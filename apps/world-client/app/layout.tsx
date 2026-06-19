@@ -15,7 +15,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      {/* suppressHydrationWarning: extensiones de navegador (p.ej. Berrycast)
+          inyectan atributos en <body> antes de la hidratación. Solo afecta a
+          este nodo, no oculta mismatches reales del árbol. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

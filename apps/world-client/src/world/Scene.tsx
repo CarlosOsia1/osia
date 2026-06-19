@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { OSIA_COLORS } from '@osia/ui';
 
@@ -12,24 +12,69 @@ import { OSIA_COLORS } from '@osia/ui';
  * son primitivas con flatShading para el look low-poly intencional.
  */
 
-type TreeProps = { position: [number, number, number]; scale: number; tint: THREE.Color };
+type Tree = { position: [number, number, number]; scale: number; tint: THREE.Color };
 
-function Pino({ position, scale, tint }: TreeProps) {
+/**
+ * Forest — los pinos como InstancedMesh (S0.2 · instancing).
+ *
+ * Cada pino son 4 partes (tronco + 3 conos). En vez de 14×4 = 56 meshes sueltos,
+ * agrupamos por geometría en 4 InstancedMesh (4 draw calls). El offset vertical de
+ * cada parte se hornea en su geometría (.translate), así una sola transformación
+ * por-árbol (posición + escala) sirve a todas sus partes. El tinte de la copa va
+ * por-instancia (instanceColor); el tronco es uniforme.
+ */
+function Forest({ trees }: { trees: Tree[] }) {
+  const meshes = useMemo(() => {
+    const parts = [
+      { geo: new THREE.CylinderGeometry(0.12, 0.16, 1, 6).translate(0, 0.5, 0), tinted: false, roughness: 0.9, color: 0x2a211a },
+      { geo: new THREE.ConeGeometry(0.9, 1.1, 7).translate(0, 1.1, 0), tinted: true, roughness: 0.85 },
+      { geo: new THREE.ConeGeometry(0.68, 1.1, 7).translate(0, 1.8, 0), tinted: true, roughness: 0.85 },
+      { geo: new THREE.ConeGeometry(0.46, 1.1, 7).translate(0, 2.5, 0), tinted: true, roughness: 0.85 },
+    ];
+
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const p = new THREE.Vector3();
+    const s = new THREE.Vector3();
+
+    return parts.map((part) => {
+      const mat = new THREE.MeshStandardMaterial({
+        color: part.tinted ? 0xffffff : part.color, // tinted: blanco base × instanceColor
+        flatShading: true,
+        roughness: part.roughness,
+      });
+      const inst = new THREE.InstancedMesh(part.geo, mat, trees.length);
+      inst.castShadow = true;
+      trees.forEach((t, i) => {
+        p.set(t.position[0], t.position[1], t.position[2]);
+        s.setScalar(t.scale);
+        inst.setMatrixAt(i, m.compose(p, q, s));
+        if (part.tinted) inst.setColorAt(i, t.tint);
+      });
+      inst.instanceMatrix.needsUpdate = true;
+      if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+      return inst;
+    });
+  }, [trees]);
+
+  // Los <primitive> no se auto-disponen: liberamos geo/material al desmontar.
+  useEffect(
+    () => () => {
+      meshes.forEach((inst) => {
+        inst.geometry.dispose();
+        (inst.material as THREE.Material).dispose();
+        inst.dispose();
+      });
+    },
+    [meshes],
+  );
+
   return (
-    <group position={position} scale={scale} castShadow>
-      {/* tronco */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <cylinderGeometry args={[0.12, 0.16, 1, 6]} />
-        <meshStandardMaterial color="#2a211a" flatShading roughness={0.9} />
-      </mesh>
-      {/* copa: tres conos apilados */}
-      {[0, 1, 2].map((i) => (
-        <mesh key={i} position={[0, 1.1 + i * 0.7, 0]} castShadow>
-          <coneGeometry args={[0.9 - i * 0.22, 1.1, 7]} />
-          <meshStandardMaterial color={tint} flatShading roughness={0.85} />
-        </mesh>
+    <>
+      {meshes.map((inst, i) => (
+        <primitive key={i} object={inst} />
       ))}
-    </group>
+    </>
   );
 }
 
@@ -85,9 +130,7 @@ export function Scene() {
         />
       </mesh>
 
-      {trees.map((t, i) => (
-        <Pino key={i} position={t.position} scale={t.scale} tint={t.tint} />
-      ))}
+      <Forest trees={trees} />
     </>
   );
 }
