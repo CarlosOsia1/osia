@@ -4,9 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "echo \"@osia/world-server: sin tests aún\" && exit 0"
+    "verify": "tsx src/verify-client.ts",
+    "test": "echo \"@osia/world-server: ver script verify\" && exit 0"
+  },
+  "dependencies": {
+    "@osia/shared": "workspace:*",
+    "jose": "^5.9.6",
+    "pino": "^9.5.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
   }
 }
