@@ -43,17 +43,19 @@ export class NetClient {
   private wantConnected = false;
   private attempts = 0;
   private seq = 0;
+  private epoch = 0; // invalida intentos de conexión en vuelo (StrictMode / carreras async)
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private remotes = new Map<number, Remote>();
 
   connect(): void {
     if (this.wantConnected) return;
     this.wantConnected = true;
-    void this.open();
+    void this.open(++this.epoch);
   }
 
   disconnect(): void {
     this.wantConnected = false;
+    this.epoch++; // cualquier open() en vuelo se aborta al volver de su await
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
     this.ws?.close();
@@ -64,8 +66,8 @@ export class NetClient {
     this.publish('idle');
   }
 
-  private async open(): Promise<void> {
-    if (!this.wantConnected) return;
+  private async open(myEpoch: number): Promise<void> {
+    if (!this.wantConnected || myEpoch !== this.epoch) return;
     this.publish(this.attempts > 0 ? 'reconnecting' : 'connecting');
     try {
       const res = await fetch(`${netConfig.apiUrl}/world/tickets`, {
@@ -75,7 +77,8 @@ export class NetClient {
       });
       if (!res.ok) throw new Error(`ticket http ${res.status}`);
       const data = (await res.json()) as { ticket: string; wsUrl?: string };
-      if (!this.wantConnected) return;
+      // Si llegó un disconnect o un open() más nuevo mientras pedíamos el ticket, abortar.
+      if (!this.wantConnected || myEpoch !== this.epoch) return;
 
       const ws = new WebSocket(data.wsUrl ?? netConfig.wsUrl);
       this.ws = ws;
@@ -83,10 +86,12 @@ export class NetClient {
       ws.onmessage = (ev) => {
         if (typeof ev.data === 'string') this.onMessage(ev.data);
       };
-      ws.onclose = () => this.onClose();
+      ws.onclose = () => {
+        if (this.ws === ws) this.onClose(); // ignora el close de un socket ya reemplazado
+      };
       ws.onerror = () => ws.close();
     } catch {
-      this.scheduleReconnect();
+      if (myEpoch === this.epoch) this.scheduleReconnect();
     }
   }
 
@@ -101,7 +106,10 @@ export class NetClient {
     const delay = Math.min(8000, 500 * 2 ** Math.min(this.attempts, 4));
     this.publish('reconnecting');
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(() => void this.open(), delay);
+    const ep = ++this.epoch;
+    this.reconnectTimer = setTimeout(() => {
+      if (this.wantConnected) void this.open(ep);
+    }, delay);
   }
 
   private onMessage(raw: string): void {
