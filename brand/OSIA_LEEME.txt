@@ -1,0 +1,58 @@
+OSIA — SISTEMA DE MARCA
+El arte de lo esencial
+=====================================================
+
+CONTENIDO DEL PAQUETE
+---------------------
+/OSIA_manual_de_marca.pdf    Manual de marca (10 págs) — la guía oficial.
+/OSIA_manual_de_marca.html   Mismo manual, versión web (ábrelo en el navegador).
+/logos/                      Todos los logos en SVG (vector) y PNG.
+/mockups/                    Aplicaciones de ejemplo (tarjeta, avatar, packaging).
+/fonts/                      Las tipografías + sus licencias.
+
+QUÉ LOGO USAR
+-------------
+- Principal (vertical)  -> uso general, piezas centradas.
+- Horizontal            -> encabezados, webs, firmas.
+- Símbolo / isotipo     -> avatar, favicon, ícono de app, sellos.
+- Logotipo (texto)      -> cuando el símbolo ya aparece aparte.
+
+Colorways (cada uno en SVG + PNG):
+  *_gold-on-dark  -> versión principal (champán sobre ónix)
+  *_gold          -> champán, fondo transparente (para fondos oscuros)
+  *_ivory         -> marfil, transparente (para fondos oscuros/foto)
+  *_onyx          -> negro, transparente (para fondos claros)
+
+Favicon/ícono: /logos/OSIA_favicon_512/192/64/32.png
+
+SVG = vectorial, escala a cualquier tamaño sin perder calidad. Úsalo siempre
+que puedas. PNG = para usos rápidos (redes, documentos).
+
+COLOR
+-----
+Champán  HEX #CBB89A  RGB 203·184·154  CMYK 0·9·24·20  (Pantone 7502 C aprox.)
+Ónix     HEX #0D0D0D  RGB 13·13·13     CMYK 0·0·0·95   (Pantone Black 6 C aprox.)
+Marfil   HEX #F5F1E8  RGB 245·241·232  CMYK 0·2·5·4
+Taupe    HEX #8C7B66  RGB 140·123·102  (tono medio de apoyo)
+
+TIPOGRAFÍA
+----------
+Display / titulares:  Italiana (Regular) — un solo peso, trazos finos.
+Cuerpo / UI / software: Jost (Light–SemiBold).
+Ambas son gratuitas (licencia SIL Open Font License, uso comercial permitido).
+fonts.google.com/specimen/Italiana  ·  fonts.google.com/specimen/Jost
+
+NOTAS
+-----
+- Slogan usado: "El arte de lo esencial". Si quieres otro, se cambia fácil.
+- Italiana no se usa en tamaños diminutos ni en párrafos largos (hairlines
+  muy finas): para eso usa Jost, y para íconos chiquitos usa el símbolo.
+
+IMPORTANTE — MARCA / LEGAL
+--------------------------
+Este paquete es el diseño de la identidad, NO una verificación legal de marca.
+"OSIA" ya existe registrada en otras categorías (audífonos, bebidas) y hay
+marcas cercanas en belleza (p. ej. "Osiao"). Antes de comercializar:
+  1) Busca "OSIA" y variantes en la Clase 3 (perfumes/cosméticos) en la SIC
+     de Colombia (plataforma SIPI) y en WIPO Global Brand Database.
+  2) Idealmente, valida con un abogado/agente de propiedad industrial.

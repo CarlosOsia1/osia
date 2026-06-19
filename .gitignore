@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Builds / outputs
+dist/
+out/
+build/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Entorno (nunca commitear secretos reales)
+.env
+.env.local
+.env.*.local
+
+# Editores / SO
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Deploy
+.vercel/

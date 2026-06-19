@@ -1,0 +1,12 @@
+{
+  "name": "@osia/world-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "echo \"@osia/world-client: sin tests aún\" && exit 0"
+  }
+}

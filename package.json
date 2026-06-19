@@ -1,0 +1,31 @@
+{
+  "name": "osia",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OSIA — Ecosistema de lujo por invitación. El arte de lo esencial.",
+  "packageManager": "pnpm@10.27.0",
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev:infra": "docker compose -f infra/docker-compose.dev.yml up -d",
+    "dev:infra:down": "docker compose -f infra/docker-compose.dev.yml down",
+    "dev:infra:logs": "docker compose -f infra/docker-compose.dev.yml logs -f"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^20.17.10",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  }
+}

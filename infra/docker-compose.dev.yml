@@ -1,0 +1,45 @@
+name: osia-dev
+
+# Infra de desarrollo local de OSIA.
+#   pnpm dev:infra        -> levanta Redis + Postgres en segundo plano
+#   pnpm dev:infra:down   -> los apaga
+# Redis se usa desde Fase 0 (presencia / pub-sub). Postgres desde Fase 1
+# (en F0 solo se valida que arranca). Credenciales del .env (ver .env.example).
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: osia-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: ['redis-server', '--appendonly', 'yes']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - osia-redis-data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: osia-postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-osia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-osia}
+      POSTGRES_DB: ${POSTGRES_DB:-osia}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-osia} -d ${POSTGRES_DB:-osia}']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - osia-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  osia-redis-data:
+  osia-postgres-data:
