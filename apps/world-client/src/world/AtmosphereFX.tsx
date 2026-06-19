@@ -24,7 +24,8 @@ export default function AtmosphereFX() {
   const { post, bloomPass } = useMemo(() => {
     const pp = new PostProcessing(gl as unknown as ConstructorParameters<typeof PostProcessing>[0]);
     const scenePass = pass(scene, camera);
-    const bp = bloom(scenePass, 0.6, 0.35, 0.55);
+    // threshold alto (0.72) = solo lo MUY brillante florece (no el horizonte cálido).
+    const bp = bloom(scenePass, 0.3, 0.35, 0.72);
     const dist = uv().sub(0.5).length();
     const vignette = smoothstep(0.32, 0.85, dist).oneMinus();
     const amount = float(0.55);
@@ -33,8 +34,8 @@ export default function AtmosphereFX() {
   }, [gl, scene, camera]);
 
   useFrame(() => {
-    // bloom dinámico: la atmósfera dicta cuánto florece la luz.
-    (bloomPass as unknown as BloomLike).strength.value = atmo.current.bloom;
+    // bloom dinámico (suave): la atmósfera dicta cuánto florece la luz, sin glow intenso.
+    (bloomPass as unknown as BloomLike).strength.value = atmo.current.bloom * 0.45;
     post.render();
   }, 1);
 

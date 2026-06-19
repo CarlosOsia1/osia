@@ -27,15 +27,19 @@ function makeBody(radius: number): THREE.Mesh {
 
 export default function SunMoon() {
   const camera = useThree((s) => s.camera);
-  const sun = useMemo(() => makeBody(6), []);
-  const moon = useMemo(() => makeBody(4.2), []);
+  const sun = useMemo(() => makeBody(3.8), []);
+  const moon = useMemo(() => makeBody(3.6), []);
 
   useFrame(() => {
     const p = atmo.current;
     const c = camera.position;
 
+    // Disco de sol con brillo SUAVE: apenas por encima del umbral de bloom, para
+    // que resplandezca un poco (más al amanecer/atardecer por el bloom dinámico),
+    // sin el glow intenso de antes.
+    const k = 0.85;
     const smat = sun.material as MeshBasicNodeMaterial;
-    smat.color.setRGB(p.sunColor[0], p.sunColor[1], p.sunColor[2], THREE.SRGBColorSpace);
+    smat.color.setRGB(p.sunColor[0] * k, p.sunColor[1] * k, p.sunColor[2] * k, THREE.SRGBColorSpace);
     sun.position.set(c.x + p.sunDir[0] * DIST, c.y + p.sunDir[1] * DIST, c.z + p.sunDir[2] * DIST);
     sun.visible = p.sunIntensity > 0.02 && p.sunDir[1] > -0.08;
 
