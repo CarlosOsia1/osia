@@ -7,6 +7,7 @@ dist/
 out/
 build/
 .next/
+next-env.d.ts
 .turbo/
 coverage/
 *.tsbuildinfo
