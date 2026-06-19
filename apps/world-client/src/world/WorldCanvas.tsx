@@ -12,6 +12,8 @@ import PerfProbe from './PerfProbe';
 import Player, { type Controls } from './Player';
 import RemotePlayers from './RemotePlayers';
 import Atmosphere from './Atmosphere';
+import SkyDome from './SkyDome';
+import Precipitation from './Precipitation';
 import { getNetClient } from '../net/useNet';
 
 /** Conecta/desconecta el cliente de red al montar/desmontar el mundo. */
@@ -68,10 +70,12 @@ export default function WorldCanvas() {
         }}
       >
         <Atmosphere />
+        <SkyDome />
         <Scene />
         <Player />
         <RemotePlayers />
         <Starfield count={1600} radius={120} />
+        <Precipitation />
         {/* Post-procesado TSL: toma el control del render (debe ir al final). */}
         <AtmosphereFX />
         {/* Muestreo de rendimiento (priority 2: corre tras el render). */}

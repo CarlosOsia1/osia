@@ -10,3 +10,5 @@ export * from './color';
 export * from './presets';
 export * from './resolve';
 export * from './clock';
+export * from './weather';
+export * from './biomes';

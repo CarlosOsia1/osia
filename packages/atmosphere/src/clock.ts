@@ -4,9 +4,9 @@
  * calculan el MISMO momento (determinismo); el server lo hará autoritativo después.
  */
 
-/** Duración de un ciclo día/noche, en segundos. Dev: corto para ver el movimiento;
- *  producción: 3600–5400 (60–90 min) para inmersión. */
-export const CYCLE_SECONDS = 240;
+/** Duración de un ciclo día/noche, en segundos. Por defecto 20 min (1200 s);
+ *  el panel de test puede acelerar/pausar. Producción: 3600–5400 (60–90 min). */
+export const CYCLE_SECONDS = 1200;
 
 /** timeOfDay 0..1 a partir de un instante (ms epoch) y la duración del ciclo. */
 export function timeOfDayAt(epochMs: number, cycleSeconds: number = CYCLE_SECONDS): number {

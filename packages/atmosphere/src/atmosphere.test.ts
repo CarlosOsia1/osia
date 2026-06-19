@@ -6,6 +6,8 @@ import { resolveAtmosphere, sunDirFor } from './resolve';
 import { CELESTIAL_CYCLE } from './presets';
 import { timeOfDayAt } from './clock';
 import { lerpRGB } from './color';
+import { BIOMES, biomeById } from './biomes';
+import { applyWeather, precipKind } from './weather';
 
 test('resolveAtmosphere es determinista', () => {
   const a = resolveAtmosphere(0.42, CELESTIAL_CYCLE);
@@ -44,4 +46,27 @@ test('timeOfDayAt está en [0,1) y avanza con el tiempo', () => {
   const t1 = timeOfDayAt(60_000, 240); // +60 s de un ciclo de 240 s = +0.25
   assert.ok(t0 >= 0 && t0 < 1);
   assert.ok(Math.abs(t1 - 0.25) < 1e-9);
+});
+
+test('hay 3 biomas y biomeById cae al primero si no existe', () => {
+  assert.ok(BIOMES.length >= 3);
+  assert.equal(biomeById('no-existe').id, BIOMES[0]!.id);
+  assert.equal(biomeById('tundra-nevada').name, 'Tundra Nevada');
+});
+
+test('cada bioma resuelve a una atmósfera válida de día y de noche', () => {
+  for (const b of BIOMES) {
+    const day = resolveAtmosphere(0.5, b.cycle);
+    const night = resolveAtmosphere(0.0, b.cycle);
+    assert.ok(day.sunIntensity > night.sunIntensity, b.id + ': día más sol que noche');
+    assert.ok(night.starsIntensity > day.starsIntensity, b.id + ': noche más estrellas');
+  }
+});
+
+test('el clima densifica la niebla y elige partícula', () => {
+  const base = resolveAtmosphere(0.5, CELESTIAL_CYCLE);
+  const lluvia = applyWeather(base, { kind: 'lluvia', intensity: 1 });
+  assert.ok(lluvia.fogDensity > base.fogDensity, 'lluvia = más niebla');
+  assert.equal(precipKind({ kind: 'nieve', intensity: 1 }), 'snow');
+  assert.equal(precipKind({ kind: 'despejado', intensity: 0 }), null);
 });
