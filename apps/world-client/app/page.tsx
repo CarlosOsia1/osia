@@ -61,7 +61,7 @@ export default function Page() {
           userSelect: 'none',
         }}
       >
-        WASD / flechas · caminar — arrastra · mirar
+        WASD / flechas · caminar — clic · mirar — ESC · soltar
       </div>
       <PerfHUD />
     </main>

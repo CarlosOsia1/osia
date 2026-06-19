@@ -11,27 +11,30 @@ import { OSIA_COLORS } from '@osia/ui';
  *
  * Figura low-poly celestial (manto cónico champán + cabeza marfil + chispa, eco
  * del símbolo). Movimiento A PIE relativo a la cámara (WASD/flechas) por cinemática
- * directa (sin Rapier todavía: el suelo de F0 es plano, no hay colisiones; Rapier
- * entra en S0.5). Cámara orbital de tercera persona con arrastre del puntero.
+ * directa (sin Rapier todavía: el suelo de F0 es plano; Rapier entra en S0.5).
  *
- * Corre a priority por defecto (0): actualiza posición y cámara ANTES de que
- * AtmosphereFX (priority 1) pinte el frame.
+ * Cámara de tercera persona con MOUSE-LOOK ESTÁNDAR (pointer lock): clic en el
+ * mundo captura el puntero y mover el mouse gira la cámara (sin arrastrar); ESC lo
+ * suelta. Eje vertical NO invertido. Corre a priority 0 (antes de AtmosphereFX).
  */
 
 export type Controls = 'forward' | 'back' | 'left' | 'right';
 
 const SPEED = 4.4; // m/s
 const CAM_DIST = 7.5;
+const SENS = 0.0022; // rad por píxel de mouse
+const ELEV_MIN = 0.12; // ~7° sobre el horizonte
+const ELEV_MAX = 1.3; // ~74° (casi cenital)
 const GROUND_RADIUS = 23.5; // el suelo es un disco r=26; dejamos margen
 
 export default function Player() {
   const group = useRef<THREE.Group>(null);
   const camera = useThree((s) => s.camera);
+  const dom = useThree((s) => s.gl.domElement);
   const [, getKeys] = useKeyboardControls<Controls>();
 
-  const yaw = useRef(0);
-  const pitch = useRef(0.42);
-  const dragging = useRef(false);
+  const yaw = useRef(0); // azimut de la cámara alrededor del avatar
+  const elev = useRef(0.42); // elevación sobre el horizonte
 
   // temporales reutilizables (cero asignaciones por frame)
   const fwd = useRef(new THREE.Vector3()).current;
@@ -40,28 +43,23 @@ export default function Player() {
   const camPos = useRef(new THREE.Vector3()).current;
   const lookAt = useRef(new THREE.Vector3()).current;
 
-  // Órbita de cámara con arrastre del puntero (sin pointer-lock).
+  // Mouse-look estándar con pointer lock (clic captura, ESC suelta).
   useEffect(() => {
-    const onDown = () => {
-      dragging.current = true;
+    const requestLock = () => {
+      if (document.pointerLockElement !== dom) void dom.requestPointerLock();
     };
-    const onUp = () => {
-      dragging.current = false;
+    const onMove = (e: MouseEvent) => {
+      if (document.pointerLockElement !== dom) return; // solo cuando está capturado
+      yaw.current -= e.movementX * SENS; // mouse derecha → girar a la derecha
+      elev.current = THREE.MathUtils.clamp(elev.current + e.movementY * SENS, ELEV_MIN, ELEV_MAX);
     };
-    const onMove = (e: PointerEvent) => {
-      if (!dragging.current) return;
-      yaw.current -= e.movementX * 0.0035;
-      pitch.current = THREE.MathUtils.clamp(pitch.current - e.movementY * 0.003, 0.12, 1.15);
-    };
-    window.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointermove', onMove);
+    dom.addEventListener('click', requestLock);
+    document.addEventListener('mousemove', onMove);
     return () => {
-      window.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointermove', onMove);
+      dom.removeEventListener('click', requestLock);
+      document.removeEventListener('mousemove', onMove);
     };
-  }, []);
+  }, [dom]);
 
   useFrame((_, delta) => {
     const g = group.current;
@@ -90,11 +88,11 @@ export default function Player() {
       g.rotation.y = Math.atan2(move.x, move.z);
     }
 
-    // cámara orbital de seguimiento (spherical alrededor del avatar)
-    const horiz = Math.cos(pitch.current) * CAM_DIST;
+    // cámara de tercera persona detrás del avatar (azimut + elevación)
+    const horiz = Math.cos(elev.current) * CAM_DIST;
     camPos.set(
       g.position.x + Math.sin(yaw.current) * horiz,
-      g.position.y + Math.sin(pitch.current) * CAM_DIST + 0.6,
+      g.position.y + Math.sin(elev.current) * CAM_DIST + 1.0,
       g.position.z + Math.cos(yaw.current) * horiz,
     );
     camera.position.lerp(camPos, 1 - Math.pow(0.0008, delta));
