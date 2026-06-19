@@ -13,6 +13,7 @@ import Player, { type Controls } from './Player';
 import RemotePlayers from './RemotePlayers';
 import Atmosphere from './Atmosphere';
 import SkyDome from './SkyDome';
+import SunMoon from './SunMoon';
 import Precipitation from './Precipitation';
 import { getNetClient } from '../net/useNet';
 
@@ -71,6 +72,7 @@ export default function WorldCanvas() {
       >
         <Atmosphere />
         <SkyDome />
+        <SunMoon />
         <Scene />
         <Player />
         <RemotePlayers />
