@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   // Los paquetes internos del monorepo se distribuyen como TypeScript fuente:
   // Next debe transpilarlos.
-  transpilePackages: ['@osia/ui', '@osia/shared'],
+  transpilePackages: ['@osia/ui', '@osia/shared', '@osia/atmosphere'],
   // El lint corre por separado en el monorepo (Turborepo + ESLint flat),
   // no durante `next build`.
   eslint: { ignoreDuringBuilds: true },

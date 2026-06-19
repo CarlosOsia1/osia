@@ -11,6 +11,7 @@ import AtmosphereFX from './AtmosphereFX';
 import PerfProbe from './PerfProbe';
 import Player, { type Controls } from './Player';
 import RemotePlayers from './RemotePlayers';
+import Atmosphere from './Atmosphere';
 import { getNetClient } from '../net/useNet';
 
 /** Conecta/desconecta el cliente de red al montar/desmontar el mundo. */
@@ -66,6 +67,7 @@ export default function WorldCanvas() {
           scene.fog = new THREE.FogExp2('#1b1814', 0.028);
         }}
       >
+        <Atmosphere />
         <Scene />
         <Player />
         <RemotePlayers />

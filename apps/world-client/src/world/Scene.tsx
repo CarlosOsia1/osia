@@ -97,26 +97,7 @@ export function Scene() {
 
   return (
     <>
-      {/* Luz ambiental marfil tenue */}
-      <ambientLight intensity={0.35} color={OSIA_COLORS.marfil} />
-      {/* Hemisférica: cielo frío arriba, rebote champán abajo */}
-      <hemisphereLight args={['#3a4a66', OSIA_COLORS.champan, 0.5]} />
-      {/* "Sol" del crepúsculo: direccional champán cálida que proyecta sombras */}
-      <directionalLight
-        position={[12, 10, 6]}
-        intensity={2.4}
-        color={OSIA_COLORS.champan}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-bias={-0.0004}
-        shadow-camera-near={0.5}
-        shadow-camera-far={60}
-        shadow-camera-left={-24}
-        shadow-camera-right={24}
-        shadow-camera-top={24}
-        shadow-camera-bottom={-24}
-      />
+      {/* Las luces (sol/luna/ambiente) las provee y anima <Atmosphere>. */}
 
       {/* Suelo low-poly */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>

@@ -1,9 +1,12 @@
 /**
- * @osia/atmosphere — Motor de Atmósfera de OSIA (lógica PURA compartida cliente↔servidor).
- *
- * Stub de Fase 0 · OSIA-S0.1. El motor real (ejes combinatorios, resolveAtmosphere,
- * interpolación, scheduler de eventos efímeros) llega en OSIA-S0.7.
- * Ver docs/06-motor-atmosfera.md.
+ * @osia/atmosphere — Motor de Atmósfera de OSIA (lógica PURA compartida).
+ * Sin Three.js, sin red, sin DB, sin Date.now: cliente y servidor resuelven el
+ * MISMO cielo desde (timeOfDay, presets). Ver docs/06-motor-atmosfera.md.
  */
 
-export const ATMOSPHERE_ENGINE_VERSION = '0.0.0';
+export * from './types';
+export * from './math';
+export * from './color';
+export * from './presets';
+export * from './resolve';
+export * from './clock';

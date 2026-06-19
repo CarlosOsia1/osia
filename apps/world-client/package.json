@@ -11,6 +11,7 @@
     "test": "echo \"@osia/world-client: sin tests aún\" && exit 0"
   },
   "dependencies": {
+    "@osia/atmosphere": "workspace:*",
     "@osia/shared": "workspace:*",
     "@osia/ui": "workspace:*",
     "@react-three/drei": "^10.0.6",

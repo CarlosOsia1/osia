@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PointsNodeMaterial } from 'three/webgpu';
 import { OSIA_COLORS } from '@osia/ui';
+import { atmo } from './atmosphereRuntime';
 
 /**
  * Starfield — cielo estrellado node-based (S0.2 · WebGPU).
@@ -49,6 +51,11 @@ export default function Starfield({ count = 1600, radius = 120 }: { count?: numb
 
     return new THREE.Points(geo, mat);
   }, [count, radius]);
+
+  // Las estrellas aparecen de noche y se apagan de día (las controla la atmósfera).
+  useFrame(() => {
+    points.material.opacity = 0.9 * atmo.current.starsIntensity;
+  });
 
   // Los <primitive> no se auto-disponen: liberamos geo/material al desmontar.
   useEffect(
