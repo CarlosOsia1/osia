@@ -42,11 +42,12 @@ export default function Starfield({ count = 1600, radius = 120 }: { count?: numb
 
     const mat = new PointsNodeMaterial();
     mat.color = new THREE.Color(OSIA_COLORS.marfil);
-    mat.size = 0.7;
+    mat.size = 0.9;
     mat.sizeAttenuation = true;
     mat.transparent = true;
     mat.opacity = 0.85;
     mat.depthWrite = false;
+    mat.fog = false; // las estrellas NUNCA se borran con la niebla (estaban invisibles de noche)
     mat.blending = THREE.AdditiveBlending;
 
     return new THREE.Points(geo, mat);
