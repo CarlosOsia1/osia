@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { KeyboardControls, type KeyboardControlsEntry } from '@react-three/drei';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import { Scene } from './Scene';
@@ -10,6 +10,18 @@ import Starfield from './Starfield';
 import AtmosphereFX from './AtmosphereFX';
 import PerfProbe from './PerfProbe';
 import Player, { type Controls } from './Player';
+import RemotePlayers from './RemotePlayers';
+import { getNetClient } from '../net/useNet';
+
+/** Conecta/desconecta el cliente de red al montar/desmontar el mundo. */
+function WorldNet() {
+  useEffect(() => {
+    const net = getNetClient();
+    net.connect();
+    return () => net.disconnect();
+  }, []);
+  return null;
+}
 
 /**
  * WorldCanvas — el lienzo R3F de EL MUNDO (OSIA-S0.3, "El Cuerpo").
@@ -33,6 +45,7 @@ export default function WorldCanvas() {
 
   return (
     <KeyboardControls map={map}>
+      <WorldNet />
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -55,6 +68,7 @@ export default function WorldCanvas() {
       >
         <Scene />
         <Player />
+        <RemotePlayers />
         <Starfield count={1600} radius={120} />
         {/* Post-procesado TSL: toma el control del render (debe ir al final). */}
         <AtmosphereFX />
