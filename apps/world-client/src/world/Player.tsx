@@ -25,6 +25,7 @@ const CAM_DIST = 7.5;
 const SENS = 0.0022; // rad por píxel de mouse
 const ELEV_MIN = 0.12; // ~7° sobre el horizonte
 const ELEV_MAX = 1.3; // ~74° (casi cenital)
+const FOLLOW_LAMBDA = 14; // suavizado del pivote (mayor = más pegado al avatar)
 const GROUND_RADIUS = 23.5; // el suelo es un disco r=26; dejamos margen
 
 export default function Player() {
@@ -40,7 +41,8 @@ export default function Player() {
   const fwd = useRef(new THREE.Vector3()).current;
   const right = useRef(new THREE.Vector3()).current;
   const move = useRef(new THREE.Vector3()).current;
-  const camPos = useRef(new THREE.Vector3()).current;
+  const pivot = useRef(new THREE.Vector3(0, 0, 6)).current; // punto que la cámara orbita/observa
+  const offset = useRef(new THREE.Vector3()).current;
   const lookAt = useRef(new THREE.Vector3()).current;
 
   // Mouse-look estándar con pointer lock (clic captura, ESC suelta).
@@ -88,15 +90,21 @@ export default function Player() {
       g.rotation.y = Math.atan2(move.x, move.z);
     }
 
-    // cámara de tercera persona detrás del avatar (azimut + elevación)
+    // Cámara de tercera persona: el pivote sigue al avatar con damping (translación
+    // suave) y la cámara orbita SIEMPRE a radio fijo desde el pivote. Computar la
+    // posición desde los ángulos (no interpolar la posición) evita que un giro
+    // brusco "corte la cuerda" del círculo y acerque la cámara al avatar.
+    pivot.lerp(g.position, 1 - Math.exp(-FOLLOW_LAMBDA * delta));
+
     const horiz = Math.cos(elev.current) * CAM_DIST;
-    camPos.set(
-      g.position.x + Math.sin(yaw.current) * horiz,
-      g.position.y + Math.sin(elev.current) * CAM_DIST + 1.0,
-      g.position.z + Math.cos(yaw.current) * horiz,
+    offset.set(
+      Math.sin(yaw.current) * horiz,
+      Math.sin(elev.current) * CAM_DIST + 1.0,
+      Math.cos(yaw.current) * horiz,
     );
-    camera.position.lerp(camPos, 1 - Math.pow(0.0008, delta));
-    lookAt.set(g.position.x, g.position.y + 1.2, g.position.z);
+    camera.position.copy(pivot).add(offset);
+    lookAt.copy(pivot);
+    lookAt.y += 1.2;
     camera.lookAt(lookAt);
   });
 
