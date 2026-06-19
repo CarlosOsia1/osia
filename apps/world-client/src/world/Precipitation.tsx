@@ -18,10 +18,11 @@ const COUNT = 1400;
 const BOX = 36; // semilado de la caja alrededor de la cámara
 
 type Cfg = { speed: number; size: number; drift: number; color: string; opacity: number };
-const CFG: Record<'rain' | 'snow' | 'sand', Cfg> = {
+const CFG: Record<'rain' | 'snow' | 'sand' | 'fog', Cfg> = {
   rain: { speed: 34, size: 0.05, drift: 1, color: '#9fb0c8', opacity: 0.45 },
   snow: { speed: 5, size: 0.16, drift: 2, color: '#eef3f8', opacity: 0.9 },
   sand: { speed: 9, size: 0.09, drift: 20, color: '#caa86a', opacity: 0.4 },
+  fog: { speed: 0.5, size: 3.2, drift: 1.5, color: '#cfcabf', opacity: 0.1 }, // jirones lentos y suaves
 };
 
 export default function Precipitation() {

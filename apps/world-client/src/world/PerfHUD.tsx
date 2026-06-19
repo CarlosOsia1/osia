@@ -2,6 +2,14 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { subscribePerf, getPerf, type PerfStats } from './perfStore';
+import { worldClock } from './worldClockRuntime';
+
+function horaDelDia(tod: number): string {
+  const min = Math.floor((((tod % 1) + 1) % 1) * 1440);
+  const hh = Math.floor(min / 60) % 24;
+  const mm = min % 60;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
 
 /**
  * PerfHUD — overlay de métricas (S0.2-H2). HTML fuera del Canvas.
@@ -81,6 +89,7 @@ export default function PerfHUD() {
       >
         OSIA · perf · {s.backend}
       </div>
+      <Row label="hora" value={horaDelDia(worldClock.tod)} />
       <Row label="fps" value={s.fps.toFixed(0)} color={fpsColor(s.fps)} />
       <Row label="draw calls" value={String(s.drawCalls)} color={drawCallColor(s.drawCalls)} />
       <Row label="triángulos" value={s.triangles.toLocaleString('es-CO')} />
