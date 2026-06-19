@@ -48,6 +48,9 @@ function Row({ label, value, color = CHAMPAN }: { label: string; value: string; 
 export default function PerfHUD() {
   const s: PerfStats = useSyncExternalStore(subscribePerf, getPerf, getPerf);
   const [visible, setVisible] = useState(true);
+  const [mounted, setMounted] = useState(false); // evita mismatch de hidratación con la hora (Date.now)
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -89,7 +92,7 @@ export default function PerfHUD() {
       >
         OSIA · perf · {s.backend}
       </div>
-      <Row label="hora" value={horaDelDia(worldClock.tod)} />
+      <Row label="hora" value={mounted ? horaDelDia(worldClock.tod) : '—:—'} />
       <Row label="fps" value={s.fps.toFixed(0)} color={fpsColor(s.fps)} />
       <Row label="draw calls" value={String(s.drawCalls)} color={drawCallColor(s.drawCalls)} />
       <Row label="triángulos" value={s.triangles.toLocaleString('es-CO')} />
