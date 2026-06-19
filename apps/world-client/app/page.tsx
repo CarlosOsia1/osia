@@ -48,6 +48,21 @@ export default function Page() {
       >
         OSIA · El Mundo
       </div>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 22,
+          left: 28,
+          color: '#8c7b66',
+          letterSpacing: '0.18em',
+          fontSize: 11,
+          textTransform: 'uppercase',
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        WASD / flechas · caminar — arrastra · mirar
+      </div>
       <PerfHUD />
     </main>
   );
