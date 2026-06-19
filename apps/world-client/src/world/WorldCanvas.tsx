@@ -7,6 +7,7 @@ import { WebGPURenderer } from 'three/webgpu';
 import { Scene } from './Scene';
 import Starfield from './Starfield';
 import AtmosphereFX from './AtmosphereFX';
+import PerfProbe from './PerfProbe';
 
 /**
  * WorldCanvas — el lienzo R3F de EL MUNDO (OSIA-S0.2, "Primera Luz").
@@ -49,6 +50,8 @@ export default function WorldCanvas() {
       />
       {/* Post-procesado TSL: toma el control del render (debe ir al final). */}
       <AtmosphereFX />
+      {/* Muestreo de rendimiento (priority 2: corre tras el render). */}
+      <PerfProbe />
     </Canvas>
   );
 }
