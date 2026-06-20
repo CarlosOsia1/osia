@@ -5,11 +5,12 @@
  */
 
 import { timeOfDayAt, CYCLE_SECONDS } from '@osia/atmosphere';
+import { serverNow } from '../net/serverClock';
 
 const wrap = (t: number) => ((t % 1) + 1) % 1;
 
 export const worldClock = {
-  tod: timeOfDayAt(Date.now(), CYCLE_SECONDS),
+  tod: timeOfDayAt(serverNow(), CYCLE_SECONDS),
   scale: 1,
   paused: false,
   manual: false,
@@ -17,7 +18,8 @@ export const worldClock = {
 
 export function tickWorldClock(deltaSec: number): void {
   if (!worldClock.manual) {
-    worldClock.tod = timeOfDayAt(Date.now(), CYCLE_SECONDS); // compartido entre clientes
+    // Hora del SERVER → todos los clientes ven el MISMO momento del ciclo día/noche.
+    worldClock.tod = timeOfDayAt(serverNow(), CYCLE_SECONDS);
     return;
   }
   if (worldClock.paused) return;

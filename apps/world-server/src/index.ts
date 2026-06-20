@@ -122,7 +122,7 @@ async function onMessage(conn: Conn, raw: string): Promise<void> {
       onInput(conn, msg);
       break;
     case C2S.PING:
-      send(conn.ws, { op: S2C.PONG, t: msg.t });
+      send(conn.ws, { op: S2C.PONG, t: msg.t, serverTime: Date.now() });
       break;
     case C2S.CHAT_SEND:
       onChat(conn, msg);
@@ -165,6 +165,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     tickHz: TICK_HZ,
     entities: hub.snapshot(),
     atmosphere: { biome: director.biome, weather: director.weather }, // sync de clima al entrar
+    serverTime: Date.now(), // sincroniza el reloj día/noche
   });
   broadcastExcept(conn, { op: S2C.ENTITY_JOIN, entity: { ...rt.state } });
   log.info({ id, handle, players: hub.entities.size }, 'join');

@@ -23,6 +23,7 @@ import {
 import { netConfig } from './config';
 import { setNetState, type NetStatus } from './store';
 import { applyServerAtmosphere } from '../world/atmosphereRuntime';
+import { reportServerOffset } from './serverClock';
 
 export type Sample = { t: number; x: number; z: number; yaw: number };
 type Remote = { handle: string; buffer: Sample[] };
@@ -49,6 +50,7 @@ export class NetClient {
   ackSeq = 0; // último seq que el server confirmó haber procesado (del DELTA)
   private epoch = 0; // invalida intentos de conexión en vuelo (StrictMode / carreras async)
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private pingTimer: ReturnType<typeof setInterval> | null = null; // PING app para sync de reloj
   private remotes = new Map<number, Remote>();
 
   connect(): void {
@@ -62,6 +64,7 @@ export class NetClient {
     this.epoch++; // cualquier open() en vuelo se aborta al volver de su await
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
+    this.stopPing();
     this.ws?.close();
     this.ws = null;
     this.selfId = null;
@@ -103,8 +106,23 @@ export class NetClient {
 
   private onClose(): void {
     this.ws = null;
+    this.stopPing();
     if (this.wantConnected) this.scheduleReconnect();
     else this.publish('idle');
+  }
+
+  /** PING aplicativo periódico → mide offset de reloj con el server (sync día/noche). */
+  private startPing(): void {
+    this.stopPing();
+    const ping = () => {
+      if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(encode({ op: C2S.PING, t: Date.now() }));
+    };
+    ping();
+    this.pingTimer = setInterval(ping, 2500);
+  }
+  private stopPing(): void {
+    if (this.pingTimer) clearInterval(this.pingTimer);
+    this.pingTimer = null;
   }
 
   private scheduleReconnect(): void {
@@ -133,6 +151,8 @@ export class NetClient {
           else this.remotes.set(e.id, { handle: e.handle, buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }] });
         }
         applyServerAtmosphere(msg.atmosphere.biome, msg.atmosphere.weather); // sync de clima al entrar
+        reportServerOffset(msg.serverTime - Date.now(), true); // offset inicial (lo refina el PING)
+        this.startPing();
         this.publish('connected');
         break;
       }
@@ -171,6 +191,12 @@ export class NetClient {
       }
       case S2C.ATMOSPHERE_UPDATE: {
         applyServerAtmosphere(msg.biome, msg.weather); // el server dicta el clima
+        break;
+      }
+      case S2C.PONG: {
+        // offset = hora del server (estimada al instante de recibir) − hora local
+        const rtt = Date.now() - msg.t;
+        reportServerOffset(msg.serverTime + rtt / 2 - Date.now());
         break;
       }
       default:

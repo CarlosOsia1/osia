@@ -41,6 +41,7 @@ export type WelcomeMsg = {
   tickHz: number;
   entities: EntityState[];
   atmosphere: AtmosphereState; // estado de clima/bioma actual (sync inmediato al entrar)
+  serverTime: number; // hora del server (ms) → sincroniza el ciclo día/noche entre clientes
 };
 /** El server dicta el clima (autoritativo); todos los clientes lo sincronizan. */
 export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WireWeather };
@@ -48,7 +49,7 @@ export type SnapshotMsg = { op: typeof S2C.SNAPSHOT; tick: number; entities: Ent
 export type DeltaMsg = { op: typeof S2C.DELTA; tick: number; ackSeq: number; entities: EntityState[] };
 export type EntityJoinMsg = { op: typeof S2C.ENTITY_JOIN; entity: EntityState };
 export type EntityLeaveMsg = { op: typeof S2C.ENTITY_LEAVE; id: number };
-export type PongMsg = { op: typeof S2C.PONG; t: number };
+export type PongMsg = { op: typeof S2C.PONG; t: number; serverTime: number };
 export type ChatBroadcastMsg = { op: typeof S2C.CHAT_MSG; id: number; handle: string; text: string };
 export type ErrorMsg = { op: typeof S2C.ERROR; code: number; message: string };
 
