@@ -174,8 +174,9 @@ function onInput(conn: Conn, msg: InputMsg): void {
   if (conn.entityId === null) return;
   const rt = hub.entities.get(conn.entityId);
   if (!rt) return;
-  rt.input = { f: msg.f, r: msg.r, yaw: msg.yaw };
-  if (msg.seq > rt.lastSeq) rt.lastSeq = msg.seq;
+  if (msg.seq <= rt.lastSeq || rt.inputs.length > 120) return; // viejo/duplicado o flood
+  const inputDt = Math.min(0.1, Math.max(0, msg.dtMs / 1000)); // clamp anti-cheat
+  rt.inputs.push({ seq: msg.seq, f: msg.f, r: msg.r, yaw: msg.yaw, dt: inputDt });
 }
 
 function onChat(conn: Conn, msg: ChatSendMsg): void {
@@ -220,7 +221,6 @@ function spawnPoint(i: number): { x: number; z: number } {
 }
 
 // ---------- Loop de tick fijo a 20 Hz ----------
-const dt = TICK_MS / 1000;
 let tick = 0;
 let lastTime = Date.now();
 let acc = 0;
@@ -229,12 +229,20 @@ const pos = { x: 0, z: 0 };
 function simulate(): void {
   tick++;
   for (const rt of hub.entities.values()) {
+    if (rt.inputs.length === 0) continue; // sin inputs este tick → la entidad no avanza
+    rt.inputs.sort((a, b) => a.seq - b.seq);
     pos.x = rt.state.x;
     pos.z = rt.state.z;
-    applyMovement(pos, rt.input, dt);
+    // Drena TODOS los inputs encolados aplicando el MISMO applyMovement con su propio dt
+    // (igual que el replay del cliente → convergencia exacta, sin rubber-band).
+    for (const inp of rt.inputs) {
+      applyMovement(pos, inp, inp.dt);
+      rt.lastSeq = inp.seq; // ackSeq = último seq procesado
+      rt.state.yaw = inp.yaw;
+    }
     rt.state.x = pos.x;
     rt.state.z = pos.z;
-    rt.state.yaw = rt.input.yaw;
+    rt.inputs.length = 0;
   }
 }
 

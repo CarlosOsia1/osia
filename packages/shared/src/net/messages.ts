@@ -25,7 +25,7 @@ export type AtmosphereState = { biome: string; weather: WireWeather };
 
 // ---- Cliente → Servidor ----
 export type HelloMsg = { op: typeof C2S.HELLO; ticket: string; protocol: number };
-export type InputMsg = { op: typeof C2S.INPUT; seq: number; f: number; r: number; yaw: number };
+export type InputMsg = { op: typeof C2S.INPUT; seq: number; f: number; r: number; yaw: number; dtMs: number };
 export type PingMsg = { op: typeof C2S.PING; t: number };
 export type ChatSendMsg = { op: typeof C2S.CHAT_SEND; text: string };
 export type ByeMsg = { op: typeof C2S.BYE };

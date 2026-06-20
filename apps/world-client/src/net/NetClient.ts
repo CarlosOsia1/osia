@@ -44,6 +44,9 @@ export class NetClient {
   private wantConnected = false;
   private attempts = 0;
   private seq = 0;
+  /** Inputs enviados aún NO confirmados por el server (se re-aplican en la reconciliación). */
+  pending: { seq: number; f: number; r: number; yaw: number; dt: number }[] = [];
+  ackSeq = 0; // último seq que el server confirmó haber procesado (del DELTA)
   private epoch = 0; // invalida intentos de conexión en vuelo (StrictMode / carreras async)
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private remotes = new Map<number, Remote>();
@@ -63,6 +66,8 @@ export class NetClient {
     this.ws = null;
     this.selfId = null;
     this.serverSelf = null;
+    this.pending.length = 0;
+    this.ackSeq = 0;
     this.remotes.clear();
     this.publish('idle');
   }
@@ -120,6 +125,8 @@ export class NetClient {
       case S2C.WELCOME: {
         this.selfId = msg.selfId;
         this.attempts = 0;
+        this.pending.length = 0;
+        this.ackSeq = 0;
         this.remotes.clear();
         for (const e of msg.entities) {
           if (e.id === msg.selfId) this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw };
@@ -145,6 +152,9 @@ export class NetClient {
           r.buffer.push({ t: now, x: e.x, z: e.z, yaw: e.yaw });
           if (r.buffer.length > BUFFER_MAX) r.buffer.shift();
         }
+        // Reconciliación: descartar los inputs que el server ya confirmó (seq <= ackSeq).
+        this.ackSeq = msg.ackSeq;
+        if (this.pending.length) this.pending = this.pending.filter((i) => i.seq > msg.ackSeq);
         break;
       }
       case S2C.ENTITY_JOIN: {
@@ -168,10 +178,11 @@ export class NetClient {
     }
   }
 
-  sendInput(f: number, r: number, yaw: number): void {
+  sendInput(f: number, r: number, yaw: number, dt: number): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
     this.seq++;
-    this.ws.send(encode({ op: C2S.INPUT, seq: this.seq, f, r, yaw }));
+    this.pending.push({ seq: this.seq, f, r, yaw, dt }); // guardado para el replay de reconciliación
+    this.ws.send(encode({ op: C2S.INPUT, seq: this.seq, f, r, yaw, dtMs: dt * 1000 }));
   }
 
   getRemoteIds(): number[] {

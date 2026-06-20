@@ -17,7 +17,7 @@ test('round-trip HELLO', () => {
 });
 
 test('round-trip INPUT', () => {
-  const msg: InputMsg = { op: C2S.INPUT, seq: 42, f: 1, r: -1, yaw: 0.7 };
+  const msg: InputMsg = { op: C2S.INPUT, seq: 42, f: 1, r: -1, yaw: 0.7, dtMs: 16 };
   assert.deepEqual(decode(encode(msg)), msg);
 });
 

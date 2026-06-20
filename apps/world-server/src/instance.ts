@@ -4,12 +4,15 @@
  * que el loop de tick aplica con applyMovement.
  */
 
-import { INSTANCE_CAPACITY, type EntityState, type MoveInput } from '@osia/shared';
+import { INSTANCE_CAPACITY, type EntityState } from '@osia/shared';
+
+/** Input encolado del cliente (con su propio dt) — el tick los drena en orden de seq. */
+export type QueuedInput = { seq: number; f: number; r: number; yaw: number; dt: number };
 
 export type EntityRuntime = {
   state: EntityState;
-  input: MoveInput; // último input recibido; se aplica cada tick
-  lastSeq: number; // última secuencia de input (para ackSeq → reconciliación S0.5)
+  inputs: QueuedInput[]; // COLA de inputs pendientes (por seq); se drena cada tick
+  lastSeq: number; // último seq drenado = ackSeq → reconciliación con input replay
 };
 
 export class Instance {
@@ -27,7 +30,7 @@ export class Instance {
   add(id: number, handle: string, spawn: { x: number; z: number }): EntityRuntime {
     const rt: EntityRuntime = {
       state: { id, handle, x: spawn.x, z: spawn.z, yaw: 0 },
-      input: { f: 0, r: 0, yaw: 0 },
+      inputs: [],
       lastSeq: 0,
     };
     this.entities.set(id, rt);

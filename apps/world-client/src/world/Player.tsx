@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { MOVE_SPEED, GROUND_RADIUS } from '@osia/shared';
+import { applyMovement } from '@osia/shared';
 import { getNetClient } from '../net/useNet';
 import AvatarMesh from './AvatarMesh';
 
@@ -25,9 +25,6 @@ const SENS = 0.0022; // rad por píxel de mouse
 const ELEV_MIN = -0.12; // permite bajar la cámara bajo la horizontal (mirar más hacia arriba)
 const ELEV_MAX = 1.3;
 const FOLLOW_LAMBDA = 14; // suavizado del pivote de cámara
-const SEND_INTERVAL = 0.05; // enviar INPUT cada 50 ms (20 Hz)
-const RECON_SNAP_DIST2 = 4; // (2 m)^2 → snap; menos → corrección suave
-const RECON_LAMBDA = 8;
 
 export default function Player() {
   const group = useRef<THREE.Group>(null);
@@ -38,8 +35,6 @@ export default function Player() {
 
   const yaw = useRef(0);
   const elev = useRef(0.42);
-  const sendAcc = useRef(0);
-  const synced = useRef(false);
 
   const fwd = useRef(new THREE.Vector3()).current;
   const right = useRef(new THREE.Vector3()).current;
@@ -47,6 +42,7 @@ export default function Player() {
   const pivot = useRef(new THREE.Vector3(0, 0, 6)).current;
   const offset = useRef(new THREE.Vector3()).current;
   const lookAt = useRef(new THREE.Vector3()).current;
+  const recon = useRef({ x: 0, z: 0 }).current; // posición reconciliada (server + replay)
 
   // Mouse-look estándar con pointer lock (clic captura, ESC suelta).
   useEffect(() => {
@@ -81,45 +77,36 @@ export default function Player() {
     right.set(-fwd.z, 0, fwd.x);
     const f = (k.forward ? 1 : 0) - (k.back ? 1 : 0);
     const r = (k.right ? 1 : 0) - (k.left ? 1 : 0);
+    const moving = f !== 0 || r !== 0;
 
-    // --- predicción local (respuesta inmediata) ---
-    if (f !== 0 || r !== 0) {
+    // Orientación del cuerpo: mira hacia donde se mueve (visual; no se reconcilia).
+    if (moving) {
       move.set(0, 0, 0).addScaledVector(fwd, f).addScaledVector(right, r).normalize();
-      g.position.addScaledVector(move, MOVE_SPEED * delta);
-      const d = Math.hypot(g.position.x, g.position.z);
-      if (d > GROUND_RADIUS) {
-        g.position.x *= GROUND_RADIUS / d;
-        g.position.z *= GROUND_RADIUS / d;
-      }
       g.rotation.y = Math.atan2(move.x, move.z);
     }
 
-    // --- enviar INPUT a 20 Hz (también parado, para reportar f=0) ---
-    sendAcc.current += delta;
-    if (sendAcc.current >= SEND_INTERVAL) {
-      sendAcc.current = 0;
-      net.sendInput(f, r, yaw.current);
-    }
+    // --- enviar 1 INPUT POR FRAME (con su dt) → NetClient lo guarda en `pending` ---
+    // (también parado, para reportar f=0). El server lo encola y lo drena por tick.
+    net.sendInput(f, r, yaw.current, delta);
 
-    // --- reconciliación con el estado autoritativo ---
+    // --- posición = estado AUTORITATIVO + REPLAY de los inputs pendientes (Gambetta/Valve) ---
+    // Como envío 1 input por frame, `recon` avanza un paso de frame por frame → suave; y el
+    // server procesa EXACTAMENTE los mismos inputs (misma applyMovement determinista), así la
+    // posición mostrada es la predicción correcta anclada al server: cero rubber-band, sin lag.
     const ss = net.serverSelf;
     if (ss) {
-      if (!synced.current) {
-        g.position.x = ss.x;
-        g.position.z = ss.z;
-        synced.current = true;
-      } else {
-        const ex = ss.x - g.position.x;
-        const ez = ss.z - g.position.z;
-        if (ex * ex + ez * ez > RECON_SNAP_DIST2) {
-          g.position.x = ss.x;
-          g.position.z = ss.z;
-        } else {
-          const a = 1 - Math.exp(-RECON_LAMBDA * delta);
-          g.position.x += ex * a;
-          g.position.z += ez * a;
-        }
-      }
+      recon.x = ss.x;
+      recon.z = ss.z;
+      for (const inp of net.pending) applyMovement(recon, inp, inp.dt);
+      g.position.x = recon.x;
+      g.position.z = recon.z;
+    } else if (moving) {
+      // sin servidor todavía: dead-reckoning local por frame (misma función pura).
+      recon.x = g.position.x;
+      recon.z = g.position.z;
+      applyMovement(recon, { f, r, yaw: yaw.current }, delta);
+      g.position.x = recon.x;
+      g.position.z = recon.z;
     }
 
     // --- cámara de tercera persona (radio constante; pivote suavizado) ---

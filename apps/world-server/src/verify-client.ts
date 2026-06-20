@@ -75,7 +75,7 @@ async function main(): Promise<void> {
 
   // 2) INPUT mueve la entidad (autoritativo)
   for (let i = 0; i < 16; i++) {
-    a.ws.send(encode({ op: C2S.INPUT, seq: i + 1, f: 1, r: 0, yaw: 0 }));
+    a.ws.send(encode({ op: C2S.INPUT, seq: i + 1, f: 1, r: 0, yaw: 0, dtMs: 50 }));
     await sleep(50);
   }
   await sleep(150);
