@@ -130,6 +130,14 @@ export function encode(msg: NetMessage): Uint8Array {
       break;
     case C2S.BYE:
       break;
+    case C2S.VOICE_SIGNAL:
+      w.u32(msg.dstId);
+      w.u8(msg.kind);
+      w.str(msg.payload);
+      break;
+    case C2S.VOICE_STATE:
+      w.u8(msg.flags);
+      break;
     // ---- S2C ----
     case S2C.WELCOME:
       w.u32(msg.selfId);
@@ -185,6 +193,15 @@ export function encode(msg: NetMessage): Uint8Array {
       w.str(msg.weather.kind);
       w.f64(msg.weather.intensity);
       break;
+    case S2C.VOICE_SIGNAL:
+      w.u32(msg.srcId);
+      w.u8(msg.kind);
+      w.str(msg.payload);
+      break;
+    case S2C.VOICE_STATE:
+      w.u32(msg.id);
+      w.u8(msg.flags);
+      break;
     case S2C.ERROR:
       w.u8(msg.code);
       w.str(msg.message);
@@ -216,6 +233,10 @@ export function decode<T extends NetMessage = NetMessage>(data: ArrayBuffer | Ui
         return { op, text: rd.str() } as T;
       case C2S.BYE:
         return { op } as T;
+      case C2S.VOICE_SIGNAL:
+        return { op, dstId: rd.u32(), kind: rd.u8(), payload: rd.str() } as T;
+      case C2S.VOICE_STATE:
+        return { op, flags: rd.u8() } as T;
       // ---- S2C ----
       case S2C.WELCOME: {
         const selfId = rd.u32();
@@ -262,6 +283,10 @@ export function decode<T extends NetMessage = NetMessage>(data: ArrayBuffer | Ui
         return { op, id: rd.u32(), handle: rd.str(), text: rd.str() } as T;
       case S2C.ATMOSPHERE_UPDATE:
         return { op, biome: rd.str(), weather: { kind: rd.str(), intensity: rd.f64() } } as T;
+      case S2C.VOICE_SIGNAL:
+        return { op, srcId: rd.u32(), kind: rd.u8(), payload: rd.str() } as T;
+      case S2C.VOICE_STATE:
+        return { op, id: rd.u32(), flags: rd.u8() } as T;
       case S2C.ERROR:
         return { op, code: rd.u8(), message: rd.str() } as T;
       default:

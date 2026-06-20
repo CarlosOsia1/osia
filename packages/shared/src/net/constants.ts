@@ -3,7 +3,7 @@
  * Cliente y servidor DEBEN usar estas mismas para que la simulación coincida.
  */
 
-export const PROTOCOL_VERSION = 5; // +5: resumeToken (reconexión con grace window)
+export const PROTOCOL_VERSION = 6; // +6: VOICE_SIGNAL/VOICE_STATE (voz P2P S0.6)
 
 /** Simulación autoritativa: tick fijo. */
 export const TICK_HZ = 20;

@@ -14,6 +14,7 @@ export const C2S = {
   INTERACT: 0x07,
   VOICE_SIGNAL: 0x08,
   BYE: 0x09,
+  VOICE_STATE: 0x0a,
 } as const;
 
 export const S2C = {
@@ -26,7 +27,8 @@ export const S2C = {
   CHAT_MSG: 0x87,
   ATMOSPHERE_UPDATE: 0x88,
   ATMOSPHERE_EVENT: 0x89,
-  VOICE_SIGNAL: 0x8b,
+  VOICE_STATE: 0x8a,
+  VOICE_SIGNAL: 0x8b, // NOTA: el par de VOICE_SIGNAL es 0x8b, NO 0x88 (ese es ATMOSPHERE_UPDATE)
   PRESENCE: 0x8c,
   ERROR: 0x8e,
 } as const;

@@ -29,6 +29,8 @@ import {
   type HelloMsg,
   type InputMsg,
   type ChatSendMsg,
+  type VoiceSignalMsg,
+  type VoiceStateMsg,
 } from '@osia/shared';
 import { config } from './config';
 import { log } from './logger';
@@ -46,8 +48,11 @@ type Conn = {
   alive: boolean;
   chatTokens?: number; // token bucket de chat (anti-spam)
   chatRefillAt?: number;
+  voiceTokens?: number; // token bucket de signaling de voz (anti-flood/DoS)
+  voiceRefillAt?: number;
 };
 const conns = new Set<Conn>();
+const peers = new Map<number, Conn>(); // entityId → conn (ruteo O(1) del signaling de voz)
 
 // Rate-limit de emisión de tickets por IP (anti-flood): máx 20 por minuto.
 const ticketHits = new Map<string, { n: number; resetAt: number }>();
@@ -117,7 +122,7 @@ const httpServer = createServer((req, res) => {
 });
 
 // ---------- WebSocket ----------
-const wss = new WebSocketServer({ server: httpServer, path: '/world', maxPayload: 16 * 1024 });
+const wss = new WebSocketServer({ server: httpServer, path: '/world', maxPayload: 64 * 1024 }); // holgura para SDP
 
 wss.on('connection', (ws, req) => {
   const origin = req.headers.origin;
@@ -155,6 +160,12 @@ async function onMessage(conn: Conn, raw: Uint8Array): Promise<void> {
     case C2S.CHAT_SEND:
       onChat(conn, msg);
       break;
+    case C2S.VOICE_SIGNAL:
+      onVoiceSignal(conn, msg);
+      break;
+    case C2S.VOICE_STATE:
+      onVoiceState(conn, msg);
+      break;
     case C2S.BYE:
       conn.ws.close();
       break;
@@ -186,6 +197,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
       prev.disconnected = false;
       prev.inputs.length = 0;
       conn.entityId = prev.state.id;
+      peers.set(prev.state.id, conn); // re-ruteo de voz a la nueva conexión
       send(conn.ws, {
         op: S2C.WELCOME,
         selfId: prev.state.id,
@@ -209,6 +221,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
 
   const id = nextEntityId++;
   conn.entityId = id;
+  peers.set(id, conn);
   const token = randomUUID();
   const rt = hub.add(id, handle, spawnPoint(hub.entities.size), token);
 
@@ -266,6 +279,44 @@ function onChat(conn: Conn, msg: ChatSendMsg): void {
   if (text) broadcastAll({ op: S2C.CHAT_MSG, id: rt.state.id, handle: rt.state.handle, text });
 }
 
+// Token bucket de voz por conexión (signaling): ráfaga alta para la tormenta de
+// conexión inicial (offer + trickle ICE a varios pares), luego ~50/s sostenido.
+// Un flood se corta sin tirar la conexión (descartar en silencio).
+const VOICE_CAP = 100;
+const VOICE_REFILL_MS = 20; // ~50 tokens/s
+function takeVoiceToken(conn: Conn): boolean {
+  const now = Date.now();
+  if (conn.voiceTokens === undefined) {
+    conn.voiceTokens = VOICE_CAP;
+    conn.voiceRefillAt = now;
+  }
+  const elapsed = now - (conn.voiceRefillAt ?? now);
+  if (elapsed >= VOICE_REFILL_MS) {
+    conn.voiceTokens = Math.min(VOICE_CAP, conn.voiceTokens + Math.floor(elapsed / VOICE_REFILL_MS));
+    conn.voiceRefillAt = now;
+  }
+  if (conn.voiceTokens <= 0) return false;
+  conn.voiceTokens--;
+  return true;
+}
+
+/** Relay BYTE-CIEGO del signaling de voz: jamás parsea el SDP/ICE; inyecta srcId (anti-spoof). */
+function onVoiceSignal(conn: Conn, msg: VoiceSignalMsg): void {
+  if (conn.entityId === null) return;
+  if (!takeVoiceToken(conn)) return; // flood → descartar en silencio
+  if (msg.dstId === conn.entityId) return; // no a sí mismo
+  const dst = peers.get(msg.dstId); // misma instancia (en F0 sólo existe el hub)
+  if (!dst || dst.ws.readyState !== WebSocket.OPEN) return; // destino ausente → descartar
+  send(dst.ws, { op: S2C.VOICE_SIGNAL, srcId: conn.entityId, kind: msg.kind, payload: msg.payload });
+}
+
+/** Difunde el estado de voz (mic/hablando/sordo) al resto del hub. */
+function onVoiceState(conn: Conn, msg: VoiceStateMsg): void {
+  if (conn.entityId === null) return;
+  if (!takeVoiceToken(conn)) return;
+  broadcastExcept(conn, { op: S2C.VOICE_STATE, id: conn.entityId, flags: msg.flags & 0x07 });
+}
+
 function dropEntity(id: number): void {
   graceTimers.delete(id);
   if (hub.entities.has(id)) {
@@ -281,6 +332,7 @@ function onClose(conn: Conn): void {
   if (conn.entityId === null) return;
   const id = conn.entityId;
   conn.entityId = null;
+  peers.delete(id); // se corta el ruteo de voz; al hacer resume se vuelve a setear
   const rt = hub.entities.get(id);
   if (!rt) return;
   // Grace window: NO se borra de inmediato — se espera una posible reconexión (resume).
