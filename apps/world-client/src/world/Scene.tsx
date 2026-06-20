@@ -99,10 +99,12 @@ export function Scene() {
     <>
       {/* Las luces (sol/luna/ambiente) las provee y anima <Atmosphere>. */}
 
-      {/* Suelo low-poly — fog=false: sin el degradado de niebla por distancia en el piso. */}
+      {/* Suelo low-poly — CON fog (como todo): en despejado no se nota (la niebla
+          arranca a ~350 m), pero en niebla/arena el suelo se funde igual que árboles
+          y cielo, sin "costura" en el horizonte. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[26, 48]} />
-        <meshStandardMaterial color="#1d2a24" flatShading roughness={1} fog={false} />
+        <meshStandardMaterial color="#1d2a24" flatShading roughness={1} />
       </mesh>
 
       {/* Un monolito celeste en el centro del claro (punto focal) */}

@@ -5,23 +5,25 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { precipKind } from '@osia/atmosphere';
 import { world, atmo } from './atmosphereRuntime';
-
-// La lluvia/arena se tiñen con el día/noche (no un azul claro fijo que se ve mal de noche).
-const RAIN_DAY = new THREE.Color('#b3c2da');
-const RAIN_NIGHT = new THREE.Color('#39435e');
-const SAND_DAY = new THREE.Color('#cda86a');
-const SAND_NIGHT = new THREE.Color('#6e5a40');
+import { RAIN, SAND, FX_BOX } from './weatherConfig';
 
 /**
  * RainStreaks (S0.7 v2) — lluvia y arena como STREAKS (segmentos de línea), como
  * en los juegos: rayas estiradas, no puntos (que eran invisibles). Cada gota es un
  * segmento que cae rápido vertical (lluvia) o cruza horizontal con ondulación
  * (arena). LineSegments + LineBasicMaterial (WebGPU lo auto-convierte). Caja que
- * sigue a la cámara; reciclado por wrap. (Nieve/niebla siguen como puntos.)
+ * sigue a la cámara; reciclado por wrap. (Nieve → Precipitation; niebla → height-fog.)
+ *
+ * ⚙️ Toda la configuración (cantidad, velocidad, largo, color…) está en weatherConfig.ts.
  */
 
-const COUNT = 4500;
-const BOX = 36;
+// La lluvia/arena se tiñen con el día/noche (no un color fijo que se ve mal de noche).
+const RAIN_DAY = new THREE.Color(RAIN.colorDay);
+const RAIN_NIGHT = new THREE.Color(RAIN.colorNight);
+const SAND_DAY = new THREE.Color(SAND.colorDay);
+const SAND_NIGHT = new THREE.Color(SAND.colorNight);
+
+const COUNT = Math.max(RAIN.count, SAND.count); // buffer compartido (el mayor)
 
 export default function RainStreaks() {
   const camera = useThree((s) => s.camera);
@@ -39,7 +41,7 @@ export default function RainStreaks() {
 
   const bases = useMemo(() => {
     const b = new Float32Array(COUNT * 3);
-    for (let i = 0; i < COUNT * 3; i++) b[i] = (Math.random() * 2 - 1) * BOX;
+    for (let i = 0; i < COUNT * 3; i++) b[i] = (Math.random() * 2 - 1) * FX_BOX;
     return b;
   }, []);
 
@@ -70,14 +72,16 @@ export default function RainStreaks() {
     const mat = lines.material as THREE.LineBasicMaterial;
     if (isRain) mat.color.copy(RAIN_DAY).lerp(RAIN_NIGHT, night);
     else mat.color.copy(SAND_DAY).lerp(SAND_NIGHT, night);
-    mat.opacity = (isRain ? 0.55 : 0.5) * Math.min(1, world.weather.intensity * 1.3);
+    mat.opacity = (isRain ? RAIN.opacity : SAND.opacity) * Math.min(1, world.weather.intensity * 1.3);
 
-    const len = isRain ? 0.9 : 1.6;
-    const fall = isRain ? 38 : 0;
+    const len = isRain ? RAIN.len : SAND.len;
+    const fall = isRain ? RAIN.fall : 0;
+    const n = isRain ? RAIN.count : SAND.count;
+    lines.geometry.setDrawRange(0, n * 2); // 2 vértices por segmento
     const { phase, speed } = seeds;
     const arr = lines.geometry.attributes.position!.array as Float32Array;
 
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < n; i++) {
       const o3 = i * 3;
       const ph = phase[i] ?? 0;
       const sp = speed[i] ?? 1;
@@ -89,22 +93,22 @@ export default function RainStreaks() {
         by -= fall * sp * delta;
         bx += Math.sin(t * 8 + ph) * 0.25 * delta;
       } else {
-        bx += (16 * sp + Math.sin(t * 4 + ph) * 5) * delta;
+        bx += (SAND.speed * sp + Math.sin(t * 4 + ph) * 5) * delta;
         by += Math.sin(t * 3 + ph * 1.3) * 1.6 * delta;
         bz += Math.cos(t * 2.3 + ph) * 2.0 * delta;
       }
 
-      if (by < -BOX) {
-        by += BOX * 2;
-        bx = (Math.random() * 2 - 1) * BOX;
-        bz = (Math.random() * 2 - 1) * BOX;
-      } else if (by > BOX) {
-        by -= BOX * 2;
+      if (by < -FX_BOX) {
+        by += FX_BOX * 2;
+        bx = (Math.random() * 2 - 1) * FX_BOX;
+        bz = (Math.random() * 2 - 1) * FX_BOX;
+      } else if (by > FX_BOX) {
+        by -= FX_BOX * 2;
       }
-      if (bx > BOX) bx -= BOX * 2;
-      else if (bx < -BOX) bx += BOX * 2;
-      if (bz > BOX) bz -= BOX * 2;
-      else if (bz < -BOX) bz += BOX * 2;
+      if (bx > FX_BOX) bx -= FX_BOX * 2;
+      else if (bx < -FX_BOX) bx += FX_BOX * 2;
+      if (bz > FX_BOX) bz -= FX_BOX * 2;
+      else if (bz < -FX_BOX) bz += FX_BOX * 2;
 
       bases[o3] = bx;
       bases[o3 + 1] = by;

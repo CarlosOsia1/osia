@@ -1,21 +1,34 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { fog, positionView, positionWorld, uniform } from 'three/tsl';
 import { resolveAtmosphere, applyWeather, biomeById } from '@osia/atmosphere';
 import { atmo, world } from './atmosphereRuntime';
 import { worldClock, tickWorldClock } from './worldClockRuntime';
+import { FOG } from './weatherConfig';
 
 /**
- * Atmosphere (S0.7 v2) — el cielo vivo. Cada frame: avanza el reloj, resuelve el
- * preset del BIOMA actual según la hora, aplica el CLIMA, y lo traduce al render
- * (cielo, niebla, sol que se mueve, luna, ambiente, exposición). Escribe el bus
- * `atmo` para que SkyDome / estrellas / partículas reaccionen. Provee las luces.
+ * Atmosphere (S0.7 v3) — el cielo vivo. Cada frame: avanza el reloj, resuelve el
+ * preset del BIOMA según la hora, aplica el CLIMA, y lo traduce al render (cielo,
+ * niebla, sol, luna, ambiente, exposición). Escribe el bus `atmo`. Provee las luces.
+ *
+ * NIEBLA = HEIGHT FOG volumétrico (TSL, scene-wide vía `scene.fogNode`). En vez del
+ * fog lineal por distancia (que sobre un suelo PLANO deja una "línea" dura en el
+ * horizonte: piso oscuro vs cielo claro), la niebla llena el AIRE por altura: densa
+ * pegada al suelo, se aclara hacia arriba. Así ENVUELVE al jugador como una esfera,
+ * sin costura, y se funde con el cielo (el color del fog = horizonte del cielo).
+ * Solo aparece con clima de niebla/arena; en despejado la fuerza ≈ 0 (mundo limpio).
  */
 
 const SUN_DIST = 70;
 const MOON_DIST = 70;
+
+// Color del height fog para climas de BAJA altura (no llegan al horizonte, así que
+// pueden tener color propio sin costura): lluvia gris, nieve blanca. (Ver weatherConfig.)
+const FOG_RAIN = new THREE.Color(FOG.rain.color);
+const FOG_SNOW = new THREE.Color(FOG.snow.color);
 
 export default function Atmosphere() {
   const scene = useThree((s) => s.scene);
@@ -25,25 +38,77 @@ export default function Atmosphere() {
   const ambient = useRef<THREE.AmbientLight>(null);
   const bg = useRef(new THREE.Color()).current;
 
+  // Uniforms del height fog (se crean una vez; se animan cada frame).
+  const fogU = useMemo(
+    () => ({
+      color: uniform(new THREE.Color(0xffffff)),
+      strength: uniform(0), // 0 despejado → 1 niebla/arena
+      height: uniform(38), // hasta qué altura (m) llega la niebla; se aclara arriba
+      dist: uniform(24), // a cuántos m alcanza fog pleno hacia el frente
+    }),
+    [],
+  );
+
+  // Monta el fogNode volumétrico una sola vez.
+  useEffect(() => {
+    const depth = positionView.z.negate(); // distancia al frente (view-space, +)
+    const distFactor = depth.div(fogU.dist).saturate(); // 0 cerca → 1 a `dist` m
+    // Denso pegado al suelo (y=0 → 1), se aclara hacia arriba (y=height → 0). Al
+    // cuadrado: concentra la niebla abajo sin hacer una pared plana.
+    const heightBase = fogU.height.sub(positionWorld.y).div(fogU.height).saturate();
+    const factor = heightBase.mul(heightBase).mul(distFactor).mul(fogU.strength).saturate();
+    scene.fogNode = fog(fogU.color, factor);
+    scene.fog = null; // el fogNode reemplaza al fog lineal
+    return () => {
+      scene.fogNode = null;
+    };
+  }, [scene, fogU]);
+
   useFrame((_, delta) => {
     tickWorldClock(delta);
     const biome = biomeById(world.biomeId);
     const p = applyWeather(resolveAtmosphere(worldClock.tod, biome.cycle), world.weather);
     atmo.current = p;
 
+    // Piso de luz LUNAR: la noche nunca es oscuridad TOTAL — la luna ilumina un poco
+    // (no mucho). Sube la luna direccional y el relleno ambiente según lo "noche" que sea.
+    const nightAmt = THREE.MathUtils.clamp(p.starsIntensity, 0, 1); // 0 día → 1 noche
+    const moonI = Math.max(p.moonIntensity, 0.85 * nightAmt);
+    const ambI = Math.max(p.ambientIntensity, 0.34 + 0.16 * nightAmt);
+
     bg.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
     scene.background = bg;
-    // Niebla LINEAL (near/far): solo aparece a partir de `near` y llena en `far`.
-    // Despejado (densidad baja) → empieza muy lejos (~90 m) = nada de niebla cerca;
-    // niebla/tormenta (densidad alta) → se acerca. Más realista que FogExp2.
-    if (!(scene.fog instanceof THREE.Fog)) scene.fog = new THREE.Fog(0x000000, 60, 250);
-    const fog = scene.fog as THREE.Fog;
-    fog.color.setRGB(p.fogColor[0], p.fogColor[1], p.fogColor[2], THREE.SRGBColorSpace);
-    // Despejado → la niebla arranca lejísimos (~350 m: nada de bruma cerca); niebla/
-    // tormenta → se acerca. Mapeo NO lineal densidad → distancia de inicio (`near`).
-    const near = THREE.MathUtils.clamp(0.22 / Math.pow(Math.max(p.fogDensity, 0.001), 1.44), 12, 500);
-    fog.near = near;
-    fog.far = near * 1.9;
+
+    // Volumen de height fog por clima:
+    //  · niebla/arena → ALTO, color = horizonte del cielo (cero costura)
+    //  · lluvia → gris y MUY baja · nieve → blanca y baja · despejado → nada
+    const wk = world.weather.kind;
+    const wi = world.weather.intensity;
+    // Igual que niebla/arena: el fog de lluvia/nieve se oscurece de noche (no glow).
+    const day = 0.45 + 0.55 * (1 - THREE.MathUtils.clamp(p.starsIntensity, 0, 1));
+    if (wk === 'lluvia') {
+      fogU.strength.value = FOG.rain.strength * wi;
+      fogU.height.value = FOG.rain.height; // súper baja: neblina gris pegada al suelo
+      fogU.color.value.copy(FOG_RAIN).multiplyScalar(day);
+    } else if (wk === 'nieve') {
+      fogU.strength.value = FOG.snow.strength * wi;
+      fogU.height.value = FOG.snow.height; // baja: bruma blanca de nevada
+      fogU.color.value.copy(FOG_SNOW).multiplyScalar(day);
+    } else if (wk === 'niebla') {
+      // color = horizonte del cielo (= fondo) → cero costura. Densidad que se DEGRADA
+      // suave de día (0.4) a medianoche (1.0) según `nightAmt` (más espesa de madrugada).
+      fogU.strength.value =
+        THREE.MathUtils.lerp(FOG.niebla.strengthDay, FOG.niebla.strengthNight, nightAmt) * wi;
+      fogU.height.value = FOG.niebla.height;
+      fogU.color.value.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
+    } else if (wk === 'tormenta-arena') {
+      fogU.strength.value = FOG.sand.strength * wi;
+      fogU.height.value = FOG.sand.height;
+      fogU.color.value.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
+    } else {
+      // despejado — sin niebla.
+      fogU.strength.value = 0;
+    }
 
     if (sun.current) {
       sun.current.position.set(p.sunDir[0] * SUN_DIST, p.sunDir[1] * SUN_DIST, p.sunDir[2] * SUN_DIST);
@@ -54,12 +119,12 @@ export default function Atmosphere() {
     if (moon.current) {
       moon.current.position.set(p.moonDir[0] * MOON_DIST, p.moonDir[1] * MOON_DIST, p.moonDir[2] * MOON_DIST);
       moon.current.color.setRGB(p.moonColor[0], p.moonColor[1], p.moonColor[2], THREE.SRGBColorSpace);
-      moon.current.intensity = p.moonIntensity;
-      moon.current.visible = p.moonIntensity > 0.001;
+      moon.current.intensity = moonI;
+      moon.current.visible = moonI > 0.001;
     }
     if (ambient.current) {
       ambient.current.color.setRGB(p.ambientColor[0], p.ambientColor[1], p.ambientColor[2], THREE.SRGBColorSpace);
-      ambient.current.intensity = p.ambientIntensity;
+      ambient.current.intensity = ambI;
     }
     gl.toneMappingExposure = p.exposure;
   });

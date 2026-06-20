@@ -66,9 +66,8 @@ export default function WorldCanvas() {
           return renderer;
         }}
         onCreated={({ scene }) => {
-          // Crepúsculo→noche celestial: cielo ónix profundo + niebla marfil tenue.
+          // Fondo inicial; la niebla la monta <Atmosphere> como height-fog (scene.fogNode).
           scene.background = new THREE.Color('#14120f');
-          scene.fog = new THREE.Fog('#1b1814', 60, 250);
         }}
       >
         <Atmosphere />
