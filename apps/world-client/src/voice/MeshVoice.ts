@@ -185,11 +185,11 @@ class MeshVoice {
     this.peers.set(id, peer);
 
     pc.ontrack = (e) => {
-      const stream = e.streams[0];
-      if (stream) {
-        spatialGraph.setPeerStream(id, stream);
-        console.info('[voz] audio recibido de', id);
-      }
+      // Con addTransceiver+replaceTrack el remoto NO asocia un MediaStream → e.streams llega vacío.
+      // Construimos el stream desde el track para no perder el audio.
+      const stream = e.streams[0] ?? new MediaStream([e.track]);
+      spatialGraph.setPeerStream(id, stream);
+      console.info('[voz] audio recibido de', id);
     };
     pc.onicecandidate = (e) => {
       if (e.candidate) this.net?.sendVoiceSignal(id, 2, JSON.stringify(e.candidate));
@@ -199,7 +199,10 @@ class MeshVoice {
         try {
           peer.makingOffer = true;
           await pc.setLocalDescription();
-          if (pc.localDescription) this.net?.sendVoiceSignal(id, 0, JSON.stringify(pc.localDescription));
+          if (pc.localDescription) {
+            this.net?.sendVoiceSignal(id, 0, JSON.stringify(pc.localDescription));
+            console.info('[voz] → oferta a', id);
+          }
         } catch {
           /* ignorar */
         } finally {
@@ -208,7 +211,7 @@ class MeshVoice {
       })();
     };
     pc.onconnectionstatechange = () => {
-      console.info('[voz] peer', id, '→', pc.connectionState);
+      console.info('[voz] peer', id, '→', pc.connectionState, '/ ice:', pc.iceConnectionState);
       if (pc.connectionState === 'failed') {
         try {
           pc.restartIce();
