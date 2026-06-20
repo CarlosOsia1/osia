@@ -39,7 +39,7 @@ async function connect(handle: string): Promise<Session> {
     const timer = setTimeout(() => reject(new Error('timeout esperando WELCOME')), 4000);
     ws.on('open', () => ws.send(encode({ op: C2S.HELLO, ticket, protocol: PROTOCOL_VERSION })));
     ws.on('message', (data: Buffer) => {
-      const msg = decode<S2CMessage>(data.toString());
+      const msg = decode<S2CMessage>(data); // frames binarios
       if (!msg) return;
       events.push(msg);
       if (msg.op === S2C.WELCOME) {
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
       const ws2 = new WebSocket(WS_URL);
       ws2.on('open', () => ws2.send(encode({ op: C2S.HELLO, ticket: reuse, protocol: PROTOCOL_VERSION })));
       ws2.on('message', (d: Buffer) => {
-        const m = decode<S2CMessage>(d.toString());
+        const m = decode<S2CMessage>(d); // frames binarios
         if (m && m.op === S2C.ERROR) {
           rejected = true;
           ok('ticket reusado rechazado (ERROR)');

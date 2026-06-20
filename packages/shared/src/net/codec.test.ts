@@ -45,8 +45,8 @@ test('round-trip WELCOME y DELTA con entidades', () => {
 });
 
 test('decode rechaza basura', () => {
-  assert.equal(decode('no-json'), null);
-  assert.equal(decode('{"foo":1}'), null);
+  assert.equal(decode(new Uint8Array(0)), null); // vacío (sin opcode)
+  assert.equal(decode(new Uint8Array([0xff])), null); // opcode desconocido
 });
 
 test('applyMovement avanza y respeta el límite del claro', () => {

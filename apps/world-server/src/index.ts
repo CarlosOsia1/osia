@@ -121,7 +121,7 @@ wss.on('connection', (ws, req) => {
   }
   const conn: Conn = { ws, entityId: null, alive: true };
   conns.add(conn);
-  ws.on('message', (data: Buffer) => void onMessage(conn, data.toString()));
+  ws.on('message', (data: Buffer) => void onMessage(conn, data)); // frames binarios
   ws.on('pong', () => {
     conn.alive = true;
   });
@@ -129,7 +129,7 @@ wss.on('connection', (ws, req) => {
   ws.on('error', () => onClose(conn));
 });
 
-async function onMessage(conn: Conn, raw: string): Promise<void> {
+async function onMessage(conn: Conn, raw: Uint8Array): Promise<void> {
   const msg = decode<C2SMessage>(raw);
   if (!msg) return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_MESSAGE, message: 'mensaje inválido' });
   if (conn.entityId === null && msg.op !== C2S.HELLO) {

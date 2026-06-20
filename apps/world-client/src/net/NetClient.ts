@@ -92,6 +92,7 @@ export class NetClient {
       if (!this.wantConnected || myEpoch !== this.epoch) return;
 
       const ws = new WebSocket(data.wsUrl ?? netConfig.wsUrl);
+      ws.binaryType = 'arraybuffer'; // protocolo binario
       this.ws = ws;
       ws.onopen = () =>
         ws.send(
@@ -103,7 +104,7 @@ export class NetClient {
           }),
         );
       ws.onmessage = (ev) => {
-        if (typeof ev.data === 'string') this.onMessage(ev.data);
+        if (ev.data instanceof ArrayBuffer) this.onMessage(ev.data);
       };
       ws.onclose = () => {
         if (this.ws === ws) this.onClose(); // ignora el close de un socket ya reemplazado
@@ -146,7 +147,7 @@ export class NetClient {
     }, delay);
   }
 
-  private onMessage(raw: string): void {
+  private onMessage(raw: ArrayBuffer): void {
     const msg = decode<S2CMessage>(raw);
     if (!msg) return;
     switch (msg.op) {
