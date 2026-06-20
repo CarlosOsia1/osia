@@ -75,6 +75,9 @@ importers:
 
   apps/world-server:
     dependencies:
+      '@osia/atmosphere':
+        specifier: workspace:*
+        version: link:../../packages/atmosphere
       '@osia/shared':
         specifier: workspace:*
         version: link:../../packages/shared

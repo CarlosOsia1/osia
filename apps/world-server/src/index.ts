@@ -32,8 +32,10 @@ import { config } from './config';
 import { log } from './logger';
 import { issueTicket, verifyTicket } from './ticket';
 import { Instance } from './instance';
+import { WeatherDirector } from './weather';
 
 const hub = new Instance('hub');
+const director = new WeatherDirector(config.biome, Date.now); // clima autoritativo del mundo
 let nextEntityId = 1;
 
 type Conn = { ws: WebSocket; entityId: number | null; alive: boolean };
@@ -162,6 +164,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     protocol: PROTOCOL_VERSION,
     tickHz: TICK_HZ,
     entities: hub.snapshot(),
+    atmosphere: { biome: director.biome, weather: director.weather }, // sync de clima al entrar
   });
   broadcastExcept(conn, { op: S2C.ENTITY_JOIN, entity: { ...rt.state } });
   log.info({ id, handle, players: hub.entities.size }, 'join');
@@ -256,6 +259,14 @@ setInterval(() => {
   }
   if (steps > 0 && hub.entities.size > 0) broadcastState();
 }, TICK_MS);
+
+// Director de clima: evalúa el reloj cada 2 s y difunde el clima cuando cambia.
+setInterval(() => {
+  if (director.update()) {
+    broadcastAll({ op: S2C.ATMOSPHERE_UPDATE, biome: director.biome, weather: director.weather });
+    log.info({ weather: director.weather }, 'clima');
+  }
+}, 2000);
 
 // Heartbeat: cierra conexiones muertas.
 setInterval(() => {

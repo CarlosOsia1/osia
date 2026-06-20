@@ -11,5 +11,6 @@ export const config = {
   port: Number(process.env.WORLD_SERVER_PORT ?? 2567),
   ticketSecret: process.env.WORLD_TICKET_SECRET ?? 'osia-dev-ticket-secret-change-me',
   corsOrigins: envList('WORLD_CORS_ORIGINS', 'http://localhost:3000'),
+  biome: process.env.WORLD_BIOME ?? 'bosque-celeste', // bioma FIJO del mundo compartido
   isProd: process.env.NODE_ENV === 'production',
 } as const;

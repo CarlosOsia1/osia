@@ -3,7 +3,7 @@
  * Cliente y servidor DEBEN usar estas mismas para que la simulación coincida.
  */
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2; // +2: atmósfera server-authoritative (clima/eventos)
 
 /** Simulación autoritativa: tick fijo. */
 export const TICK_HZ = 20;

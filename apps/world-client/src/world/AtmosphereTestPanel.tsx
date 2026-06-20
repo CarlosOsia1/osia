@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { BIOMES, type WeatherKind } from '@osia/atmosphere';
-import { world } from './atmosphereRuntime';
+import {
+  world,
+  setOverrideBiome,
+  setOverrideWeather,
+  clearOverrides,
+  isOverriding,
+} from './atmosphereRuntime';
 import { setTimeScale, setPaused, resetClock } from './worldClockRuntime';
 
 /**
- * AtmosphereTestPanel — controles de TEST (se quitan luego): cambiar bioma, activar
- * clima y acelerar/pausar el ciclo día/noche. Overlay HTML, estética OSIA. Toggle
- * con la tecla "b".
+ * AtmosphereTestPanel — controles de TEST (se quitan luego). El clima REAL lo dicta
+ * el server (sincronizado entre todos); aquí podés hacer un PREVIEW LOCAL de bioma y
+ * clima (override) sin afectar a nadie, o volver a "En vivo" para seguir al server.
+ * También acelera/pausa el ciclo día/noche. Overlay HTML. Toggle con la tecla "b".
  */
 
 const CHAMPAN = '#cbb89a';
@@ -52,8 +59,7 @@ function Btn({ active, onClick, children }: { active: boolean; onClick: () => vo
 
 export default function AtmosphereTestPanel() {
   const [open, setOpen] = useState(true);
-  const [biomeId, setBiomeId] = useState(world.biomeId);
-  const [weather, setWeather] = useState<WeatherKind>(world.weather.kind);
+  const [, setTick] = useState(0);
   const [speed, setSpeed] = useState<number | 'pause' | 'real'>('real');
 
   useEffect(() => {
@@ -61,16 +67,25 @@ export default function AtmosphereTestPanel() {
       if (e.key === 'b' || e.key === 'B') setOpen((v) => !v);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const id = setInterval(() => setTick((t) => t + 1), 700); // refresca el estado EN VIVO del server
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      clearInterval(id);
+    };
   }, []);
 
+  const refresh = () => setTick((t) => t + 1);
   const pickBiome = (id: string) => {
-    setBiomeId(id);
-    world.biomeId = id;
+    setOverrideBiome(id);
+    refresh();
   };
   const pickWeather = (k: WeatherKind) => {
-    setWeather(k);
-    world.weather = { kind: k, intensity: k === 'despejado' ? 0 : 1 };
+    setOverrideWeather({ kind: k, intensity: k === 'despejado' ? 0 : 1 });
+    refresh();
+  };
+  const goLive = () => {
+    clearOverrides();
+    refresh();
   };
   const pickSpeed = (s: number) => {
     setSpeed(s);
@@ -78,6 +93,11 @@ export default function AtmosphereTestPanel() {
   };
 
   if (!open) return null;
+
+  const overriding = isOverriding();
+  const biomeSel = world.overrideBiomeId ?? world.liveBiomeId;
+  const weatherSel = world.overrideWeather?.kind ?? world.liveWeather.kind;
+  const shownPct = Math.round(world.weather.intensity * 100);
 
   return (
     <div
@@ -100,19 +120,29 @@ export default function AtmosphereTestPanel() {
         OSIA · test atmósfera · (b)
       </div>
 
+      {/* Estado actual + volver al server */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 }}>
+        <span style={{ color: DIM }}>
+          {overriding ? 'preview local' : 'en vivo'} · {world.weather.kind} {shownPct}%
+        </span>
+        <Btn active={!overriding} onClick={goLive}>
+          En vivo
+        </Btn>
+      </div>
+
       <div style={{ color: DIM, marginBottom: 5 }}>Bioma</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 }}>
         {BIOMES.map((b) => (
-          <Btn key={b.id} active={biomeId === b.id} onClick={() => pickBiome(b.id)}>
+          <Btn key={b.id} active={biomeSel === b.id} onClick={() => pickBiome(b.id)}>
             {b.name}
           </Btn>
         ))}
       </div>
 
-      <div style={{ color: DIM, marginBottom: 5 }}>Clima</div>
+      <div style={{ color: DIM, marginBottom: 5 }}>Clima {overriding ? '(override)' : '(server)'}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 }}>
         {WEATHERS.map((w) => (
-          <Btn key={w.kind} active={weather === w.kind} onClick={() => pickWeather(w.kind)}>
+          <Btn key={w.kind} active={weatherSel === w.kind} onClick={() => pickWeather(w.kind)}>
             {w.label}
           </Btn>
         ))}

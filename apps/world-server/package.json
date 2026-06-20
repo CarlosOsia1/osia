@@ -13,6 +13,7 @@
     "test": "echo \"@osia/world-server: ver script verify\" && exit 0"
   },
   "dependencies": {
+    "@osia/atmosphere": "workspace:*",
     "@osia/shared": "workspace:*",
     "jose": "^5.9.6",
     "pino": "^9.5.0",

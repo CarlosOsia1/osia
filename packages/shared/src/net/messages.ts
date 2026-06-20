@@ -15,6 +15,14 @@ export type EntityState = {
   yaw: number;
 };
 
+/**
+ * Clima que viaja por la red. `kind` es un WeatherKind de @osia/atmosphere, tipado
+ * como string aquí para no acoplar la capa de red a la de atmósfera.
+ */
+export type WireWeather = { kind: string; intensity: number };
+/** Estado de atmósfera autoritativo del mundo: bioma + clima. */
+export type AtmosphereState = { biome: string; weather: WireWeather };
+
 // ---- Cliente → Servidor ----
 export type HelloMsg = { op: typeof C2S.HELLO; ticket: string; protocol: number };
 export type InputMsg = { op: typeof C2S.INPUT; seq: number; f: number; r: number; yaw: number };
@@ -32,7 +40,12 @@ export type WelcomeMsg = {
   protocol: number;
   tickHz: number;
   entities: EntityState[];
+  atmosphere: AtmosphereState; // estado de clima/bioma actual (sync inmediato al entrar)
 };
+/** El server dicta el clima (autoritativo); todos los clientes lo sincronizan. */
+export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WireWeather };
+/** Evento atmosférico efímero (lluvia de meteoros, aurora…). */
+export type AtmosphereEventMsg = { op: typeof S2C.ATMOSPHERE_EVENT; kind: string; durationMs: number };
 export type SnapshotMsg = { op: typeof S2C.SNAPSHOT; tick: number; entities: EntityState[] };
 export type DeltaMsg = { op: typeof S2C.DELTA; tick: number; ackSeq: number; entities: EntityState[] };
 export type EntityJoinMsg = { op: typeof S2C.ENTITY_JOIN; entity: EntityState };
@@ -49,6 +62,8 @@ export type S2CMessage =
   | EntityLeaveMsg
   | PongMsg
   | ChatBroadcastMsg
+  | AtmosphereUpdateMsg
+  | AtmosphereEventMsg
   | ErrorMsg;
 
 export type NetMessage = C2SMessage | S2CMessage;

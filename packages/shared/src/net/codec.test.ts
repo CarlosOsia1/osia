@@ -29,6 +29,7 @@ test('round-trip WELCOME y DELTA con entidades', () => {
     protocol: 1,
     tickHz: 20,
     entities: [{ id: 1, handle: 'carlos', x: 0, z: 6, yaw: 0 }],
+    atmosphere: { biome: 'bosque-celeste', weather: { kind: 'despejado', intensity: 0 } },
   };
   assert.deepEqual(decode(encode(welcome)), welcome);
 

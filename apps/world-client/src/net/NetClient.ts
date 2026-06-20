@@ -22,6 +22,7 @@ import {
 } from '@osia/shared';
 import { netConfig } from './config';
 import { setNetState, type NetStatus } from './store';
+import { applyServerAtmosphere, applyServerEvent } from '../world/atmosphereRuntime';
 
 export type Sample = { t: number; x: number; z: number; yaw: number };
 type Remote = { handle: string; buffer: Sample[] };
@@ -124,6 +125,7 @@ export class NetClient {
           if (e.id === msg.selfId) this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw };
           else this.remotes.set(e.id, { handle: e.handle, buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }] });
         }
+        applyServerAtmosphere(msg.atmosphere.biome, msg.atmosphere.weather); // sync de clima al entrar
         this.publish('connected');
         break;
       }
@@ -155,6 +157,14 @@ export class NetClient {
       }
       case S2C.ENTITY_LEAVE: {
         if (this.remotes.delete(msg.id)) this.publish();
+        break;
+      }
+      case S2C.ATMOSPHERE_UPDATE: {
+        applyServerAtmosphere(msg.biome, msg.weather); // el server dicta el clima
+        break;
+      }
+      case S2C.ATMOSPHERE_EVENT: {
+        applyServerEvent(msg.kind, msg.durationMs, performance.now());
         break;
       }
       default:

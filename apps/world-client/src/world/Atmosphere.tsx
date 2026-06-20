@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { fog, positionView, positionWorld, uniform } from 'three/tsl';
 import { resolveAtmosphere, applyWeather, biomeById } from '@osia/atmosphere';
-import { atmo, world } from './atmosphereRuntime';
+import { atmo, world, tickWeatherDisplay } from './atmosphereRuntime';
 import { worldClock, tickWorldClock } from './worldClockRuntime';
 import { FOG } from './weatherConfig';
 
@@ -66,6 +66,7 @@ export default function Atmosphere() {
 
   useFrame((_, delta) => {
     tickWorldClock(delta);
+    tickWeatherDisplay(delta); // rampa suave del clima hacia el objetivo (override ?? server)
     const biome = biomeById(world.biomeId);
     const p = applyWeather(resolveAtmosphere(worldClock.tod, biome.cycle), world.weather);
     atmo.current = p;
