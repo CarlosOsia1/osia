@@ -28,6 +28,7 @@ export default function VoiceHUD() {
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [level, setLevel] = useState(0); // nivel del mic (diagnóstico)
   const [error, setError] = useState<string | null>(null);
   const [secure, setSecure] = useState(true);
 
@@ -35,10 +36,13 @@ export default function VoiceHUD() {
     setSecure(typeof window === 'undefined' ? true : window.isSecureContext);
   }, []);
 
-  // Indicador propio de "hablando" (poll del estado del gate).
+  // Indicador propio de "hablando" + nivel del mic (poll).
   useEffect(() => {
     if (!micOn) return;
-    const t = setInterval(() => setSpeaking(meshVoice.isSpeaking()), 120);
+    const t = setInterval(() => {
+      setSpeaking(meshVoice.isSpeaking());
+      setLevel(meshVoice.micLevel());
+    }, 100);
     return () => clearInterval(t);
   }, [micOn]);
 
@@ -172,6 +176,21 @@ export default function VoiceHUD() {
           >
             <span style={DOT(muted ? '#8c6b66' : speaking ? '#9fd6a0' : '#6b6354')} />
             {muted ? 'mic off' : 'voz activa'}
+          </span>
+          {/* Medidor de nivel del mic (diagnóstico: si se mueve al hablar, el mic captura). */}
+          <span
+            style={{ width: 44, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}
+            title="nivel del micrófono"
+          >
+            <span
+              style={{
+                display: 'block',
+                height: '100%',
+                width: `${Math.min(100, level * 300)}%`,
+                background: speaking ? '#9fd6a0' : '#cbb89a',
+                transition: 'width .1s linear',
+              }}
+            />
           </span>
           <button type="button" style={btn} onClick={toggleMute}>
             {muted ? 'reactivar' : 'silenciar'}

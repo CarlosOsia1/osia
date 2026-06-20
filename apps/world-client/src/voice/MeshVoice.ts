@@ -76,6 +76,9 @@ class MeshVoice {
   getMode(): 'vad' | 'ptt' {
     return this.mode;
   }
+  micLevel(): number {
+    return spatialGraph.micLevel();
+  }
 
   /** Pide el micrófono (DEBE llamarse desde un gesto del usuario: priming de autoplay). */
   async enableMic(): Promise<boolean> {
@@ -92,6 +95,7 @@ class MeshVoice {
       for (const [, p] of this.peers) this.addMicTo(p.pc); // a las PCs ya abiertas
       this.startVad();
       this.publishState();
+      console.info('[voz] mic ON; AudioContext:', spatialGraph.state(), '; pares:', this.peers.size);
       return true;
     } catch {
       return false;
@@ -122,6 +126,7 @@ class MeshVoice {
     spatialGraph.setMicGate(really);
     if (this.speaking !== really) {
       this.speaking = really;
+      console.info('[voz] tu mic:', really ? 'HABLANDO (enviando)' : 'silencio');
       this.publishState();
     }
   }
@@ -175,6 +180,7 @@ class MeshVoice {
     this.active.add(id);
     spatialGraph.addPeer(id);
     const polite = this.net.selfId > id;
+    console.info('[voz] abriendo conexión con', id, '(polite=' + polite + ')');
     const peer: Peer = { pc, polite, makingOffer: false, ignoreOffer: false, settingRemoteAnswer: false, pending: [] };
     this.peers.set(id, peer);
 
@@ -268,6 +274,7 @@ class MeshVoice {
     const peer = this.peers.get(src);
     if (!peer) return;
     const pc = peer.pc;
+    console.info('[voz] ← señal kind', kind, 'de', src);
     try {
       if (kind === 0 || kind === 1) {
         const desc = JSON.parse(payload) as RTCSessionDescriptionInit;

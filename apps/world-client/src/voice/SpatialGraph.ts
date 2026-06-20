@@ -53,9 +53,19 @@ class SpatialGraph {
       this.ctx.onstatechange = () => {
         if (this.ctx && this.ctx.state !== 'running') void this.ctx.resume().catch(() => {});
       };
+      // Red de seguridad: si el contexto se creó suspendido (un peer entró antes de que el
+      // usuario activara la voz), reanudarlo en el primer gesto del usuario en esta pestaña.
+      const resume = () => void this.ctx?.resume().catch(() => {});
+      window.addEventListener('pointerdown', resume);
+      window.addEventListener('keydown', resume);
     }
     void this.ctx.resume().catch(() => {});
     return this.ctx;
+  }
+
+  /** Estado del AudioContext (diagnóstico): 'running' | 'suspended' | 'none'. */
+  state(): string {
+    return this.ctx?.state ?? 'none';
   }
 
   // ---------- Micrófono ----------
