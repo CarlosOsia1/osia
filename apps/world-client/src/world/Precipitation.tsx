@@ -25,7 +25,7 @@ const BOX = 36; // semilado de la caja alrededor de la cámara
 type Cfg = { fall: number; size: number; drift: number; color: string; opacity: number };
 const CFG: Record<'rain' | 'snow' | 'sand' | 'fog', Cfg> = {
   rain: { fall: 32, size: 0.06, drift: 0, color: '#9fb0c8', opacity: 0.5 },
-  snow: { fall: 4, size: 0.18, drift: 1.4, color: '#eef3f8', opacity: 0.9 },
+  snow: { fall: 3.4, size: 0.26, drift: 1.7, color: '#f2f6fb', opacity: 0.95 },
   sand: { fall: 0, size: 0.1, drift: 17, color: '#caa86a', opacity: 0.45 },
   fog: { fall: 0.5, size: 3.4, drift: 0.6, color: '#cfcabf', opacity: 0.1 },
 };
@@ -74,7 +74,8 @@ export default function Precipitation() {
 
   useFrame((_, delta) => {
     const kind = precipKind(world.weather);
-    if (!kind) {
+    // la lluvia y la arena las dibuja RainStreaks (líneas); aquí solo nieve/niebla.
+    if (kind !== 'snow' && kind !== 'fog') {
       points.visible = false;
       return;
     }
@@ -101,18 +102,12 @@ export default function Precipitation() {
       let y = arr[o + 1] ?? 0;
       let z = arr[o + 2] ?? 0;
 
-      if (kind === 'rain') {
+      if (kind === 'snow') {
         y -= cfg.fall * sp * delta;
-        x += Math.sin(t * 9 + ph) * 0.3 * delta;
-      } else if (kind === 'snow') {
-        y -= cfg.fall * sp * delta;
-        x += (Math.sin(t * 1.4 + ph) * 1.5 + cfg.drift) * delta;
+        x += (Math.sin(t * 1.4 + ph) * 1.5 + cfg.drift) * delta; // sway + viento
         z += Math.cos(t * 1.1 + ph * 1.7) * 1.5 * delta;
-      } else if (kind === 'sand') {
-        x += (cfg.drift * sp + Math.sin(t * 5 + ph) * 4) * delta;
-        y += Math.sin(t * 3.5 + ph * 1.3) * 2.4 * delta;
-        z += Math.cos(t * 2.4 + ph) * 2.6 * delta;
       } else {
+        // niebla: jirones que flotan
         y -= cfg.fall * sp * delta;
         x += Math.sin(t * 0.3 + ph) * 0.7 * delta;
         z += Math.cos(t * 0.25 + ph) * 0.7 * delta;

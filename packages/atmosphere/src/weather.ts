@@ -21,7 +21,7 @@ const STRENGTH: Record<WeatherKind, number> = {
   despejado: 0,
   lluvia: 0.1, // -90%
   nieve: 0.4, // -60%
-  'tormenta-arena': 0.7, // -30%
+  'tormenta-arena': 0.7, // -30% sobre el -30% previo (tapaba demasiado)
   niebla: 1,
 };
 

@@ -51,7 +51,13 @@ export default function Player() {
   // Mouse-look estándar con pointer lock (clic captura, ESC suelta).
   useEffect(() => {
     const requestLock = () => {
-      if (document.pointerLockElement !== dom) void dom.requestPointerLock();
+      if (document.pointerLockElement === dom) return;
+      // requestPointerLock rechaza con SecurityError si se llama justo tras salir
+      // del lock (cooldown del navegador); lo ignoramos (funciona al siguiente clic).
+      const req = dom.requestPointerLock() as unknown;
+      if (req && typeof (req as { catch?: unknown }).catch === 'function') {
+        (req as Promise<void>).catch(() => {});
+      }
     };
     const onMove = (e: MouseEvent) => {
       if (document.pointerLockElement !== dom) return;

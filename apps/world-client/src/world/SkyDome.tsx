@@ -25,7 +25,8 @@ export default function SkyDome() {
   const obj = useMemo(() => {
     const material = new MeshBasicNodeMaterial();
     const up = normalize(positionLocal).y; // -1..1 (dirección del domo)
-    const t = smoothstep(float(-0.06), float(0.5), up);
+    // degradado SUAVE y amplio (no una banda dura): cielo natural y bonito.
+    const t = smoothstep(float(-0.12), float(0.55), up);
     material.colorNode = mix(topU, horU, t.oneMinus()); // horizonte abajo, cenit arriba
     material.side = THREE.BackSide;
     material.depthWrite = false;

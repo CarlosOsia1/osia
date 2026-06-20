@@ -15,6 +15,7 @@ import Atmosphere from './Atmosphere';
 import SkyDome from './SkyDome';
 import SunMoon from './SunMoon';
 import Precipitation from './Precipitation';
+import RainStreaks from './RainStreaks';
 import { getNetClient } from '../net/useNet';
 
 /** Conecta/desconecta el cliente de red al montar/desmontar el mundo. */
@@ -67,7 +68,7 @@ export default function WorldCanvas() {
         onCreated={({ scene }) => {
           // Crepúsculo→noche celestial: cielo ónix profundo + niebla marfil tenue.
           scene.background = new THREE.Color('#14120f');
-          scene.fog = new THREE.FogExp2('#1b1814', 0.028);
+          scene.fog = new THREE.Fog('#1b1814', 60, 250);
         }}
       >
         <Atmosphere />
@@ -78,6 +79,7 @@ export default function WorldCanvas() {
         <RemotePlayers />
         <Starfield count={1600} radius={120} />
         <Precipitation />
+        <RainStreaks />
         {/* Post-procesado TSL: toma el control del render (debe ir al final). */}
         <AtmosphereFX />
         {/* Muestreo de rendimiento (priority 2: corre tras el render). */}

@@ -33,10 +33,17 @@ export default function Atmosphere() {
 
     bg.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
     scene.background = bg;
-    if (scene.fog instanceof THREE.FogExp2) {
-      scene.fog.color.setRGB(p.fogColor[0], p.fogColor[1], p.fogColor[2], THREE.SRGBColorSpace);
-      scene.fog.density = p.fogDensity;
-    }
+    // Niebla LINEAL (near/far): solo aparece a partir de `near` y llena en `far`.
+    // Despejado (densidad baja) → empieza muy lejos (~90 m) = nada de niebla cerca;
+    // niebla/tormenta (densidad alta) → se acerca. Más realista que FogExp2.
+    if (!(scene.fog instanceof THREE.Fog)) scene.fog = new THREE.Fog(0x000000, 60, 250);
+    const fog = scene.fog as THREE.Fog;
+    fog.color.setRGB(p.fogColor[0], p.fogColor[1], p.fogColor[2], THREE.SRGBColorSpace);
+    // Despejado → la niebla arranca lejísimos (~350 m: nada de bruma cerca); niebla/
+    // tormenta → se acerca. Mapeo NO lineal densidad → distancia de inicio (`near`).
+    const near = THREE.MathUtils.clamp(0.22 / Math.pow(Math.max(p.fogDensity, 0.001), 1.44), 12, 500);
+    fog.near = near;
+    fog.far = near * 1.9;
 
     if (sun.current) {
       sun.current.position.set(p.sunDir[0] * SUN_DIST, p.sunDir[1] * SUN_DIST, p.sunDir[2] * SUN_DIST);
