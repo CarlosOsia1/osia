@@ -17,6 +17,7 @@ export type NetState = {
   chatLog: ChatLine[]; // historial reciente del chat in-world
   bubbles: Record<number, Bubble>; // burbuja activa sobre cada avatar (por id)
   chatNotice: string | null; // aviso transitorio (p.ej. rate-limit)
+  voice: Record<number, number>; // flags de voz por id remoto (mic/hablando/sordo)
 };
 
 let state: NetState = {
@@ -27,6 +28,7 @@ let state: NetState = {
   chatLog: [],
   bubbles: {},
   chatNotice: null,
+  voice: {},
 };
 const listeners = new Set<() => void>();
 
@@ -78,6 +80,25 @@ export function purgeExpiredBubbles(): void {
 
 export function setChatNotice(msg: string | null): void {
   setNetState({ chatNotice: msg });
+}
+
+// ---------- Voz (estado para el roster/HUD; el audio lo maneja MeshVoice) ----------
+export function setVoiceFlags(id: number, flags: number): void {
+  setNetState({ voice: { ...state.voice, [id]: flags } });
+}
+
+/** Limpia el estado auxiliar de un remoto que se fue (voz + burbuja). */
+export function clearRemote(id: number): void {
+  const voice = { ...state.voice };
+  const bubbles = { ...state.bubbles };
+  delete voice[id];
+  delete bubbles[id];
+  setNetState({ voice, bubbles });
+}
+
+/** Resetea voz + burbujas (al (re)conectar; la roster puede cambiar). */
+export function resetAux(): void {
+  setNetState({ voice: {}, bubbles: {}, chatNotice: null });
 }
 
 // ---------- Lock de input (no mover el avatar mientras se escribe en el chat) ----------

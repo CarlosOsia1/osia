@@ -23,7 +23,15 @@ import {
   type S2CMessage,
 } from '@osia/shared';
 import { netConfig } from './config';
-import { setNetState, pushChatMessage, setChatNotice, type NetStatus } from './store';
+import {
+  setNetState,
+  pushChatMessage,
+  setChatNotice,
+  setVoiceFlags,
+  clearRemote,
+  resetAux,
+  type NetStatus,
+} from './store';
 import { applyServerAtmosphere } from '../world/atmosphereRuntime';
 import { reportServerOffset } from './serverClock';
 
@@ -42,6 +50,11 @@ export class NetClient {
   readonly handle = randomHandle();
   selfId: number | null = null;
   serverSelf: { x: number; z: number; yaw: number } | null = null;
+
+  /** Callbacks de voz (los conecta MeshVoice; NetClient sólo transporta, sin lógica WebRTC). */
+  onVoiceSignal: ((srcId: number, kind: number, payload: string) => void) | null = null;
+  onVoiceState: ((id: number, flags: number) => void) | null = null;
+  onReset: (() => void) | null = null; // (re)WELCOME → MeshVoice cierra las PCs
 
   private ws: WebSocket | null = null;
   private wantConnected = false;
@@ -159,6 +172,8 @@ export class NetClient {
         this.pending.length = 0;
         this.ackSeq = 0;
         this.remotes.clear();
+        this.onReset?.(); // cierra las PCs de voz (la roster puede traer ids nuevos)
+        resetAux(); // limpia voz/burbujas de la sesión anterior
         for (const e of msg.entities) {
           if (e.id === msg.selfId) this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw };
           else this.remotes.set(e.id, { handle: e.handle, buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }] });
@@ -200,7 +215,10 @@ export class NetClient {
         break;
       }
       case S2C.ENTITY_LEAVE: {
-        if (this.remotes.delete(msg.id)) this.publish();
+        if (this.remotes.delete(msg.id)) {
+          clearRemote(msg.id); // limpia su voz + burbuja
+          this.publish();
+        }
         break;
       }
       case S2C.ATMOSPHERE_UPDATE: {
@@ -213,6 +231,15 @@ export class NetClient {
       }
       case S2C.ERROR: {
         if (msg.code === ErrorCode.RATE_LIMIT) setChatNotice('demasiados mensajes — esperá un momento');
+        break;
+      }
+      case S2C.VOICE_SIGNAL: {
+        this.onVoiceSignal?.(msg.srcId, msg.kind, msg.payload); // → MeshVoice
+        break;
+      }
+      case S2C.VOICE_STATE: {
+        setVoiceFlags(msg.id, msg.flags); // roster/HUD
+        this.onVoiceState?.(msg.id, msg.flags);
         break;
       }
       case S2C.PONG: {
@@ -237,6 +264,18 @@ export class NetClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
     const clean = normalizeChat(text); // mismo límite que el server; vuelve por broadcast
     if (clean) this.ws.send(encode({ op: C2S.CHAT_SEND, text: clean }));
+  }
+
+  /** Voz: tuneliza SDP/ICE hacia un par. El server lo reescribe a S2C con srcId (anti-spoof). */
+  sendVoiceSignal(dstId: number, kind: number, payload: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
+    if (payload.length > 60000) return; // guard: el str() del codec usa u16 y el WS corta >64KB
+    this.ws.send(encode({ op: C2S.VOICE_SIGNAL, dstId, kind, payload }));
+  }
+
+  sendVoiceState(flags: number): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
+    this.ws.send(encode({ op: C2S.VOICE_STATE, flags }));
   }
 
   getRemoteIds(): number[] {

@@ -16,14 +16,20 @@ import SkyDome from './SkyDome';
 import SunMoon from './SunMoon';
 import Precipitation from './Precipitation';
 import RainStreaks from './RainStreaks';
+import VoiceDriver from './VoiceDriver';
 import { getNetClient } from '../net/useNet';
+import { meshVoice } from '../voice/MeshVoice';
 
-/** Conecta/desconecta el cliente de red al montar/desmontar el mundo. */
+/** Conecta/desconecta el cliente de red y la malla de voz al montar/desmontar el mundo. */
 function WorldNet() {
   useEffect(() => {
     const net = getNetClient();
     net.connect();
-    return () => net.disconnect();
+    meshVoice.attach(net); // cablea el signaling de voz (el mic se pide con gesto en el HUD)
+    return () => {
+      meshVoice.detach();
+      net.disconnect();
+    };
   }, []);
   return null;
 }
@@ -76,6 +82,7 @@ export default function WorldCanvas() {
         <Scene />
         <Player />
         <RemotePlayers />
+        <VoiceDriver />
         <Starfield count={1600} radius={120} />
         <Precipitation />
         <RainStreaks />
