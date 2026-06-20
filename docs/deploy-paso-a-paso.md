@@ -17,6 +17,47 @@
 > (sin assets 3D pesados), y Vercel es zero-config para Next. Cuando metamos modelos/texturas
 > pesados, movemos el front a **Cloudflare Pages + R2** (egress 0) — ahí Vercel se vuelve caro.
 
+## 🚩 SIN dominio (lo que estás haciendo ahora) — Fly.io + Vercel
+
+No hace falta comprar dominio: el front en Vercel da `*.vercel.app` (HTTPS) y el
+world-server en **Fly.io** da `*.fly.dev` con **TLS/WSS automático**. Con eso la voz
+funciona (todo HTTPS). Cuando compres el dominio, migrás a Hetzner (sección de abajo) o te
+quedás en Fly. Costo: Vercel free + Fly ~2–5 USD/mes (máquina chica).
+
+### A) World-server en Fly.io
+1. Instalá flyctl: en Windows (PowerShell) `iwr https://fly.io/install.ps1 -useb | iex`.
+2. `fly auth signup` (o `fly auth login`).
+3. En la raíz del repo: `fly launch --no-deploy`
+   - Aceptá usar el `fly.toml` existente. Si el nombre `osia-world` está tomado, elegí otro
+     y actualizá `app = "..."` en `fly.toml`.
+4. Generá el secreto: `openssl rand -hex 32` (o en PowerShell: `-join ((1..64) | % {'{0:x}' -f (Get-Random -Max 16)})`).
+5. Seteá las variables (poné tu nombre de app real en la URL):
+   ```
+   fly secrets set WORLD_TICKET_SECRET=<secreto> WORLD_PUBLIC_WS_URL=wss://<app>.fly.dev/world WORLD_CORS_ORIGINS=https://PENDIENTE.vercel.app
+   ```
+   (a `WORLD_CORS_ORIGINS` le ponés la URL de Vercel después del paso B; podés reejecutar este comando)
+6. `fly deploy`
+7. Probá: `https://<app>.fly.dev/health` → `{"ok":true,...}`
+
+### B) Frontend en Vercel
+1. Vercel → **Add New → Project → Import** tu repo. **Root Directory** = `apps/world-client`.
+2. **Environment Variables**:
+   ```
+   NEXT_PUBLIC_WORLD_WS_URL = wss://<app>.fly.dev/world
+   NEXT_PUBLIC_WORLD_API_URL = https://<app>.fly.dev
+   ```
+3. **Deploy** → te da `https://<algo>.vercel.app`.
+
+### C) Conectá las puntas
+1. Copiá la URL de Vercel y actualizá el CORS del server:
+   `fly secrets set WORLD_CORS_ORIGINS=https://<algo>.vercel.app`  (Fly redeploya solo)
+2. Abrí la URL de Vercel en 2 dispositivos → caminan, chatean y **hablan** (ya hay HTTPS).
+
+> Cuando tengas dominio: o seguís en Fly (perfecto para multi-región), o migrás a Hetzner con
+> el `infra/` que ya está listo (más barato a escala). El protocolo y el código no cambian.
+
+---
+
 ## Lo que YA dejé hecho (en el repo)
 - `apps/world-server/Dockerfile` + `.dockerignore`
 - `infra/Caddyfile` (TLS automático + reverse proxy del WS)

@@ -1,0 +1,20 @@
+# Fly.io — world-server de OSIA SIN dominio (te da <app>.fly.dev con TLS/WSS automático).
+#   fly launch --no-deploy   (crea la app; elegí un nombre único → cambia "app" abajo)
+#   fly secrets set WORLD_TICKET_SECRET=... WORLD_CORS_ORIGINS=https://tu-app.vercel.app WORLD_PUBLIC_WS_URL=wss://<app>.fly.dev/world
+#   fly deploy
+app = "osia-world"            # ← cambiá por tu nombre único (el que aceptó fly launch)
+primary_region = "gru"        # São Paulo (lo más cercano a LATAM)
+
+[build]
+  dockerfile = "apps/world-server/Dockerfile"
+
+[http_service]
+  internal_port = 2567
+  force_https = true
+  auto_stop_machines = "off"  # el WS es stateful: NO apagar la máquina
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
