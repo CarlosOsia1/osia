@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import PerfHUD from '@/src/world/PerfHUD';
 import NetStatus from '@/src/world/NetStatus';
 import AtmosphereTestPanel from '@/src/world/AtmosphereTestPanel';
+import ChatPanel from '@/src/ui/ChatPanel';
 
 // El engine 3D (Three.js / R3F) se carga SOLO en cliente y on-demand (code splitting):
 // la entrada no arrastra Three.js en su bundle inicial (ver docs/08-estrategia-rendimiento.md).
@@ -64,8 +65,9 @@ export default function Page() {
           userSelect: 'none',
         }}
       >
-        WASD / flechas · caminar — clic · mirar — ESC · soltar
+        WASD / flechas · caminar — clic · mirar — ENTER · chat — ESC · soltar
       </div>
+      <ChatPanel />
       <PerfHUD />
       <AtmosphereTestPanel />
     </main>

@@ -17,11 +17,13 @@ import {
   decode,
   C2S,
   S2C,
+  ErrorCode,
+  normalizeChat,
   PROTOCOL_VERSION,
   type S2CMessage,
 } from '@osia/shared';
 import { netConfig } from './config';
-import { setNetState, type NetStatus } from './store';
+import { setNetState, pushChatMessage, setChatNotice, type NetStatus } from './store';
 import { applyServerAtmosphere } from '../world/atmosphereRuntime';
 import { reportServerOffset } from './serverClock';
 
@@ -205,6 +207,14 @@ export class NetClient {
         applyServerAtmosphere(msg.biome, msg.weather); // el server dicta el clima
         break;
       }
+      case S2C.CHAT_MSG: {
+        pushChatMessage(msg.id, msg.handle, msg.text); // log + burbuja sobre el avatar
+        break;
+      }
+      case S2C.ERROR: {
+        if (msg.code === ErrorCode.RATE_LIMIT) setChatNotice('demasiados mensajes — esperá un momento');
+        break;
+      }
       case S2C.PONG: {
         // offset = hora del server (estimada al instante de recibir) − hora local
         const rtt = Date.now() - msg.t;
@@ -221,6 +231,12 @@ export class NetClient {
     this.seq++;
     this.pending.push({ seq: this.seq, f, r, yaw, dt }); // guardado para el replay de reconciliación
     this.ws.send(encode({ op: C2S.INPUT, seq: this.seq, f, r, yaw, dtMs: dt * 1000 }));
+  }
+
+  sendChat(text: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
+    const clean = normalizeChat(text); // mismo límite que el server; vuelve por broadcast
+    if (clean) this.ws.send(encode({ op: C2S.CHAT_SEND, text: clean }));
   }
 
   getRemoteIds(): number[] {

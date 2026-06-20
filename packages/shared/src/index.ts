@@ -16,3 +16,6 @@ export * from './net/constants';
 export * from './net/movement';
 export * from './net/messages';
 export * from './net/codec';
+
+// --- Utilidades de texto ---
+export * from './text/sanitizeChat';

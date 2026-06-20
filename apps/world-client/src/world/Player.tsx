@@ -6,6 +6,7 @@ import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { applyMovement } from '@osia/shared';
 import { getNetClient } from '../net/useNet';
+import { isChatTyping } from '../net/store';
 import AvatarMesh from './AvatarMesh';
 
 /**
@@ -75,8 +76,10 @@ export default function Player() {
 
     fwd.set(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     right.set(-fwd.z, 0, fwd.x);
-    const f = (k.forward ? 1 : 0) - (k.back ? 1 : 0);
-    const r = (k.right ? 1 : 0) - (k.left ? 1 : 0);
+    // Mientras se escribe en el chat, las teclas van al input: no mover ni rotar.
+    const typing = isChatTyping();
+    const f = typing ? 0 : (k.forward ? 1 : 0) - (k.back ? 1 : 0);
+    const r = typing ? 0 : (k.right ? 1 : 0) - (k.left ? 1 : 0);
     const moving = f !== 0 || r !== 0;
 
     // Orientación del cuerpo: mira hacia donde se mueve (visual; no se reconcilia).

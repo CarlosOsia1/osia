@@ -20,6 +20,7 @@ import {
   S2C,
   ErrorCode,
   applyMovement,
+  normalizeChat,
   PROTOCOL_VERSION,
   TICK_HZ,
   TICK_MS,
@@ -39,7 +40,13 @@ const hub = new Instance('hub');
 const director = new WeatherDirector(config.biome, Date.now); // clima autoritativo del mundo
 let nextEntityId = 1;
 
-type Conn = { ws: WebSocket; entityId: number | null; alive: boolean; lastChat?: number };
+type Conn = {
+  ws: WebSocket;
+  entityId: number | null;
+  alive: boolean;
+  chatTokens?: number; // token bucket de chat (anti-spam)
+  chatRefillAt?: number;
+};
 const conns = new Set<Conn>();
 
 // Rate-limit de emisión de tickets por IP (anti-flood): máx 20 por minuto.
@@ -229,16 +236,33 @@ function onInput(conn: Conn, msg: InputMsg): void {
   rt.inputs.push({ seq: msg.seq, f: msg.f, r: msg.r, yaw: msg.yaw, dt: inputDt });
 }
 
+// Token bucket de chat por conexión: ráfaga de 4, luego 1 token cada 2 s.
+const CHAT_CAP = 4;
+const CHAT_REFILL_MS = 2000;
+function takeChatToken(conn: Conn): boolean {
+  const now = Date.now();
+  if (conn.chatTokens === undefined) {
+    conn.chatTokens = CHAT_CAP;
+    conn.chatRefillAt = now;
+  }
+  const elapsed = now - (conn.chatRefillAt ?? now);
+  if (elapsed >= CHAT_REFILL_MS) {
+    conn.chatTokens = Math.min(CHAT_CAP, conn.chatTokens + Math.floor(elapsed / CHAT_REFILL_MS));
+    conn.chatRefillAt = now;
+  }
+  if (conn.chatTokens <= 0) return false;
+  conn.chatTokens--;
+  return true;
+}
+
 function onChat(conn: Conn, msg: ChatSendMsg): void {
   if (conn.entityId === null) return;
   const rt = hub.entities.get(conn.entityId);
   if (!rt) return;
-  const now = Date.now();
-  if (conn.lastChat && now - conn.lastChat < 600) {
+  if (!takeChatToken(conn)) {
     return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.RATE_LIMIT, message: 'demasiados mensajes' });
   }
-  conn.lastChat = now;
-  const text = String(msg.text).slice(0, 240);
+  const text = normalizeChat(msg.text); // mismo saneo que el cliente (autoridad)
   if (text) broadcastAll({ op: S2C.CHAT_MSG, id: rt.state.id, handle: rt.state.handle, text });
 }
 
