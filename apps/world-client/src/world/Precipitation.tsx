@@ -1,119 +1,95 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { uniform, positionLocal, range, vec3, sin, cos, float, mod } from 'three/tsl';
 import { precipKind } from '@osia/atmosphere';
 import { world } from './atmosphereRuntime';
 import { SNOW, FX_BOX } from './weatherConfig';
 
 /**
- * Precipitation (S0.7 v4) — NIEVE como InstancedMesh de blobs low-poly.
+ * Precipitation (S0.7 v5) — NIEVE simulada EN GPU. Cada copo es una instancia (icosaedro
+ * low-poly) cuya posición la calcula el SHADER (TSL positionNode) desde un uniform de
+ * tiempo + valores aleatorios por instancia (`range`): caída + viento + sway + wrap en
+ * una caja, todo en la GPU. La CPU ya NO recorre 30k copos por frame (antes: 30k
+ * matrices + ~1.9MB re-subidos/frame → stutter); ahora solo avanza 1 número (el tiempo).
  *
- * IMPORTANTE: en WebGPU los `THREE.Points` rasterizan SIEMPRE a 1 píxel (no existe
- * `gl_PointSize`), así que el tamaño de los puntos NO se puede cambiar. Por eso la
- * nieve se dibuja como instancias 3D reales (icosaedros pequeños): el tamaño se
- * respeta, varía por copo, y la perspectiva atenúa los lejanos. Encaja con el low-poly.
- *
- * La lluvia/arena las dibuja RainStreaks (líneas). La niebla la hace el height-fog
- * volumétrico (Atmosphere), no partículas.
- *
- * ⚙️ Toda la configuración (cantidad, tamaño, velocidad…) está en weatherConfig.ts.
- * Caja que SIGUE a la cámara; reciclado por wrap en los 3 ejes (nevada infinita).
+ * La caja SIGUE a la cámara (nevada infinita). El tamaño SÍ se respeta (instancias 3D;
+ * en WebGPU los Points miden 1px). Config en weatherConfig.ts.
  */
 
 export default function Precipitation() {
   const camera = useThree((s) => s.camera);
-  const tRef = useRef(0);
+  const timeU = useMemo(() => uniform(0), []);
 
-  const snow = useMemo(() => {
+  const mesh = useMemo(() => {
     const geo = new THREE.IcosahedronGeometry(SNOW.size, 0); // blob low-poly
-    const mat = new THREE.MeshBasicMaterial({
-      color: SNOW.color,
-      transparent: true,
-      opacity: SNOW.opacity,
-      depthWrite: false,
-      fog: false,
-    });
-    const mesh = new THREE.InstancedMesh(geo, mat, SNOW.count);
-    mesh.frustumCulled = false;
-    mesh.visible = false;
+    geo.deleteAttribute('normal'); // unlit + sin map → no se usan (ahorra vertex buffers en WebGPU)
+    geo.deleteAttribute('uv');
+    const mat = new MeshBasicNodeMaterial();
+    mat.color = new THREE.Color(SNOW.color);
+    mat.transparent = true;
+    mat.opacity = SNOW.opacity;
+    mat.depthWrite = false;
+    mat.fog = false;
 
-    // Estado por copo: offset (relativo a la caja), tamaño, fase y velocidad.
-    const off = new Float32Array(SNOW.count * 3);
-    const size = new Float32Array(SNOW.count);
-    const phase = new Float32Array(SNOW.count);
-    const speed = new Float32Array(SNOW.count);
-    for (let i = 0; i < SNOW.count; i++) {
-      off[i * 3] = (Math.random() * 2 - 1) * FX_BOX;
-      off[i * 3 + 1] = (Math.random() * 2 - 1) * FX_BOX;
-      off[i * 3 + 2] = (Math.random() * 2 - 1) * FX_BOX;
-      size[i] = 0.6 + Math.random() * SNOW.sizeVar; // factor por copo (0.6×–2.0× por defecto)
-      phase[i] = Math.random() * Math.PI * 2;
-      speed[i] = 0.6 + Math.random() * 0.8;
-    }
-    return { mesh, off, size, phase, speed, dummy: new THREE.Object3D() };
-  }, []);
+    // --- simulación EN GPU: posición por instancia desde `range` + tiempo ---
+    // WebGPU permite MÁX 8 vertex buffers → agrupo los aleatorios en 2 `range` de vec3
+    // (no 6 escalares, que serían 6 buffers).
+    const B = float(FX_BOX);
+    const B2 = float(FX_BOX * 2);
+    const base = range(new THREE.Vector3(-FX_BOX, -FX_BOX, -FX_BOX), new THREE.Vector3(FX_BOX, FX_BOX, FX_BOX));
+    const rnd = range(new THREE.Vector3(0.6, 0, 0.6), new THREE.Vector3(1.4, Math.PI * 2, 0.6 + SNOW.sizeVar));
+    const bx = base.x; // posición base (aleatoria por copo)
+    const by = base.y;
+    const bz = base.z;
+    const sp = rnd.x; // factor de velocidad
+    const ph = rnd.y; // fase
+    const sz = rnd.z; // factor de tamaño por copo
+
+    // caída + wrap en [-B, B)
+    const yFall = by.sub(timeU.mul(sp).mul(SNOW.fall));
+    const y = mod(yFall.add(B), B2).sub(B);
+    // viento lateral (constante) con wrap + sway (seno, fuera del wrap)
+    const xWrap = mod(bx.add(timeU.mul(SNOW.drift)).add(B), B2).sub(B);
+    const x = xWrap.add(sin(timeU.mul(1.4).add(ph)).mul(1.5));
+    const z = bz.add(cos(timeU.mul(1.1).add(ph.mul(1.7))).mul(1.5));
+
+    mat.positionNode = positionLocal.mul(sz).add(vec3(x, y, z));
+
+    const m = new THREE.InstancedMesh(geo, mat, SNOW.count);
+    m.frustumCulled = false;
+    m.visible = false;
+    // matrices identidad: el positionNode hace TODO el movimiento/escala.
+    const id = new THREE.Matrix4();
+    for (let i = 0; i < SNOW.count; i++) m.setMatrixAt(i, id);
+    m.instanceMatrix.needsUpdate = true;
+    return m;
+  }, [timeU]);
 
   useFrame((_, delta) => {
     const kind = precipKind(world.weather);
     if (kind !== 'snow') {
-      snow.mesh.visible = false;
+      mesh.visible = false;
       return;
     }
-    snow.mesh.visible = true;
-    snow.mesh.position.copy(camera.position); // la caja sigue a la cámara
-    tRef.current += delta;
-    const t = tRef.current;
-
-    const { off, size, phase, speed, dummy, mesh } = snow;
-    (mesh.material as THREE.MeshBasicMaterial).opacity =
+    mesh.visible = true;
+    mesh.position.copy(camera.position); // la caja sigue al jugador
+    timeU.value += delta; // ← único trabajo de CPU por frame
+    (mesh.material as MeshBasicNodeMaterial).opacity =
       SNOW.opacity * Math.min(1, world.weather.intensity * 1.2);
-
-    for (let i = 0; i < SNOW.count; i++) {
-      const o = i * 3;
-      const ph = phase[i] ?? 0;
-      const sp = speed[i] ?? 1;
-      let x = off[o] ?? 0;
-      let y = off[o + 1] ?? 0;
-      let z = off[o + 2] ?? 0;
-
-      y -= SNOW.fall * sp * delta;
-      x += (Math.sin(t * 1.4 + ph) * 1.5 + SNOW.drift) * delta; // sway + viento
-      z += Math.cos(t * 1.1 + ph * 1.7) * 1.5 * delta;
-
-      if (y < -FX_BOX) {
-        y += FX_BOX * 2;
-        x = (Math.random() * 2 - 1) * FX_BOX;
-        z = (Math.random() * 2 - 1) * FX_BOX;
-      } else if (y > FX_BOX) {
-        y -= FX_BOX * 2;
-      }
-      if (x > FX_BOX) x -= FX_BOX * 2;
-      else if (x < -FX_BOX) x += FX_BOX * 2;
-      if (z > FX_BOX) z -= FX_BOX * 2;
-      else if (z < -FX_BOX) z += FX_BOX * 2;
-
-      off[o] = x;
-      off[o + 1] = y;
-      off[o + 2] = z;
-
-      dummy.position.set(x, y, z);
-      dummy.scale.setScalar(size[i] ?? 1);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
   });
 
   useEffect(
     () => () => {
-      snow.mesh.geometry.dispose();
-      (snow.mesh.material as THREE.Material).dispose();
-      snow.mesh.dispose();
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+      mesh.dispose();
     },
-    [snow],
+    [mesh],
   );
 
-  return <primitive object={snow.mesh} />;
+  return <primitive object={mesh} />;
 }
