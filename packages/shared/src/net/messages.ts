@@ -47,7 +47,9 @@ export type WelcomeMsg = {
 /** El server dicta el clima (autoritativo); todos los clientes lo sincronizan. */
 export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WireWeather };
 export type SnapshotMsg = { op: typeof S2C.SNAPSHOT; tick: number; entities: EntityState[] };
-export type DeltaMsg = { op: typeof S2C.DELTA; tick: number; ackSeq: number; entities: EntityState[] };
+/** Entidad en el hot path (DELTA): SIN handle — el nombre no cambia, no se reenvía cada tick. */
+export type DeltaEntity = { id: number; x: number; z: number; yaw: number };
+export type DeltaMsg = { op: typeof S2C.DELTA; tick: number; ackSeq: number; entities: DeltaEntity[] };
 export type EntityJoinMsg = { op: typeof S2C.ENTITY_JOIN; entity: EntityState };
 export type EntityLeaveMsg = { op: typeof S2C.ENTITY_LEAVE; id: number };
 export type PongMsg = { op: typeof S2C.PONG; t: number; serverTime: number };

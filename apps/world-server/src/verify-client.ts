@@ -12,7 +12,7 @@ import {
   S2C,
   PROTOCOL_VERSION,
   type S2CMessage,
-  type EntityState,
+  type DeltaEntity,
 } from '@osia/shared';
 
 const HTTP = process.env.WORLD_HTTP ?? 'http://localhost:2567';
@@ -51,7 +51,7 @@ async function connect(handle: string): Promise<Session> {
   });
 }
 
-function findSelf(events: S2CMessage[], selfId: number): EntityState | undefined {
+function findSelf(events: S2CMessage[], selfId: number): DeltaEntity | undefined {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     if (e && e.op === S2C.DELTA) return e.entities.find((x) => x.id === selfId);

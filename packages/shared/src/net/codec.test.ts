@@ -39,7 +39,7 @@ test('round-trip WELCOME y DELTA con entidades', () => {
     op: S2C.DELTA,
     tick: 100,
     ackSeq: 42,
-    entities: [{ id: 1, handle: 'carlos', x: 1.2, z: 5.5, yaw: 0.3 }],
+    entities: [{ id: 1, x: 1.2, z: 5.5, yaw: 0.3 }],
   };
   assert.deepEqual(decode(encode(delta)), delta);
 });

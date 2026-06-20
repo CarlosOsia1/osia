@@ -176,7 +176,7 @@ export class NetClient {
           }
           let r = this.remotes.get(e.id);
           if (!r) {
-            r = { handle: e.handle, buffer: [] };
+            r = { handle: '', buffer: [] }; // el handle llega por WELCOME/ENTITY_JOIN, no en el DELTA
             this.remotes.set(e.id, r);
             this.publish();
           }

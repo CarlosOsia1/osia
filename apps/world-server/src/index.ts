@@ -39,8 +39,22 @@ const hub = new Instance('hub');
 const director = new WeatherDirector(config.biome, Date.now); // clima autoritativo del mundo
 let nextEntityId = 1;
 
-type Conn = { ws: WebSocket; entityId: number | null; alive: boolean };
+type Conn = { ws: WebSocket; entityId: number | null; alive: boolean; lastChat?: number };
 const conns = new Set<Conn>();
+
+// Rate-limit de emisión de tickets por IP (anti-flood): máx 20 por minuto.
+const ticketHits = new Map<string, { n: number; resetAt: number }>();
+function allowTicket(ip: string): boolean {
+  const now = Date.now();
+  const e = ticketHits.get(ip);
+  if (!e || now > e.resetAt) {
+    ticketHits.set(ip, { n: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (e.n >= 20) return false;
+  e.n++;
+  return true;
+}
 const GRACE_MS = 30_000; // ventana de reconexión: la entidad se conserva tras una caída
 const graceTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
@@ -65,6 +79,10 @@ const httpServer = createServer((req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/world/tickets') {
+    const ip = req.socket.remoteAddress ?? 'unknown';
+    if (!allowTicket(ip)) {
+      return void res.writeHead(429, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'rate_limit' }));
+    }
     let body = '';
     req.on('data', (c: Buffer) => {
       body += c;
@@ -215,6 +233,11 @@ function onChat(conn: Conn, msg: ChatSendMsg): void {
   if (conn.entityId === null) return;
   const rt = hub.entities.get(conn.entityId);
   if (!rt) return;
+  const now = Date.now();
+  if (conn.lastChat && now - conn.lastChat < 600) {
+    return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.RATE_LIMIT, message: 'demasiados mensajes' });
+  }
+  conn.lastChat = now;
   const text = String(msg.text).slice(0, 240);
   if (text) broadcastAll({ op: S2C.CHAT_MSG, id: rt.state.id, handle: rt.state.handle, text });
 }
@@ -291,7 +314,13 @@ function simulate(): void {
 }
 
 function broadcastState(): void {
-  const entities = hub.snapshot();
+  // Delta-compression del hot path: el DELTA NO lleva handle (va en WELCOME/JOIN).
+  const entities = [...hub.entities.values()].map((e) => ({
+    id: e.state.id,
+    x: e.state.x,
+    z: e.state.z,
+    yaw: e.state.yaw,
+  }));
   for (const c of conns) {
     if (c.entityId === null || c.ws.readyState !== WebSocket.OPEN) continue;
     const rt = hub.entities.get(c.entityId);
