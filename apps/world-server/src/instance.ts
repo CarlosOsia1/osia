@@ -13,6 +13,8 @@ export type EntityRuntime = {
   state: EntityState;
   inputs: QueuedInput[]; // COLA de inputs pendientes (por seq); se drena cada tick
   lastSeq: number; // último seq drenado = ackSeq → reconciliación con input replay
+  token: string; // resume token: re-adoptar la entidad en una reconexión (grace window)
+  disconnected: boolean; // true mientras espera reconexión (no la borramos de inmediato)
 };
 
 export class Instance {
@@ -27,11 +29,13 @@ export class Instance {
     return this.entities.size >= INSTANCE_CAPACITY;
   }
 
-  add(id: number, handle: string, spawn: { x: number; z: number }): EntityRuntime {
+  add(id: number, handle: string, spawn: { x: number; z: number }, token: string): EntityRuntime {
     const rt: EntityRuntime = {
       state: { id, handle, x: spawn.x, z: spawn.z, yaw: 0 },
       inputs: [],
       lastSeq: 0,
+      token,
+      disconnected: false,
     };
     this.entities.set(id, rt);
     return rt;

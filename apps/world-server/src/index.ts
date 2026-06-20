@@ -11,6 +11,7 @@
  */
 
 import { createServer, type ServerResponse } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
   encode,
@@ -40,6 +41,8 @@ let nextEntityId = 1;
 
 type Conn = { ws: WebSocket; entityId: number | null; alive: boolean };
 const conns = new Set<Conn>();
+const GRACE_MS = 30_000; // ventana de reconexión: la entidad se conserva tras una caída
+const graceTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 // ---------- HTTP (tickets + health) ----------
 function setCors(res: ServerResponse, origin: string | undefined): void {
@@ -148,6 +151,32 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_TICKET, message: 'ticket inválido' });
     return void conn.ws.close();
   }
+  // Reconexión: re-adoptar la entidad desconectada si el resumeToken coincide (dentro del grace).
+  if (msg.resumeToken) {
+    const prev = [...hub.entities.values()].find((e) => e.disconnected && e.token === msg.resumeToken);
+    if (prev) {
+      const timer = graceTimers.get(prev.state.id);
+      if (timer) clearTimeout(timer);
+      graceTimers.delete(prev.state.id);
+      prev.disconnected = false;
+      prev.inputs.length = 0;
+      conn.entityId = prev.state.id;
+      send(conn.ws, {
+        op: S2C.WELCOME,
+        selfId: prev.state.id,
+        instanceId: hub.id,
+        protocol: PROTOCOL_VERSION,
+        tickHz: TICK_HZ,
+        entities: hub.snapshot(),
+        atmosphere: { biome: director.biome, weather: director.weather },
+        serverTime: Date.now(),
+        resumeToken: prev.token,
+      });
+      log.info({ id: prev.state.id }, 'resume');
+      return;
+    }
+  }
+
   if (hub.full) {
     send(conn.ws, { op: S2C.ERROR, code: ErrorCode.INSTANCE_FULL, message: 'instancia llena' });
     return void conn.ws.close();
@@ -155,7 +184,8 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
 
   const id = nextEntityId++;
   conn.entityId = id;
-  const rt = hub.add(id, handle, spawnPoint(hub.entities.size));
+  const token = randomUUID();
+  const rt = hub.add(id, handle, spawnPoint(hub.entities.size), token);
 
   send(conn.ws, {
     op: S2C.WELCOME,
@@ -166,6 +196,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     entities: hub.snapshot(),
     atmosphere: { biome: director.biome, weather: director.weather }, // sync de clima al entrar
     serverTime: Date.now(), // sincroniza el reloj día/noche
+    resumeToken: token,
   });
   broadcastExcept(conn, { op: S2C.ENTITY_JOIN, entity: { ...rt.state } });
   log.info({ id, handle, players: hub.entities.size }, 'join');
@@ -188,16 +219,28 @@ function onChat(conn: Conn, msg: ChatSendMsg): void {
   if (text) broadcastAll({ op: S2C.CHAT_MSG, id: rt.state.id, handle: rt.state.handle, text });
 }
 
-function onClose(conn: Conn): void {
-  if (!conns.has(conn)) return;
-  conns.delete(conn);
-  if (conn.entityId !== null) {
-    const id = conn.entityId;
+function dropEntity(id: number): void {
+  graceTimers.delete(id);
+  if (hub.entities.has(id)) {
     hub.remove(id);
-    conn.entityId = null;
     broadcastAll({ op: S2C.ENTITY_LEAVE, id });
     log.info({ id, players: hub.entities.size }, 'leave');
   }
+}
+
+function onClose(conn: Conn): void {
+  if (!conns.has(conn)) return;
+  conns.delete(conn);
+  if (conn.entityId === null) return;
+  const id = conn.entityId;
+  conn.entityId = null;
+  const rt = hub.entities.get(id);
+  if (!rt) return;
+  // Grace window: NO se borra de inmediato — se espera una posible reconexión (resume).
+  rt.disconnected = true;
+  rt.inputs.length = 0; // que no siga "moviéndose" con inputs viejos
+  graceTimers.set(id, setTimeout(() => dropEntity(id), GRACE_MS));
+  log.info({ id }, 'disconnect (grace)');
 }
 
 // ---------- helpers de envío ----------

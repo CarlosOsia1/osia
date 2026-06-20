@@ -3,7 +3,7 @@
  * Cliente y servidor DEBEN usar estas mismas para que la simulación coincida.
  */
 
-export const PROTOCOL_VERSION = 4; // +4: serverTime en WELCOME/PONG → reloj día/noche sincronizado
+export const PROTOCOL_VERSION = 5; // +5: resumeToken (reconexión con grace window)
 
 /** Simulación autoritativa: tick fijo. */
 export const TICK_HZ = 20;

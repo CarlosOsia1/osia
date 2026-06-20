@@ -24,7 +24,7 @@ export type WireWeather = { kind: string; intensity: number };
 export type AtmosphereState = { biome: string; weather: WireWeather };
 
 // ---- Cliente → Servidor ----
-export type HelloMsg = { op: typeof C2S.HELLO; ticket: string; protocol: number };
+export type HelloMsg = { op: typeof C2S.HELLO; ticket: string; protocol: number; resumeToken?: string };
 export type InputMsg = { op: typeof C2S.INPUT; seq: number; f: number; r: number; yaw: number; dtMs: number };
 export type PingMsg = { op: typeof C2S.PING; t: number };
 export type ChatSendMsg = { op: typeof C2S.CHAT_SEND; text: string };
@@ -42,6 +42,7 @@ export type WelcomeMsg = {
   entities: EntityState[];
   atmosphere: AtmosphereState; // estado de clima/bioma actual (sync inmediato al entrar)
   serverTime: number; // hora del server (ms) → sincroniza el ciclo día/noche entre clientes
+  resumeToken: string; // para re-adoptar esta entidad si hay una reconexión (grace window)
 };
 /** El server dicta el clima (autoritativo); todos los clientes lo sincronizan. */
 export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WireWeather };

@@ -48,6 +48,7 @@ export class NetClient {
   /** Inputs enviados aún NO confirmados por el server (se re-aplican en la reconciliación). */
   pending: { seq: number; f: number; r: number; yaw: number; dt: number }[] = [];
   ackSeq = 0; // último seq que el server confirmó haber procesado (del DELTA)
+  private resumeToken: string | null = null; // para re-adoptar la entidad al reconectar
   private epoch = 0; // invalida intentos de conexión en vuelo (StrictMode / carreras async)
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null; // PING app para sync de reloj
@@ -71,6 +72,7 @@ export class NetClient {
     this.serverSelf = null;
     this.pending.length = 0;
     this.ackSeq = 0;
+    this.resumeToken = null; // salida limpia → no reanudar (la próxima conexión es nueva)
     this.remotes.clear();
     this.publish('idle');
   }
@@ -91,7 +93,15 @@ export class NetClient {
 
       const ws = new WebSocket(data.wsUrl ?? netConfig.wsUrl);
       this.ws = ws;
-      ws.onopen = () => ws.send(encode({ op: C2S.HELLO, ticket: data.ticket, protocol: PROTOCOL_VERSION }));
+      ws.onopen = () =>
+        ws.send(
+          encode({
+            op: C2S.HELLO,
+            ticket: data.ticket,
+            protocol: PROTOCOL_VERSION,
+            resumeToken: this.resumeToken ?? undefined, // si hubo caída, reanuda la entidad
+          }),
+        );
       ws.onmessage = (ev) => {
         if (typeof ev.data === 'string') this.onMessage(ev.data);
       };
@@ -152,6 +162,7 @@ export class NetClient {
         }
         applyServerAtmosphere(msg.atmosphere.biome, msg.atmosphere.weather); // sync de clima al entrar
         reportServerOffset(msg.serverTime - Date.now(), true); // offset inicial (lo refina el PING)
+        this.resumeToken = msg.resumeToken; // guardado por si hay una reconexión
         this.startPing();
         this.publish('connected');
         break;
