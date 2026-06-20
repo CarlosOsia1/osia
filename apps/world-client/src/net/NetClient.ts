@@ -47,8 +47,34 @@ function randomHandle(): string {
   return `${name}-${Math.floor(Math.random() * 90 + 10)}`;
 }
 
+// resumeToken + handle se guardan en sessionStorage (POR PESTAÑA) para que un RELOAD re-adopte
+// la misma entidad dentro de la ventana de gracia, en vez de crear un viajero nuevo.
+const SS_TOKEN = 'osia.resumeToken';
+const SS_HANDLE = 'osia.handle';
+function ssGet(k: string): string | null {
+  try {
+    return typeof window !== 'undefined' ? window.sessionStorage.getItem(k) : null;
+  } catch {
+    return null;
+  }
+}
+function ssSet(k: string, v: string): void {
+  try {
+    if (typeof window !== 'undefined') window.sessionStorage.setItem(k, v);
+  } catch {
+    /* sessionStorage no disponible (modo privado estricto, etc.) */
+  }
+}
+function loadHandle(): string {
+  const saved = ssGet(SS_HANDLE);
+  if (saved) return saved;
+  const h = randomHandle();
+  ssSet(SS_HANDLE, h);
+  return h;
+}
+
 export class NetClient {
-  readonly handle = randomHandle();
+  readonly handle = loadHandle(); // estable entre reloads (misma pestaña)
   selfId: number | null = null;
   serverSelf: { x: number; z: number; yaw: number } | null = null;
 
@@ -64,7 +90,7 @@ export class NetClient {
   /** Inputs enviados aún NO confirmados por el server (se re-aplican en la reconciliación). */
   pending: { seq: number; f: number; r: number; yaw: number; dt: number }[] = [];
   ackSeq = 0; // último seq que el server confirmó haber procesado (del DELTA)
-  private resumeToken: string | null = null; // para re-adoptar la entidad al reconectar
+  private resumeToken: string | null = ssGet(SS_TOKEN); // re-adoptar la entidad (sobrevive al reload)
   private epoch = 0; // invalida intentos de conexión en vuelo (StrictMode / carreras async)
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null; // PING app para sync de reloj
@@ -88,7 +114,8 @@ export class NetClient {
     this.serverSelf = null;
     this.pending.length = 0;
     this.ackSeq = 0;
-    this.resumeToken = null; // salida limpia → no reanudar (la próxima conexión es nueva)
+    this.resumeToken = null; // en memoria; el token persistido se limpia solo al cerrar la pestaña
+    // NO borramos SS_TOKEN: así un reload (o el doble-montaje de StrictMode) re-adopta la entidad.
     this.remotes.clear();
     this.publish('idle');
   }
@@ -116,7 +143,7 @@ export class NetClient {
             op: C2S.HELLO,
             ticket: data.ticket,
             protocol: PROTOCOL_VERSION,
-            resumeToken: this.resumeToken ?? undefined, // si hubo caída, reanuda la entidad
+            resumeToken: ssGet(SS_TOKEN) ?? undefined, // fuente de verdad: sobrevive reload y StrictMode
           }),
         );
       ws.onmessage = (ev) => {
@@ -182,6 +209,7 @@ export class NetClient {
         applyServerAtmosphere(msg.atmosphere.biome, msg.atmosphere.weather); // sync de clima al entrar
         reportServerOffset(msg.serverTime - Date.now(), true); // offset inicial (lo refina el PING)
         this.resumeToken = msg.resumeToken; // guardado por si hay una reconexión
+        ssSet(SS_TOKEN, msg.resumeToken); // persistido → sobrevive a un reload de la página
         this.startPing();
         this.publish('connected');
         break;
