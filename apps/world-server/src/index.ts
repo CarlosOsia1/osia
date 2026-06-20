@@ -110,7 +110,7 @@ const httpServer = createServer((req, res) => {
           const ticket = await issueTicket(handle, worldId);
           res
             .writeHead(200, { 'content-type': 'application/json' })
-            .end(JSON.stringify({ ticket, wsUrl: `ws://localhost:${config.port}/world` }));
+            .end(JSON.stringify({ ticket, wsUrl: config.publicWsUrl }));
         } catch {
           res.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'bad_request' }));
         }

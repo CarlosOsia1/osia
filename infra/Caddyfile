@@ -1,0 +1,9 @@
+# Caddy: TLS automático (Let's Encrypt) + reverse proxy del world-server.
+# Reemplazá ws.TU-DOMINIO.com por tu subdominio real.
+# DNS: registro A  ws.TU-DOMINIO.com → IP del server, en modo "DNS only" (grey-cloud).
+# Caddy maneja el upgrade de WebSocket automáticamente (no hay que configurar nada extra).
+
+ws.TU-DOMINIO.com {
+	encode zstd gzip
+	reverse_proxy world-server:2567
+}
