@@ -21,7 +21,7 @@ type PeerAudio = {
   retry: (() => void) | null; // reintento de play() del sumidero al volver la visibilidad
 };
 
-const MAX_DIST = 35; // m: a partir de acá, inaudible
+const MAX_DIST = 45; // m: a partir de acá, inaudible
 const SMOOTH = 0.02; // constante de tiempo del suavizado
 
 class SpatialGraph {
@@ -119,8 +119,8 @@ class SpatialGraph {
     const panner = ctx.createPanner();
     panner.panningModel = 'HRTF';
     panner.distanceModel = 'inverse';
-    panner.refDistance = 1.5;
-    panner.rolloffFactor = 2.5;
+    panner.refDistance = 6; // audible de cerca y a media distancia (el oyente es la cámara, ~10u)
+    panner.rolloffFactor = 1; // caída suave (antes 2.5 = casi inaudible a 10u)
     panner.maxDistance = MAX_DIST;
     panner.positionX.value = 9999; // lejos hasta tener la posición real (se corrige al 1er update)
     biquad.connect(gain);

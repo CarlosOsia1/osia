@@ -180,7 +180,10 @@ class MeshVoice {
 
     pc.ontrack = (e) => {
       const stream = e.streams[0];
-      if (stream) spatialGraph.setPeerStream(id, stream);
+      if (stream) {
+        spatialGraph.setPeerStream(id, stream);
+        console.info('[voz] audio recibido de', id);
+      }
     };
     pc.onicecandidate = (e) => {
       if (e.candidate) this.net?.sendVoiceSignal(id, 2, JSON.stringify(e.candidate));
@@ -199,6 +202,7 @@ class MeshVoice {
       })();
     };
     pc.onconnectionstatechange = () => {
+      console.info('[voz] peer', id, '→', pc.connectionState);
       if (pc.connectionState === 'failed') {
         try {
           pc.restartIce();
