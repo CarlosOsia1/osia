@@ -13,11 +13,12 @@
  */
 
 type PeerAudio = {
-  el: HTMLAudioElement;
+  el: HTMLMediaElement;
   source: MediaStreamAudioSourceNode | null;
   biquad: BiquadFilterNode;
   gain: GainNode;
   panner: PannerNode;
+  retry: (() => void) | null; // reintento de play() del sumidero al volver la visibilidad
 };
 
 const MAX_DIST = 35; // m: a partir de acá, inaudible
@@ -60,6 +61,7 @@ class SpatialGraph {
   // ---------- Micrófono ----------
   /** Procesa el mic y devuelve el track a ENVIAR (gateado por ganancia). */
   startMic(raw: MediaStream): MediaStreamTrack | null {
+    this.stopMic(); // idempotencia: libera cualquier mic/nodos previos (track.stop + disconnect)
     const ctx = this.ensureContext();
     this.micRaw = raw;
     this.micSource = ctx.createMediaStreamSource(raw);
@@ -102,9 +104,11 @@ class SpatialGraph {
   addPeer(id: number): void {
     const ctx = this.ensureContext();
     if (this.peers.has(id) || !this.master) return;
-    const el = document.createElement('audio');
+    // <video muted playsinline> como sumidero: más fiable que <audio> con MediaStream remoto en
+    // Safari/iOS (vale igual para un stream solo-audio). El audio audible sale por Web Audio.
+    const el = document.createElement('video');
     el.autoplay = true;
-    el.muted = true; // el audio audible sale por Web Audio; el <audio> es solo el sumidero
+    el.muted = true;
     el.setAttribute('playsinline', '');
     el.style.display = 'none';
     document.body.appendChild(el);
@@ -122,15 +126,22 @@ class SpatialGraph {
     biquad.connect(gain);
     gain.connect(panner);
     panner.connect(this.master);
-    this.peers.set(id, { el, source: null, biquad, gain, panner });
+    this.peers.set(id, { el, source: null, biquad, gain, panner, retry: null });
   }
 
   setPeerStream(id: number, stream: MediaStream): void {
     const ctx = this.ensureContext();
     const p = this.peers.get(id);
     if (!p) return;
-    p.el.srcObject = stream; // sumidero obligatorio (Chrome silencia el source si falta)
-    void p.el.play().catch(() => {});
+    p.el.srcObject = stream; // sumidero obligatorio (Chrome silencia el source remoto si falta)
+    void p.el.play().catch((e: unknown) => console.warn('[voice] sink play() rechazado', id, e));
+    if (!p.retry) {
+      // iOS/cambio de pestaña: si el sumidero se pausó, reintentar al volver a estar visible.
+      p.retry = () => {
+        if (document.visibilityState === 'visible') void p.el.play().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', p.retry);
+    }
     p.source?.disconnect();
     p.source = ctx.createMediaStreamSource(stream);
     p.source.connect(p.biquad);
@@ -191,6 +202,7 @@ class SpatialGraph {
     p.biquad.disconnect();
     p.gain.disconnect();
     p.panner.disconnect();
+    if (p.retry) document.removeEventListener('visibilitychange', p.retry);
     p.el.srcObject = null;
     p.el.remove();
     this.peers.delete(id);

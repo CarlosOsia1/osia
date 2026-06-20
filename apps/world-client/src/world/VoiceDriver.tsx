@@ -36,26 +36,20 @@ export default function VoiceDriver() {
 
     const self = net.serverSelf;
     const renderTime = performance.now() - 100;
+    const frame: { id: number; dist: number }[] = [];
     for (const id of net.getRemoteIds()) {
       const s = net.sampleRemote(id, renderTime);
       if (!s) continue;
       const dist = self ? Math.hypot(s.x - self.x, s.z - self.z) : 0;
       spatialGraph.setPeerPosition(id, s.x, HEAD_Y, s.z, dist);
+      frame.push({ id, dist });
     }
 
-    // Gating de proximidad cada ~300 ms.
+    // Gating de proximidad cada ~300 ms (reusa las distancias ya calculadas este frame).
     acc.current += delta;
     if (acc.current >= 0.3 && self) {
       acc.current = 0;
-      const ranked = net
-        .getRemoteIds()
-        .map((id) => {
-          const s = net.sampleRemote(id, renderTime);
-          return s ? { id, dist: Math.hypot(s.x - self.x, s.z - self.z) } : null;
-        })
-        .filter((x): x is { id: number; dist: number } => x !== null)
-        .sort((a, b) => a.dist - b.dist);
-      meshVoice.updateNeighbors(ranked);
+      meshVoice.updateNeighbors(frame.sort((a, b) => a.dist - b.dist));
     }
   });
 

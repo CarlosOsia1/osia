@@ -129,7 +129,6 @@ export default function ChatPanel() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onInputKey}
-          onBlur={() => setOpen(false)}
           maxLength={240}
           placeholder="escribí y Enter — Esc para cerrar"
           aria-label="mensaje de chat"

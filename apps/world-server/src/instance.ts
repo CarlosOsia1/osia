@@ -15,6 +15,7 @@ export type EntityRuntime = {
   lastSeq: number; // último seq drenado = ackSeq → reconciliación con input replay
   token: string; // resume token: re-adoptar la entidad en una reconexión (grace window)
   disconnected: boolean; // true mientras espera reconexión (no la borramos de inmediato)
+  voiceFlags: number; // último estado de voz (mic/hablando/sordo) → sync al que entra
 };
 
 export class Instance {
@@ -36,6 +37,7 @@ export class Instance {
       lastSeq: 0,
       token,
       disconnected: false,
+      voiceFlags: 0,
     };
     this.entities.set(id, rt);
     return rt;

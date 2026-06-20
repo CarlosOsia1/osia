@@ -25,11 +25,11 @@ function WorldNet() {
   useEffect(() => {
     const net = getNetClient();
     net.connect();
-    meshVoice.attach(net); // cablea el signaling de voz (el mic se pide con gesto en el HUD)
-    return () => {
-      meshVoice.detach();
-      net.disconnect();
-    };
+    meshVoice.attach(net); // idempotente: (re)cablea el signaling de voz (el mic se pide con gesto en el HUD)
+    // NO hacemos meshVoice.detach() en el cleanup: el doble-mount de StrictMode dispararía el
+    // teardown del mic/PCs y dejaría el HUD (componente hermano) desincronizado. El singleton vive
+    // toda la sesión; el navegador libera el mic al cerrar la pestaña.
+    return () => net.disconnect();
   }, []);
   return null;
 }

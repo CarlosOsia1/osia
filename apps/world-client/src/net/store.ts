@@ -96,9 +96,9 @@ export function clearRemote(id: number): void {
   setNetState({ voice, bubbles });
 }
 
-/** Resetea voz + burbujas (al (re)conectar; la roster puede cambiar). */
+/** Resetea voz + burbujas + chat (al (re)conectar; la roster puede cambiar y los ids se reasignan). */
 export function resetAux(): void {
-  setNetState({ voice: {}, bubbles: {}, chatNotice: null });
+  setNetState({ voice: {}, bubbles: {}, chatNotice: null, chatLog: [] });
 }
 
 // ---------- Lock de input (no mover el avatar mientras se escribe en el chat) ----------

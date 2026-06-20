@@ -31,8 +31,20 @@ export function normalizeChat(raw: string): string {
     .replace(STRIP, '')
     .replace(/\s+/g, ' ')
     .trim();
-  if (s.length > MAX_CHARS) s = s.slice(0, MAX_CHARS);
+  if ([...s].length > MAX_CHARS) s = [...s].slice(0, MAX_CHARS).join(''); // por codepoints (sin surrogates huérfanos)
   // Guard por bytes (recorta respetando codepoints completos).
   while (s.length > 0 && enc.encode(s).length > MAX_BYTES) s = s.slice(0, -1);
   return s;
+}
+
+const MAX_HANDLE_CHARS = 24;
+
+/** Normaliza un handle: mismo saneo que el chat, cap 24 codepoints, fallback 'anónimo'. */
+export function normalizeHandle(raw: string): string {
+  const s = String(raw ?? '')
+    .normalize('NFC')
+    .replace(STRIP, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [...s].slice(0, MAX_HANDLE_CHARS).join('') || 'anónimo';
 }

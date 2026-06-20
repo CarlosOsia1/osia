@@ -53,6 +53,7 @@ class Writer {
   }
   str(s: string): void {
     const bytes = te.encode(s);
+    if (bytes.length > 0xffff) throw new RangeError(`str() excede u16: ${bytes.length} bytes`); // falla ruidoso, no trunca
     this.u16(bytes.length);
     this.ensure(bytes.length);
     this.buf.set(bytes, this.off);

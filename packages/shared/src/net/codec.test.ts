@@ -19,6 +19,7 @@ import type {
 } from './messages';
 import { applyMovement, type Vec2 } from './movement';
 import { GROUND_RADIUS } from './constants';
+import { normalizeChat, normalizeHandle } from '../text/sanitizeChat';
 
 test('round-trip HELLO', () => {
   const msg: HelloMsg = { op: C2S.HELLO, ticket: 'a.b.c', protocol: 1 };
@@ -71,6 +72,17 @@ test('round-trip VOICE_SIGNAL (SDP grande) y VOICE_STATE', () => {
 test('decode rechaza basura', () => {
   assert.equal(decode(new Uint8Array(0)), null); // vacío (sin opcode)
   assert.equal(decode(new Uint8Array([0xff])), null); // opcode desconocido
+});
+
+test('normalizeChat/Handle sanea control, zero-width y RTL', () => {
+  const ZW = String.fromCharCode(0x200b); // zero-width space
+  const RTL = String.fromCharCode(0x202e); // right-to-left override
+  assert.equal(normalizeChat(`  hola${ZW}mundo  `), 'holamundo'); // zero-width + trim/collapse
+  assert.equal(normalizeChat(`a${RTL}b`), 'ab'); // RTL override
+  assert.equal([...normalizeChat('x'.repeat(300))].length, 240); // cap por codepoints
+  assert.equal(normalizeHandle(''), 'anónimo'); // fallback
+  assert.equal(normalizeHandle(`  Orión${ZW}  `), 'Orión');
+  assert.ok([...normalizeHandle('y'.repeat(50))].length <= 24); // cap del handle
 });
 
 test('applyMovement avanza y respeta el límite del claro', () => {

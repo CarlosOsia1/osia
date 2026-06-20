@@ -21,6 +21,7 @@ import {
   ErrorCode,
   applyMovement,
   normalizeChat,
+  normalizeHandle,
   PROTOCOL_VERSION,
   TICK_HZ,
   TICK_MS,
@@ -104,7 +105,7 @@ const httpServer = createServer((req, res) => {
       void (async () => {
         try {
           const parsed = JSON.parse(body || '{}') as { worldId?: string; handle?: string };
-          const handle = String(parsed.handle ?? 'anónimo').slice(0, 24) || 'anónimo';
+          const handle = normalizeHandle(parsed.handle ?? ''); // saneo (anti-spoof RTL/zero-width)
           const worldId = String(parsed.worldId ?? 'osia');
           const ticket = await issueTicket(handle, worldId);
           res
@@ -180,14 +181,8 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     send(conn.ws, { op: S2C.ERROR, code: ErrorCode.PROTOCOL_MISMATCH, message: 'protocolo' });
     return void conn.ws.close();
   }
-  let handle: string;
-  try {
-    handle = (await verifyTicket(msg.ticket)).handle;
-  } catch {
-    send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_TICKET, message: 'ticket inválido' });
-    return void conn.ws.close();
-  }
-  // Reconexión: re-adoptar la entidad desconectada si el resumeToken coincide (dentro del grace).
+  // RECONEXIÓN: el resumeToken es un secreto del server (randomUUID) que ya prueba identidad.
+  // Se re-adopta SÍNCRONO (sin await previo) → no hay carrera con el grace timer (otra macrotarea).
   if (msg.resumeToken) {
     const prev = [...hub.entities.values()].find((e) => e.disconnected && e.token === msg.resumeToken);
     if (prev) {
@@ -209,9 +204,19 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
         serverTime: Date.now(),
         resumeToken: prev.token,
       });
+      sendVoiceSnapshot(conn); // estado de voz de los demás (después del WELCOME)
       log.info({ id: prev.state.id }, 'resume');
       return;
     }
+  }
+
+  // ALTA NUEVA: requiere ticket válido.
+  let handle: string;
+  try {
+    handle = (await verifyTicket(msg.ticket)).handle;
+  } catch {
+    send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_TICKET, message: 'ticket inválido' });
+    return void conn.ws.close();
   }
 
   if (hub.full) {
@@ -236,8 +241,18 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     serverTime: Date.now(), // sincroniza el reloj día/noche
     resumeToken: token,
   });
+  sendVoiceSnapshot(conn); // estado de voz de los demás (después del WELCOME)
   broadcastExcept(conn, { op: S2C.ENTITY_JOIN, entity: { ...rt.state } });
   log.info({ id, handle, players: hub.entities.size }, 'join');
+}
+
+/** Sincroniza al recién llegado el estado de voz (mic/hablando) de los demás. Llamar TRAS el WELCOME. */
+function sendVoiceSnapshot(conn: Conn): void {
+  for (const e of hub.entities.values()) {
+    if (e.state.id !== conn.entityId && e.voiceFlags) {
+      send(conn.ws, { op: S2C.VOICE_STATE, id: e.state.id, flags: e.voiceFlags });
+    }
+  }
 }
 
 function onInput(conn: Conn, msg: InputMsg): void {
@@ -303,27 +318,30 @@ function takeVoiceToken(conn: Conn): boolean {
 /** Relay BYTE-CIEGO del signaling de voz: jamás parsea el SDP/ICE; inyecta srcId (anti-spoof). */
 function onVoiceSignal(conn: Conn, msg: VoiceSignalMsg): void {
   if (conn.entityId === null) return;
-  if (!takeVoiceToken(conn)) return; // flood → descartar en silencio
   if (msg.dstId === conn.entityId) return; // no a sí mismo
   const dst = peers.get(msg.dstId); // misma instancia (en F0 sólo existe el hub)
-  if (!dst || dst.ws.readyState !== WebSocket.OPEN) return; // destino ausente → descartar
+  if (!dst || dst.ws.readyState !== WebSocket.OPEN) return; // destino ausente → descartar (sin gastar token)
+  if (!takeVoiceToken(conn)) return; // flood de relays VÁLIDOS → descartar en silencio
   send(dst.ws, { op: S2C.VOICE_SIGNAL, srcId: conn.entityId, kind: msg.kind, payload: msg.payload });
 }
 
-/** Difunde el estado de voz (mic/hablando/sordo) al resto del hub. */
+/** Difunde el estado de voz (mic/hablando/sordo) al resto del hub y lo persiste para sync. */
 function onVoiceState(conn: Conn, msg: VoiceStateMsg): void {
   if (conn.entityId === null) return;
   if (!takeVoiceToken(conn)) return;
-  broadcastExcept(conn, { op: S2C.VOICE_STATE, id: conn.entityId, flags: msg.flags & 0x07 });
+  const flags = msg.flags & 0x07;
+  const rt = hub.entities.get(conn.entityId);
+  if (rt) rt.voiceFlags = flags; // persistido → sincronizar al que entre después
+  broadcastExcept(conn, { op: S2C.VOICE_STATE, id: conn.entityId, flags });
 }
 
 function dropEntity(id: number): void {
   graceTimers.delete(id);
-  if (hub.entities.has(id)) {
-    hub.remove(id);
-    broadcastAll({ op: S2C.ENTITY_LEAVE, id });
-    log.info({ id, players: hub.entities.size }, 'leave');
-  }
+  const rt = hub.entities.get(id);
+  if (!rt || !rt.disconnected) return; // ya re-adoptada por un resume → no borrar
+  hub.remove(id);
+  broadcastAll({ op: S2C.ENTITY_LEAVE, id });
+  log.info({ id, players: hub.entities.size }, 'leave');
 }
 
 function onClose(conn: Conn): void {

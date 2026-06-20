@@ -166,10 +166,15 @@ class MeshVoice {
 
   private openPeer(id: number): void {
     if (!this.net || this.peers.has(id) || this.net.selfId === null) return;
+    let pc: RTCPeerConnection;
+    try {
+      pc = new RTCPeerConnection({ iceServers: getIceServers() });
+    } catch {
+      return; // config ICE inválida → no dejar el id "pegado" en active sin PC; el próximo tick reintenta
+    }
     this.active.add(id);
     spatialGraph.addPeer(id);
     const polite = this.net.selfId > id;
-    const pc = new RTCPeerConnection({ iceServers: getIceServers() });
     const peer: Peer = { pc, polite, makingOffer: false, ignoreOffer: false, settingRemoteAnswer: false, pending: [] };
     this.peers.set(id, peer);
 
@@ -248,7 +253,14 @@ class MeshVoice {
   }
 
   private async onSignal(src: number, kind: number, payload: string): Promise<void> {
-    if (!this.active.has(src)) return; // signaling huérfano → no resucitar PC
+    if (!this.peers.has(src)) {
+      // Sin PC local todavía. Una OFERTA de un par que SIGUE en la roster y entra en el cap es
+      // legítima (asimetría de gating: el remoto nos gateó antes que nosotros a él) → abrir
+      // reactivamente. Answers/candidates sin peer, o ids fuera de la roster, se ignoran (huérfanos).
+      const inRoster = this.net?.getRemoteIds().includes(src) ?? false;
+      if (kind !== 0 || !inRoster || this.active.size >= AUDIBLE_CAP) return;
+      this.openPeer(src); // PN resuelve el glare (ambos lados ofertan; el impolite ignora)
+    }
     const peer = this.peers.get(src);
     if (!peer) return;
     const pc = peer.pc;
@@ -276,8 +288,15 @@ class MeshVoice {
         }
       } else if (kind === 2) {
         const cand = JSON.parse(payload) as RTCIceCandidateInit;
-        if (pc.remoteDescription) await pc.addIceCandidate(cand);
-        else peer.pending.push(cand); // los ICE suelen ganarle al SDP → bufferear
+        if (!pc.remoteDescription) {
+          peer.pending.push(cand); // los ICE suelen ganarle al SDP → bufferear
+        } else {
+          try {
+            await pc.addIceCandidate(cand);
+          } catch {
+            peer.pending.push(cand); // ufrag de un ICE-restart aún no aplicado → re-bufferear
+          }
+        }
       }
     } catch {
       /* glare/orden: tragar */

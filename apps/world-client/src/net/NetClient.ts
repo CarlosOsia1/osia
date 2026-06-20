@@ -40,6 +40,7 @@ type Remote = { handle: string; buffer: Sample[] };
 
 const HANDLES = ['Orión', 'Vega', 'Lyra', 'Altair', 'Sirio', 'Polaris', 'Rigel', 'Mira', 'Antares', 'Deneb'];
 const BUFFER_MAX = 30;
+const voiceEnc = new TextEncoder(); // para medir el tamaño en bytes del payload de voz
 
 function randomHandle(): string {
   const name = HANDLES[Math.floor(Math.random() * HANDLES.length)] ?? 'Viajero';
@@ -269,7 +270,7 @@ export class NetClient {
   /** Voz: tuneliza SDP/ICE hacia un par. El server lo reescribe a S2C con srcId (anti-spoof). */
   sendVoiceSignal(dstId: number, kind: number, payload: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
-    if (payload.length > 60000) return; // guard: el str() del codec usa u16 y el WS corta >64KB
+    if (voiceEnc.encode(payload).length > 62000) return; // guard en BYTES UTF-8 (str() usa u16; el WS corta >64KB)
     this.ws.send(encode({ op: C2S.VOICE_SIGNAL, dstId, kind, payload }));
   }
 

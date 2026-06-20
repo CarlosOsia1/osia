@@ -51,11 +51,16 @@ export default function VoiceHUD() {
     const up = (e: KeyboardEvent) => {
       if (e.code === 'KeyV') meshVoice.setPushing(false);
     };
+    const release = () => meshVoice.setPushing(false); // alt-tab / pestaña oculta: el keyup no llega
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
+    window.addEventListener('blur', release);
+    document.addEventListener('visibilitychange', release);
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', release);
+      document.removeEventListener('visibilitychange', release);
       meshVoice.setPushing(false);
     };
   }, [micOn, mode]);
