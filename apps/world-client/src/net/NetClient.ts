@@ -22,7 +22,7 @@ import {
 } from '@osia/shared';
 import { netConfig } from './config';
 import { setNetState, type NetStatus } from './store';
-import { applyServerAtmosphere, applyServerEvent } from '../world/atmosphereRuntime';
+import { applyServerAtmosphere } from '../world/atmosphereRuntime';
 
 export type Sample = { t: number; x: number; z: number; yaw: number };
 type Remote = { handle: string; buffer: Sample[] };
@@ -161,10 +161,6 @@ export class NetClient {
       }
       case S2C.ATMOSPHERE_UPDATE: {
         applyServerAtmosphere(msg.biome, msg.weather); // el server dicta el clima
-        break;
-      }
-      case S2C.ATMOSPHERE_EVENT: {
-        applyServerEvent(msg.kind, msg.durationMs, performance.now());
         break;
       }
       default:

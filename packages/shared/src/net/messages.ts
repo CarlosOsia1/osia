@@ -44,8 +44,6 @@ export type WelcomeMsg = {
 };
 /** El server dicta el clima (autoritativo); todos los clientes lo sincronizan. */
 export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WireWeather };
-/** Evento atmosférico efímero (lluvia de meteoros, aurora…). */
-export type AtmosphereEventMsg = { op: typeof S2C.ATMOSPHERE_EVENT; kind: string; durationMs: number };
 export type SnapshotMsg = { op: typeof S2C.SNAPSHOT; tick: number; entities: EntityState[] };
 export type DeltaMsg = { op: typeof S2C.DELTA; tick: number; ackSeq: number; entities: EntityState[] };
 export type EntityJoinMsg = { op: typeof S2C.ENTITY_JOIN; entity: EntityState };
@@ -63,7 +61,6 @@ export type S2CMessage =
   | PongMsg
   | ChatBroadcastMsg
   | AtmosphereUpdateMsg
-  | AtmosphereEventMsg
   | ErrorMsg;
 
 export type NetMessage = C2SMessage | S2CMessage;

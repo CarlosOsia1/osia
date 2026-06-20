@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OSIA_COLORS } from '@osia/ui';
 
@@ -56,6 +57,28 @@ function Forest({ trees }: { trees: Tree[] }) {
       return inst;
     });
   }, [trees]);
+
+  // Viento: cada árbol se MECE (lean desde la base) con su propia fase → bosque vivo.
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const tRef = useRef(0);
+  useFrame((_, delta) => {
+    tRef.current += delta;
+    const t = tRef.current;
+    for (let i = 0; i < trees.length; i++) {
+      const tree = trees[i]!;
+      const phase = i * 1.3;
+      dummy.position.set(tree.position[0], tree.position[1], tree.position[2]);
+      dummy.rotation.set(
+        Math.sin(t * 1.1 + phase) * 0.0165, // mecido principal (suave, 30%)
+        0,
+        Math.sin(t * 0.85 + phase + 1.2) * 0.012, // segundo eje (movimiento orgánico)
+      );
+      dummy.scale.setScalar(tree.scale);
+      dummy.updateMatrix();
+      for (const inst of meshes) inst.setMatrixAt(i, dummy.matrix);
+    }
+    for (const inst of meshes) inst.instanceMatrix.needsUpdate = true;
+  });
 
   // Los <primitive> no se auto-disponen: liberamos geo/material al desmontar.
   useEffect(

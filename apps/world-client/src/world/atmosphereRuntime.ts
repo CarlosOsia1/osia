@@ -32,8 +32,6 @@ export const world = {
   // override LOCAL del panel de test; null = seguir al server
   overrideBiomeId: null as string | null,
   overrideWeather: null as WeatherState | null,
-  // evento efímero activo (meteoros, aurora…); lo dispara el server
-  event: null as { kind: string; until: number } | null,
   // lo que se RENDERIZA (rampa suave hacia el objetivo activo)
   biomeId: DEFAULT_BIOME,
   weather: clear(),
@@ -43,11 +41,6 @@ export const world = {
 export function applyServerAtmosphere(biome: string, weather: { kind: string; intensity: number }): void {
   world.liveBiomeId = biome;
   world.liveWeather = { kind: weather.kind as WeatherKind, intensity: weather.intensity };
-}
-
-/** Registra un evento atmosférico efímero del server (visual: pendiente). */
-export function applyServerEvent(kind: string, durationMs: number, nowMs: number): void {
-  world.event = { kind, until: nowMs + durationMs };
 }
 
 /** El panel de test escribe estos overrides (preview LOCAL, no afecta a otros). */

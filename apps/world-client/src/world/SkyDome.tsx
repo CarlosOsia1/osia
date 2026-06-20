@@ -8,10 +8,9 @@ import { uniform, positionLocal, normalize, mix, smoothstep, float } from 'three
 import { atmo } from './atmosphereRuntime';
 
 /**
- * SkyDome (S0.7 v2 · quick win #1) — domo de cielo con GRADIENTE cenit→horizonte
- * (node/TSL, WebGPU). Pasa del "fondo plano de plato" a profundidad atmosférica
- * vertical. Lee skyTop/skyHorizon del bus `atmo` cada frame. Sigue a la cámara.
- * Radio < far de cámara (200) para no recortarse; sin escribir profundidad.
+ * SkyDome (S0.7) — domo de cielo con GRADIENTE cenit→horizonte (node/TSL, WebGPU).
+ * Profundidad atmosférica vertical; lee skyTop/skyHorizon del bus `atmo` cada frame.
+ * Sigue a la cámara. Radio < far de cámara (200).
  */
 
 const R = 180;
@@ -25,7 +24,6 @@ export default function SkyDome() {
   const obj = useMemo(() => {
     const material = new MeshBasicNodeMaterial();
     const up = normalize(positionLocal).y; // -1..1 (dirección del domo)
-    // degradado SUAVE y amplio (no una banda dura): cielo natural y bonito.
     const t = smoothstep(float(-0.12), float(0.55), up);
     material.colorNode = mix(topU, horU, t.oneMinus()); // horizonte abajo, cenit arriba
     material.side = THREE.BackSide;

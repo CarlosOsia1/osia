@@ -79,6 +79,7 @@ export default function WorldCanvas() {
         <Starfield count={1600} radius={120} />
         <Precipitation />
         <RainStreaks />
+        {/* Eventos efímeros (meteoros/aurora) desmontados por ahora — código preservado. */}
         {/* Post-procesado TSL: toma el control del render (debe ir al final). */}
         <AtmosphereFX />
         {/* Muestreo de rendimiento (priority 2: corre tras el render). */}

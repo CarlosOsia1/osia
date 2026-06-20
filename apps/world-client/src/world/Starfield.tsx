@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PointsNodeMaterial } from 'three/webgpu';
 import { OSIA_COLORS } from '@osia/ui';
@@ -26,6 +26,7 @@ function mulberry32(seed: number) {
 }
 
 export default function Starfield({ count = 1600, radius = 120 }: { count?: number; radius?: number }) {
+  const camera = useThree((s) => s.camera);
   const points = useMemo(() => {
     const rnd = mulberry32(0x051a);
     const pos = new Float32Array(count * 3);
@@ -55,6 +56,9 @@ export default function Starfield({ count = 1600, radius = 120 }: { count?: numb
 
   // Las estrellas aparecen de noche y se apagan de día (las controla la atmósfera).
   useFrame(() => {
+    // La esfera de estrellas SIGUE a la cámara → distancia "infinita", sin parallax al
+    // caminar: las estrellas se ven estáticas y lejanas (no se mueven con el jugador).
+    points.position.copy(camera.position);
     points.material.opacity = 0.9 * atmo.current.starsIntensity;
   });
 

@@ -22,7 +22,7 @@ export type Controls = 'forward' | 'back' | 'left' | 'right';
 
 const CAM_DIST = 7.5;
 const SENS = 0.0022; // rad por píxel de mouse
-const ELEV_MIN = 0.12;
+const ELEV_MIN = -0.12; // permite bajar la cámara bajo la horizontal (mirar más hacia arriba)
 const ELEV_MAX = 1.3;
 const FOLLOW_LAMBDA = 14; // suavizado del pivote de cámara
 const SEND_INTERVAL = 0.05; // enviar INPUT cada 50 ms (20 Hz)

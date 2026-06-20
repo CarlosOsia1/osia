@@ -261,6 +261,7 @@ setInterval(() => {
 }, TICK_MS);
 
 // Director de clima: evalúa el reloj cada 2 s y difunde el clima cuando cambia.
+// (Los eventos efímeros — director.maybeEvent() — están desactivados por ahora.)
 setInterval(() => {
   if (director.update()) {
     broadcastAll({ op: S2C.ATMOSPHERE_UPDATE, biome: director.biome, weather: director.weather });

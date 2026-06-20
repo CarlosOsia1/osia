@@ -29,6 +29,9 @@ const MOON_DIST = 70;
 // pueden tener color propio sin costura): lluvia gris, nieve blanca. (Ver weatherConfig.)
 const FOG_RAIN = new THREE.Color(FOG.rain.color);
 const FOG_SNOW = new THREE.Color(FOG.snow.color);
+// Relleno ambiente azul-lunar: de noche el ambientColor del preset es casi negro, así
+// que subir solo la intensidad no alcanza; lo lerpeamos hacia este tono para "ver".
+const MOONLIT = new THREE.Color('#34405c');
 
 export default function Atmosphere() {
   const scene = useThree((s) => s.scene);
@@ -74,8 +77,8 @@ export default function Atmosphere() {
     // Piso de luz LUNAR: la noche nunca es oscuridad TOTAL — la luna ilumina un poco
     // (no mucho). Sube la luna direccional y el relleno ambiente según lo "noche" que sea.
     const nightAmt = THREE.MathUtils.clamp(p.starsIntensity, 0, 1); // 0 día → 1 noche
-    const moonI = Math.max(p.moonIntensity, 0.85 * nightAmt);
-    const ambI = Math.max(p.ambientIntensity, 0.34 + 0.16 * nightAmt);
+    const moonI = Math.max(p.moonIntensity, 1.15 * nightAmt);
+    const ambI = Math.max(p.ambientIntensity, 0.4 + 0.2 * nightAmt);
 
     bg.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
     scene.background = bg;
@@ -125,6 +128,7 @@ export default function Atmosphere() {
     }
     if (ambient.current) {
       ambient.current.color.setRGB(p.ambientColor[0], p.ambientColor[1], p.ambientColor[2], THREE.SRGBColorSpace);
+      ambient.current.color.lerp(MOONLIT, nightAmt * 0.5); // de noche, relleno azul lunar (no negro)
       ambient.current.intensity = ambI;
     }
     gl.toneMappingExposure = p.exposure;
