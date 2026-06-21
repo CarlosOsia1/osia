@@ -19,12 +19,16 @@ import {
   C2S,
   S2C,
   ErrorCode,
-  applyMovement,
   normalizeChat,
   normalizeHandle,
   PROTOCOL_VERSION,
   TICK_HZ,
   TICK_MS,
+  PING_INTERVAL_MS,
+  CONNECTION_TIMEOUT_MS,
+  HELLO_TIMEOUT_MS,
+  RECONNECT_GRACE_MS,
+  MAX_VOICE_PAYLOAD_BYTES,
   type C2SMessage,
   type S2CMessage,
   type HelloMsg,
@@ -38,37 +42,37 @@ import { log } from './logger';
 import { issueTicket, verifyTicket } from './ticket';
 import { Instance } from './instance';
 import { WeatherDirector } from './weather';
+import { TokenBucket, KeyedRateLimiter } from './rateLimit';
+import { TickMetrics } from './metrics';
 
 const hub = new Instance('hub');
-const director = new WeatherDirector(config.biome, Date.now); // clima autoritativo del mundo
+const director = new WeatherDirector(config.biome, Date.now, config.worldSeed); // clima autoritativo + determinista
+const metrics = new TickMetrics();
 let nextEntityId = 1;
+const voiceEnc = new TextEncoder(); // medir el tamaño en bytes del payload de voz (validación)
 
 type Conn = {
   ws: WebSocket;
   entityId: number | null;
-  alive: boolean;
-  chatTokens?: number; // token bucket de chat (anti-spam)
-  chatRefillAt?: number;
-  voiceTokens?: number; // token bucket de signaling de voz (anti-flood/DoS)
-  voiceRefillAt?: number;
+  lastSeen: number; // último instante con señal del cliente (pong/mensaje) → timeout de heartbeat
+  helloTimer?: ReturnType<typeof setTimeout>; // cierra el socket si no llega HELLO a tiempo
+  chat?: TokenBucket; // anti-spam de chat (creado al primer mensaje)
+  voiceBucket?: TokenBucket; // anti-flood del signaling de voz
 };
 const conns = new Set<Conn>();
 const peers = new Map<number, Conn>(); // entityId → conn (ruteo O(1) del signaling de voz)
 
-// Rate-limit de emisión de tickets por IP (anti-flood): máx 20 por minuto.
-const ticketHits = new Map<string, { n: number; resetAt: number }>();
-function allowTicket(ip: string): boolean {
-  const now = Date.now();
-  const e = ticketHits.get(ip);
-  if (!e || now > e.resetAt) {
-    ticketHits.set(ip, { n: 1, resetAt: now + 60_000 });
-    return true;
+/** Limpia el temporizador de HELLO una vez la conexión se autenticó (alta o resume). */
+function clearHelloTimer(conn: Conn): void {
+  if (conn.helloTimer) {
+    clearTimeout(conn.helloTimer);
+    conn.helloTimer = undefined;
   }
-  if (e.n >= 20) return false;
-  e.n++;
-  return true;
 }
-const GRACE_MS = 30_000; // ventana de reconexión: la entidad se conserva tras una caída
+
+// Rate-limit de emisión de tickets por IP (anti-flood): ~20 por minuto.
+const ticketLimiter = new KeyedRateLimiter(20, 3000);
+const GRACE_MS = RECONNECT_GRACE_MS; // ventana de reconexión: la entidad se conserva tras una caída
 const graceTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 // ---------- HTTP (tickets + health) ----------
@@ -88,13 +92,15 @@ const httpServer = createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     return void res
       .writeHead(200, { 'content-type': 'application/json' })
-      .end(JSON.stringify({ ok: true, players: hub.entities.size }));
+      .end(JSON.stringify({ ok: true, players: hub.entities.size, metrics: metrics.snapshot() }));
   }
 
   if (req.method === 'POST' && req.url === '/world/tickets') {
     const ip = req.socket.remoteAddress ?? 'unknown';
-    if (!allowTicket(ip)) {
-      return void res.writeHead(429, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'rate_limit' }));
+    if (!ticketLimiter.take(ip, Date.now())) {
+      return void res
+        .writeHead(429, { 'content-type': 'application/json' })
+        .end(JSON.stringify({ error: 'rate_limit' }));
     }
     let body = '';
     req.on('data', (c: Buffer) => {
@@ -112,7 +118,9 @@ const httpServer = createServer((req, res) => {
             .writeHead(200, { 'content-type': 'application/json' })
             .end(JSON.stringify({ ticket, wsUrl: config.publicWsUrl }));
         } catch {
-          res.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'bad_request' }));
+          res
+            .writeHead(400, { 'content-type': 'application/json' })
+            .end(JSON.stringify({ error: 'bad_request' }));
         }
       })();
     });
@@ -132,11 +140,21 @@ wss.on('connection', (ws, req) => {
     ws.close();
     return;
   }
-  const conn: Conn = { ws, entityId: null, alive: true };
+  const conn: Conn = { ws, entityId: null, lastSeen: Date.now() };
   conns.add(conn);
-  ws.on('message', (data: Buffer) => void onMessage(conn, data)); // frames binarios
+  // HELLO_TIMEOUT (docs/05 §2.1): un socket que no se autentica a tiempo se cierra.
+  conn.helloTimer = setTimeout(() => {
+    if (conn.entityId === null) {
+      send(ws, { op: S2C.ERROR, code: ErrorCode.TIMEOUT, message: 'esperaba HELLO' });
+      ws.close();
+    }
+  }, HELLO_TIMEOUT_MS);
+  ws.on('message', (data: Buffer) => {
+    conn.lastSeen = Date.now();
+    void onMessage(conn, data);
+  }); // frames binarios
   ws.on('pong', () => {
-    conn.alive = true;
+    conn.lastSeen = Date.now();
   });
   ws.on('close', () => onClose(conn));
   ws.on('error', () => onClose(conn));
@@ -144,9 +162,18 @@ wss.on('connection', (ws, req) => {
 
 async function onMessage(conn: Conn, raw: Uint8Array): Promise<void> {
   const msg = decode<C2SMessage>(raw);
-  if (!msg) return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_MESSAGE, message: 'mensaje inválido' });
+  if (!msg)
+    return void send(conn.ws, {
+      op: S2C.ERROR,
+      code: ErrorCode.BAD_MESSAGE,
+      message: 'mensaje inválido',
+    });
   if (conn.entityId === null && msg.op !== C2S.HELLO) {
-    return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_MESSAGE, message: 'esperaba HELLO' });
+    return void send(conn.ws, {
+      op: S2C.ERROR,
+      code: ErrorCode.BAD_MESSAGE,
+      message: 'esperaba HELLO',
+    });
   }
   switch (msg.op) {
     case C2S.HELLO:
@@ -168,7 +195,7 @@ async function onMessage(conn: Conn, raw: Uint8Array): Promise<void> {
       onVoiceState(conn, msg);
       break;
     case C2S.BYE:
-      conn.ws.close();
+      onBye(conn);
       break;
     default:
       break;
@@ -184,7 +211,9 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
   // RECONEXIÓN: el resumeToken es un secreto del server (randomUUID) que ya prueba identidad.
   // Se re-adopta SÍNCRONO (sin await previo) → no hay carrera con el grace timer (otra macrotarea).
   if (msg.resumeToken) {
-    const prev = [...hub.entities.values()].find((e) => e.disconnected && e.token === msg.resumeToken);
+    const prev = [...hub.entities.values()].find(
+      (e) => e.disconnected && e.token === msg.resumeToken,
+    );
     if (prev) {
       const timer = graceTimers.get(prev.state.id);
       if (timer) clearTimeout(timer);
@@ -192,6 +221,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
       prev.disconnected = false;
       prev.inputs.length = 0;
       conn.entityId = prev.state.id;
+      clearHelloTimer(conn); // autenticado por resume
       peers.set(prev.state.id, conn); // re-ruteo de voz a la nueva conexión
       send(conn.ws, {
         op: S2C.WELCOME,
@@ -226,6 +256,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
 
   const id = nextEntityId++;
   conn.entityId = id;
+  clearHelloTimer(conn); // autenticado por ticket válido
   peers.set(id, conn);
   const token = randomUUID();
   const rt = hub.add(id, handle, spawnPoint(hub.entities.size), token);
@@ -268,19 +299,8 @@ function onInput(conn: Conn, msg: InputMsg): void {
 const CHAT_CAP = 4;
 const CHAT_REFILL_MS = 2000;
 function takeChatToken(conn: Conn): boolean {
-  const now = Date.now();
-  if (conn.chatTokens === undefined) {
-    conn.chatTokens = CHAT_CAP;
-    conn.chatRefillAt = now;
-  }
-  const elapsed = now - (conn.chatRefillAt ?? now);
-  if (elapsed >= CHAT_REFILL_MS) {
-    conn.chatTokens = Math.min(CHAT_CAP, conn.chatTokens + Math.floor(elapsed / CHAT_REFILL_MS));
-    conn.chatRefillAt = now;
-  }
-  if (conn.chatTokens <= 0) return false;
-  conn.chatTokens--;
-  return true;
+  conn.chat ??= new TokenBucket(CHAT_CAP, CHAT_REFILL_MS, Date.now());
+  return conn.chat.take(Date.now());
 }
 
 function onChat(conn: Conn, msg: ChatSendMsg): void {
@@ -288,7 +308,11 @@ function onChat(conn: Conn, msg: ChatSendMsg): void {
   const rt = hub.entities.get(conn.entityId);
   if (!rt) return;
   if (!takeChatToken(conn)) {
-    return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.RATE_LIMIT, message: 'demasiados mensajes' });
+    return void send(conn.ws, {
+      op: S2C.ERROR,
+      code: ErrorCode.RATE_LIMIT,
+      message: 'demasiados mensajes',
+    });
   }
   const text = normalizeChat(msg.text); // mismo saneo que el cliente (autoridad)
   if (text) broadcastAll({ op: S2C.CHAT_MSG, id: rt.state.id, handle: rt.state.handle, text });
@@ -300,29 +324,26 @@ function onChat(conn: Conn, msg: ChatSendMsg): void {
 const VOICE_CAP = 100;
 const VOICE_REFILL_MS = 20; // ~50 tokens/s
 function takeVoiceToken(conn: Conn): boolean {
-  const now = Date.now();
-  if (conn.voiceTokens === undefined) {
-    conn.voiceTokens = VOICE_CAP;
-    conn.voiceRefillAt = now;
-  }
-  const elapsed = now - (conn.voiceRefillAt ?? now);
-  if (elapsed >= VOICE_REFILL_MS) {
-    conn.voiceTokens = Math.min(VOICE_CAP, conn.voiceTokens + Math.floor(elapsed / VOICE_REFILL_MS));
-    conn.voiceRefillAt = now;
-  }
-  if (conn.voiceTokens <= 0) return false;
-  conn.voiceTokens--;
-  return true;
+  conn.voiceBucket ??= new TokenBucket(VOICE_CAP, VOICE_REFILL_MS, Date.now());
+  return conn.voiceBucket.take(Date.now());
 }
 
 /** Relay BYTE-CIEGO del signaling de voz: jamás parsea el SDP/ICE; inyecta srcId (anti-spoof). */
 function onVoiceSignal(conn: Conn, msg: VoiceSignalMsg): void {
   if (conn.entityId === null) return;
   if (msg.dstId === conn.entityId) return; // no a sí mismo
+  // Validación de contrato (SHD-04): kind acotado (0=offer 1=answer 2=ice 3=ice-end) y payload
+  // con tope de tamaño → evita amplificación/DoS vía el relay aunque el SDP no se inspeccione.
+  if (msg.kind > 3 || voiceEnc.encode(msg.payload).length > MAX_VOICE_PAYLOAD_BYTES) return;
   const dst = peers.get(msg.dstId); // misma instancia (en F0 sólo existe el hub)
   if (!dst || dst.ws.readyState !== WebSocket.OPEN) return; // destino ausente → descartar (sin gastar token)
   if (!takeVoiceToken(conn)) return; // flood de relays VÁLIDOS → descartar en silencio
-  send(dst.ws, { op: S2C.VOICE_SIGNAL, srcId: conn.entityId, kind: msg.kind, payload: msg.payload });
+  send(dst.ws, {
+    op: S2C.VOICE_SIGNAL,
+    srcId: conn.entityId,
+    kind: msg.kind,
+    payload: msg.payload,
+  });
 }
 
 /** Difunde el estado de voz (mic/hablando/sordo) al resto del hub y lo persiste para sync. */
@@ -344,9 +365,29 @@ function dropEntity(id: number): void {
   log.info({ id, players: hub.entities.size }, 'leave');
 }
 
+/** Salida LIMPIA (BYE): a diferencia de una caída de red, NO espera la gracia —
+ *  remueve la entidad y avisa `ENTITY_LEAVE` de inmediato (docs/05 §2.2). */
+function onBye(conn: Conn): void {
+  const id = conn.entityId;
+  conn.entityId = null; // onClose no debe re-procesarlo ni meterlo en gracia
+  if (id !== null) {
+    const timer = graceTimers.get(id);
+    if (timer) clearTimeout(timer);
+    graceTimers.delete(id);
+    peers.delete(id);
+    if (hub.entities.has(id)) {
+      hub.remove(id);
+      broadcastAll({ op: S2C.ENTITY_LEAVE, id });
+      log.info({ id, players: hub.entities.size }, 'leave (bye)');
+    }
+  }
+  conn.ws.close();
+}
+
 function onClose(conn: Conn): void {
   if (!conns.has(conn)) return;
   conns.delete(conn);
+  clearHelloTimer(conn);
   if (conn.entityId === null) return;
   const id = conn.entityId;
   conn.entityId = null;
@@ -356,7 +397,10 @@ function onClose(conn: Conn): void {
   // Grace window: NO se borra de inmediato — se espera una posible reconexión (resume).
   rt.disconnected = true;
   rt.inputs.length = 0; // que no siga "moviéndose" con inputs viejos
-  graceTimers.set(id, setTimeout(() => dropEntity(id), GRACE_MS));
+  graceTimers.set(
+    id,
+    setTimeout(() => dropEntity(id), GRACE_MS),
+  );
   log.info({ id }, 'disconnect (grace)');
 }
 
@@ -385,54 +429,43 @@ function spawnPoint(i: number): { x: number; z: number } {
 let tick = 0;
 let lastTime = Date.now();
 let acc = 0;
-const pos = { x: 0, z: 0 };
 
-function simulate(): void {
-  tick++;
-  for (const rt of hub.entities.values()) {
-    if (rt.inputs.length === 0) continue; // sin inputs este tick → la entidad no avanza
-    rt.inputs.sort((a, b) => a.seq - b.seq);
-    pos.x = rt.state.x;
-    pos.z = rt.state.z;
-    // Drena TODOS los inputs encolados aplicando el MISMO applyMovement con su propio dt
-    // (igual que el replay del cliente → convergencia exacta, sin rubber-band).
-    for (const inp of rt.inputs) {
-      applyMovement(pos, inp, inp.dt);
-      rt.lastSeq = inp.seq; // ackSeq = último seq procesado
-      rt.state.yaw = inp.yaw;
-    }
-    rt.state.x = pos.x;
-    rt.state.z = pos.z;
-    rt.inputs.length = 0;
-  }
-}
-
-function broadcastState(): void {
-  // Delta-compression del hot path: el DELTA NO lleva handle (va en WELCOME/JOIN).
-  const entities = [...hub.entities.values()].map((e) => ({
-    id: e.state.id,
-    x: e.state.x,
-    z: e.state.z,
-    yaw: e.state.yaw,
-  }));
+/** Difunde el DELTA a cada cliente filtrado por su AOI; devuelve los bytes totales enviados. */
+function broadcastState(): number {
+  hub.updateVisibility();
+  let bytesOut = 0;
   for (const c of conns) {
     if (c.entityId === null || c.ws.readyState !== WebSocket.OPEN) continue;
     const rt = hub.entities.get(c.entityId);
-    c.ws.send(encode({ op: S2C.DELTA, tick, ackSeq: rt?.lastSeq ?? 0, entities }));
+    // DELTA SIN handle (va en WELCOME/JOIN) y filtrado por el AOI del viewer.
+    const data = encode({
+      op: S2C.DELTA,
+      tick,
+      ackSeq: rt?.lastSeq ?? 0,
+      entities: hub.visibleDeltaFor(c.entityId),
+    });
+    c.ws.send(data);
+    bytesOut += data.byteLength;
   }
+  return bytesOut;
 }
 
 setInterval(() => {
   const now = Date.now();
   acc += now - lastTime;
   lastTime = now;
+  const t0 = performance.now();
   let steps = 0;
   while (acc >= TICK_MS && steps < 5) {
-    simulate();
+    tick++;
+    hub.step(); // la instancia es dueña de su simulación
     acc -= TICK_MS;
     steps++;
   }
-  if (steps > 0 && hub.entities.size > 0) broadcastState();
+  if (steps > 0 && hub.entities.size > 0) {
+    const bytesOut = broadcastState();
+    metrics.record(performance.now() - t0, hub.entities.size, bytesOut);
+  }
 }, TICK_MS);
 
 // Director de clima: evalúa el reloj cada 2 s y difunde el clima cuando cambia.
@@ -444,16 +477,23 @@ setInterval(() => {
   }
 }, 2000);
 
-// Heartbeat: cierra conexiones muertas.
+// Métricas de tick a logs cada 10 s (presupuesto ≤1.5 KB/jugador/tick, docs/05 §5.4).
 setInterval(() => {
+  if (hub.entities.size > 0) log.info(metrics.snapshot(), 'metrics');
+}, 10_000);
+
+// Heartbeat (docs/05 §2.2): ping cada PING_INTERVAL_MS; si no llega señal del cliente
+// (pong/mensaje) en CONNECTION_TIMEOUT_MS (~3 pings perdidos), se termina. La gracia +
+// resume token conservan la sesión para que un microcorte no expulse del mundo.
+setInterval(() => {
+  const now = Date.now();
   for (const c of conns) {
-    if (!c.alive) {
+    if (now - c.lastSeen > CONNECTION_TIMEOUT_MS) {
       c.ws.terminate();
       continue;
     }
-    c.alive = false;
     if (c.ws.readyState === WebSocket.OPEN) c.ws.ping();
   }
-}, 2000);
+}, PING_INTERVAL_MS);
 
 httpServer.listen(config.port, () => log.info({ port: config.port }, 'world-server escuchando'));

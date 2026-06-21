@@ -38,7 +38,18 @@ import { reportServerOffset } from './serverClock';
 export type Sample = { t: number; x: number; z: number; yaw: number };
 type Remote = { handle: string; buffer: Sample[] };
 
-const HANDLES = ['Orión', 'Vega', 'Lyra', 'Altair', 'Sirio', 'Polaris', 'Rigel', 'Mira', 'Antares', 'Deneb'];
+const HANDLES = [
+  'Orión',
+  'Vega',
+  'Lyra',
+  'Altair',
+  'Sirio',
+  'Polaris',
+  'Rigel',
+  'Mira',
+  'Antares',
+  'Deneb',
+];
 const BUFFER_MAX = 30;
 const voiceEnc = new TextEncoder(); // para medir el tamaño en bytes del payload de voz
 
@@ -169,7 +180,8 @@ export class NetClient {
   private startPing(): void {
     this.stopPing();
     const ping = () => {
-      if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(encode({ op: C2S.PING, t: Date.now() }));
+      if (this.ws?.readyState === WebSocket.OPEN)
+        this.ws.send(encode({ op: C2S.PING, t: Date.now() }));
     };
     ping();
     this.pingTimer = setInterval(ping, 2500);
@@ -204,7 +216,11 @@ export class NetClient {
         resetAux(); // limpia voz/burbujas de la sesión anterior
         for (const e of msg.entities) {
           if (e.id === msg.selfId) this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw };
-          else this.remotes.set(e.id, { handle: e.handle, buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }] });
+          else
+            this.remotes.set(e.id, {
+              handle: e.handle,
+              buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }],
+            });
         }
         applyServerAtmosphere(msg.atmosphere.biome, msg.atmosphere.weather); // sync de clima al entrar
         reportServerOffset(msg.serverTime - Date.now(), true); // offset inicial (lo refina el PING)
@@ -238,7 +254,10 @@ export class NetClient {
       case S2C.ENTITY_JOIN: {
         const e = msg.entity;
         if (e.id !== this.selfId && !this.remotes.has(e.id)) {
-          this.remotes.set(e.id, { handle: e.handle, buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }] });
+          this.remotes.set(e.id, {
+            handle: e.handle,
+            buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }],
+          });
           this.publish();
         }
         break;
@@ -259,7 +278,8 @@ export class NetClient {
         break;
       }
       case S2C.ERROR: {
-        if (msg.code === ErrorCode.RATE_LIMIT) setChatNotice('demasiados mensajes — esperá un momento');
+        // Código estable; el componente lo traduce (i18n). NetClient no arma copy de UI.
+        if (msg.code === ErrorCode.RATE_LIMIT) setChatNotice('rateLimited');
         break;
       }
       case S2C.VOICE_SIGNAL: {
@@ -324,7 +344,12 @@ export class NetClient {
       if (renderTime >= a.t && renderTime <= b.t) {
         const span = Math.max(1, b.t - a.t);
         const k = (renderTime - a.t) / span;
-        return { t: renderTime, x: a.x + (b.x - a.x) * k, z: a.z + (b.z - a.z) * k, yaw: a.yaw + (b.yaw - a.yaw) * k };
+        return {
+          t: renderTime,
+          x: a.x + (b.x - a.x) * k,
+          z: a.z + (b.z - a.z) * k,
+          yaw: a.yaw + (b.yaw - a.yaw) * k,
+        };
       }
     }
     return buf[buf.length - 1]!; // clamp al último (sin extrapolar)

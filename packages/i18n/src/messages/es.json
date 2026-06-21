@@ -1,0 +1,40 @@
+{
+  "app": {
+    "title": "OSIA · El Mundo",
+    "controls": "WASD / flechas · caminar — clic · mirar — ENTER · chat — ESC · soltar",
+    "loading": "despertando el mundo…"
+  },
+  "net": {
+    "travelers": "{count, plural, one {# viajero en el claro} other {# viajeros en el claro}}",
+    "connecting": "conectando…",
+    "reconnecting": "reconectando…",
+    "offline": "sin conexión"
+  },
+  "chat": {
+    "ariaPanel": "chat del mundo",
+    "ariaInput": "mensaje de chat",
+    "placeholder": "escribí y Enter — Esc para cerrar",
+    "rateLimited": "demasiados mensajes — esperá un momento"
+  },
+  "voice": {
+    "aria": "control de voz",
+    "enable": "activar voz",
+    "errorMic": "no se pudo acceder al micrófono",
+    "errorHttps": "la voz necesita https",
+    "active": "voz activa",
+    "micOff": "mic off",
+    "mute": "silenciar",
+    "unmute": "reactivar",
+    "deafen": "ensordecer",
+    "undeafen": "oír",
+    "modeAuto": "voz: auto",
+    "modePtt": "voz: tecla V",
+    "speaking": "hablando",
+    "micActive": "mic activo",
+    "micLevel": "nivel del micrófono",
+    "pttHint": "mantené V para hablar"
+  },
+  "lang": {
+    "label": "idioma"
+  }
+}

@@ -5,6 +5,12 @@
  * Formato: 1 byte de opcode + campos empacados (DataView, big-endian). Strings con
  * prefijo u16 de longitud + UTF-8. Floats en f64 (round-trip EXACTO → la predicción del
  * cliente y la del server coinciden sin drift). Mucho más chico/rápido que JSON.
+ *
+ * DECISIÓN F0 (SHD-02): el hot path (INPUT/DELTA) usa f64 sin cuantizar. docs/05 §5.2
+ * pide q16/f16 para el presupuesto ≤1.5 KB/jugador/tick; con ≤12 entidades, f64 cabe de
+ * sobra (~28 B/entidad) y el round-trip EXACTO evita reintroducir el drift de predicción
+ * que la cuantización de posiciones puede causar. La cuantización (+ bitmask delta + AOI)
+ * se implementa cuando se MIDA que la banda real supera el presupuesto, no antes.
  */
 
 import { C2S, S2C } from './opcodes';
@@ -72,33 +78,44 @@ class Reader {
     this.bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
     this.view = new DataView(this.bytes.buffer, this.bytes.byteOffset, this.bytes.byteLength);
   }
+  /** Bounds-check: un frame truncado/mentiroso (prefijo u16 mayor que lo que hay) lanza →
+   *  decode() lo atrapa y devuelve null, en vez de aceptar datos corruptos silenciosamente. */
+  private ensure(n: number): void {
+    if (this.off + n > this.bytes.byteLength) throw new RangeError('lectura fuera de límites');
+  }
   u8(): number {
+    this.ensure(1);
     const v = this.view.getUint8(this.off);
     this.off += 1;
     return v;
   }
   u16(): number {
+    this.ensure(2);
     const v = this.view.getUint16(this.off);
     this.off += 2;
     return v;
   }
   u32(): number {
+    this.ensure(4);
     const v = this.view.getUint32(this.off);
     this.off += 4;
     return v;
   }
   i8(): number {
+    this.ensure(1);
     const v = this.view.getInt8(this.off);
     this.off += 1;
     return v;
   }
   f64(): number {
+    this.ensure(8);
     const v = this.view.getFloat64(this.off);
     this.off += 8;
     return v;
   }
   str(): string {
     const n = this.u16();
+    this.ensure(n); // el prefijo de longitud no puede exceder lo que queda en el buffer
     const s = td.decode(this.bytes.subarray(this.off, this.off + n));
     this.off += n;
     return s;
@@ -214,7 +231,9 @@ export function encode(msg: NetMessage): Uint8Array {
 }
 
 /** Deserializa binario; devuelve null si el mensaje no es válido. */
-export function decode<T extends NetMessage = NetMessage>(data: ArrayBuffer | Uint8Array): T | null {
+export function decode<T extends NetMessage = NetMessage>(
+  data: ArrayBuffer | Uint8Array,
+): T | null {
   try {
     const rd = new Reader(data);
     const op = rd.u8();
@@ -247,7 +266,13 @@ export function decode<T extends NetMessage = NetMessage>(data: ArrayBuffer | Ui
         const n = rd.u16();
         const entities = [];
         for (let i = 0; i < n; i++) {
-          entities.push({ id: rd.u32(), handle: rd.str(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() });
+          entities.push({
+            id: rd.u32(),
+            handle: rd.str(),
+            x: rd.f64(),
+            z: rd.f64(),
+            yaw: rd.f64(),
+          });
         }
         const biome = rd.str();
         const kind = rd.str();
@@ -271,11 +296,15 @@ export function decode<T extends NetMessage = NetMessage>(data: ArrayBuffer | Ui
         const ackSeq = rd.u32();
         const n = rd.u16();
         const entities = [];
-        for (let i = 0; i < n; i++) entities.push({ id: rd.u32(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() });
+        for (let i = 0; i < n; i++)
+          entities.push({ id: rd.u32(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() });
         return { op, tick, ackSeq, entities } as T;
       }
       case S2C.ENTITY_JOIN:
-        return { op, entity: { id: rd.u32(), handle: rd.str(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() } } as T;
+        return {
+          op,
+          entity: { id: rd.u32(), handle: rd.str(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() },
+        } as T;
       case S2C.ENTITY_LEAVE:
         return { op, id: rd.u32() } as T;
       case S2C.PONG:

@@ -87,7 +87,12 @@ class MeshVoice {
     if (!navigator.mediaDevices?.getUserMedia) return false;
     try {
       const raw = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
       });
       spatialGraph.ensureContext();
       this.micTrack = spatialGraph.startMic(raw);
@@ -95,7 +100,12 @@ class MeshVoice {
       for (const [, p] of this.peers) this.addMicTo(p.pc); // a las PCs ya abiertas
       this.startVad();
       this.publishState();
-      console.info('[voz] mic ON; AudioContext:', spatialGraph.state(), '; pares:', this.peers.size);
+      console.info(
+        '[voz] mic ON; AudioContext:',
+        spatialGraph.state(),
+        '; pares:',
+        this.peers.size,
+      );
       return true;
     } catch {
       return false;
@@ -181,7 +191,14 @@ class MeshVoice {
     spatialGraph.addPeer(id);
     const polite = this.net.selfId > id;
     console.info('[voz] abriendo conexión con', id, '(polite=' + polite + ')');
-    const peer: Peer = { pc, polite, makingOffer: false, ignoreOffer: false, settingRemoteAnswer: false, pending: [] };
+    const peer: Peer = {
+      pc,
+      polite,
+      makingOffer: false,
+      ignoreOffer: false,
+      settingRemoteAnswer: false,
+      pending: [],
+    };
     this.peers.set(id, peer);
 
     pc.ontrack = (e) => {
@@ -222,8 +239,22 @@ class MeshVoice {
     };
 
     // m-line de audio sendrecv (existe aunque el mic aún no esté; PN dispara la oferta).
-    pc.addTransceiver('audio', { direction: 'sendrecv' });
+    const tx = pc.addTransceiver('audio', { direction: 'sendrecv' });
+    void this.capBitrate(tx.sender); // mesh con ~5 subidas: acotar Opus para no saturar el uplink
     if (this.micTrack) this.addMicTo(pc);
+  }
+
+  /** Cap de bitrate del envío de voz: en malla cada quien sube N-1 streams; Opus al default
+   *  (~40-64 kbps) multiplica la subida. ~32 kbps mono basta para voz y cuida el uplink móvil. */
+  private async capBitrate(sender: RTCRtpSender): Promise<void> {
+    try {
+      const params = sender.getParameters();
+      if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+      params.encodings[0]!.maxBitrate = 32000;
+      await sender.setParameters(params);
+    } catch {
+      /* algunos navegadores rechazan setParameters antes de negociar; no es crítico */
+    }
   }
 
   private addMicTo(pc: RTCPeerConnection): void {
@@ -281,7 +312,8 @@ class MeshVoice {
     try {
       if (kind === 0 || kind === 1) {
         const desc = JSON.parse(payload) as RTCSessionDescriptionInit;
-        const readyForOffer = !peer.makingOffer && (pc.signalingState === 'stable' || peer.settingRemoteAnswer);
+        const readyForOffer =
+          !peer.makingOffer && (pc.signalingState === 'stable' || peer.settingRemoteAnswer);
         const offerCollision = kind === 0 && !readyForOffer;
         peer.ignoreOffer = !peer.polite && offerCollision;
         if (peer.ignoreOffer) return;
@@ -298,7 +330,8 @@ class MeshVoice {
         peer.pending.length = 0;
         if (kind === 0) {
           await pc.setLocalDescription();
-          if (pc.localDescription) this.net?.sendVoiceSignal(src, 1, JSON.stringify(pc.localDescription));
+          if (pc.localDescription)
+            this.net?.sendVoiceSignal(src, 1, JSON.stringify(pc.localDescription));
         }
       } else if (kind === 2) {
         const cand = JSON.parse(payload) as RTCIceCandidateInit;

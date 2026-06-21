@@ -10,7 +10,7 @@
  * El día/noche es determinista por tiempo (no se difunde); el clima sí es server-driven.
  */
 
-import { biomeById, type WeatherKind } from '@osia/atmosphere';
+import { biomeById, mulberry32, type WeatherKind } from '@osia/atmosphere';
 
 export type DirectorWeather = { kind: WeatherKind; intensity: number };
 
@@ -20,25 +20,29 @@ const CLEAR_MAX = 75_000;
 const ACTIVE_MIN = 30_000;
 const ACTIVE_MAX = 70_000;
 
-function rand(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
-
 export class WeatherDirector {
   readonly biome: string;
   weather: DirectorWeather = { kind: 'despejado', intensity: 0 };
 
   private readonly allowed: WeatherKind[];
   private readonly nowMs: () => number;
+  // PRNG SEMBRADO (mulberry32): el clima del server-authoritative deja de usar Math.random.
+  // Mismo `seed` → misma secuencia de climas → reproducible/replayable/testeable (docs/06 §6.2).
+  private readonly rng: () => number;
   private phaseUntil: number;
   private active = false;
 
-  constructor(biome: string, nowMs: () => number) {
+  constructor(biome: string, nowMs: () => number, seed: number) {
     this.biome = biome;
     this.nowMs = nowMs;
+    this.rng = mulberry32(seed);
     // Climas no-despejado que este bioma permite (single source of truth: biomes.ts).
     this.allowed = biomeById(biome).weathers.filter((w) => w !== 'despejado');
-    this.phaseUntil = nowMs() + rand(CLEAR_MIN, CLEAR_MAX);
+    this.phaseUntil = nowMs() + this.rand(CLEAR_MIN, CLEAR_MAX);
+  }
+
+  private rand(min: number, max: number): number {
+    return min + this.rng() * (max - min);
   }
 
   /** Evalúa el reloj; muta `weather` y devuelve true si cambió (hay que difundir). */
@@ -50,19 +54,19 @@ export class WeatherDirector {
       // Fin del clima → despejar.
       this.weather = { kind: 'despejado', intensity: 0 };
       this.active = false;
-      this.phaseUntil = t + rand(CLEAR_MIN, CLEAR_MAX);
+      this.phaseUntil = t + this.rand(CLEAR_MIN, CLEAR_MAX);
       return true;
     }
 
     // Fin del despejado → arrancar un clima permitido (si hay).
     if (this.allowed.length === 0) {
-      this.phaseUntil = t + rand(CLEAR_MIN, CLEAR_MAX);
+      this.phaseUntil = t + this.rand(CLEAR_MIN, CLEAR_MAX);
       return false;
     }
-    const kind = this.allowed[Math.floor(Math.random() * this.allowed.length)]!;
-    this.weather = { kind, intensity: 0.7 + Math.random() * 0.3 }; // 0.7–1.0
+    const kind = this.allowed[Math.floor(this.rng() * this.allowed.length)]!;
+    this.weather = { kind, intensity: 0.7 + this.rng() * 0.3 }; // 0.7–1.0
     this.active = true;
-    this.phaseUntil = t + rand(ACTIVE_MIN, ACTIVE_MAX);
+    this.phaseUntil = t + this.rand(ACTIVE_MIN, ACTIVE_MAX);
     return true;
   }
 }

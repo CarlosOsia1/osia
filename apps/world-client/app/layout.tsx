@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+import '@osia/ui/styles.css'; // tokens de marca + fuentes + clases de componentes (fuente única)
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -12,13 +15,19 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="es">
+    <html lang={locale}>
       {/* suppressHydrationWarning: extensiones de navegador (p.ej. Berrycast)
           inyectan atributos en <body> antes de la hidratación. Solo afecta a
           este nodo, no oculta mismatches reales del árbol. */}
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }

@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { LineBasicNodeMaterial } from 'three/webgpu';
 import { uniform, attribute, vec3, vec2, sin, cos, float } from 'three/tsl';
-import { precipKind } from '@osia/atmosphere';
+import { precipKind, mulberry32 } from '@osia/atmosphere';
 import { world, atmo } from './atmosphereRuntime';
 import { RAIN, SAND, FX_BOX } from './weatherConfig';
 
@@ -40,12 +40,13 @@ export default function RainStreaks() {
     const seed = new Float32Array(COUNT * 2 * 3);
     const rand = new Float32Array(COUNT * 2 * 2); // x=velocidad, y=fase
     const sideArr = new Float32Array(COUNT * 2);
+    const rnd = mulberry32(0x5a1f); // semilla fija → distribución determinista (sin Math.random)
     for (let i = 0; i < COUNT; i++) {
-      const bx = (Math.random() * 2 - 1) * FX_BOX;
-      const by = (Math.random() * 2 - 1) * FX_BOX;
-      const bz = (Math.random() * 2 - 1) * FX_BOX;
-      const sp = 0.7 + Math.random() * 0.6;
-      const ph = Math.random() * Math.PI * 2;
+      const bx = (rnd() * 2 - 1) * FX_BOX;
+      const by = (rnd() * 2 - 1) * FX_BOX;
+      const bz = (rnd() * 2 - 1) * FX_BOX;
+      const sp = 0.7 + rnd() * 0.6;
+      const ph = rnd() * Math.PI * 2;
       for (let v = 0; v < 2; v++) {
         const j = i * 2 + v;
         seed[j * 3] = bx;
@@ -117,7 +118,8 @@ export default function RainStreaks() {
       colU.value.copy(SAND_DAY).lerp(tmpCol.copy(SAND_NIGHT), night);
     }
     const mat = lines.material as LineBasicNodeMaterial;
-    mat.opacity = (isRain ? RAIN.opacity : SAND.opacity) * Math.min(1, world.weather.intensity * 1.3);
+    mat.opacity =
+      (isRain ? RAIN.opacity : SAND.opacity) * Math.min(1, world.weather.intensity * 1.3);
     lines.geometry.setDrawRange(0, (isRain ? RAIN.count : SAND.count) * 2);
   });
 

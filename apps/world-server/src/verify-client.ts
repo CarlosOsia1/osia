@@ -1,6 +1,7 @@
 /**
  * Cliente de verificación del world-server (S0.4 DoD). No es un test unitario:
- * abre conexiones reales contra el server corriendo y comprueba el flujo completo.
+ * abre conexiones reales contra el server corriendo y comprueba el flujo completo
+ * (handshake, movimiento autoritativo, presencia, anti-replay de ticket, BYE y resume).
  *   pnpm --filter @osia/world-server verify   (con el server escuchando)
  */
 
@@ -29,26 +30,36 @@ async function getTicket(handle: string): Promise<string> {
   return json.ticket;
 }
 
-type Session = { ws: WebSocket; selfId: number; events: S2CMessage[] };
+type Session = { ws: WebSocket; selfId: number; resumeToken: string; events: S2CMessage[] };
 
-async function connect(handle: string): Promise<Session> {
-  const ticket = await getTicket(handle);
+/** Abre una sesión: HELLO con `firstMessage` (ticket nuevo o resume), resuelve en WELCOME. */
+function open(firstMessage: Uint8Array): Promise<Session> {
   return new Promise<Session>((resolve, reject) => {
     const ws = new WebSocket(WS_URL);
     const events: S2CMessage[] = [];
     const timer = setTimeout(() => reject(new Error('timeout esperando WELCOME')), 4000);
-    ws.on('open', () => ws.send(encode({ op: C2S.HELLO, ticket, protocol: PROTOCOL_VERSION })));
+    ws.on('open', () => ws.send(firstMessage));
     ws.on('message', (data: Buffer) => {
       const msg = decode<S2CMessage>(data); // frames binarios
       if (!msg) return;
       events.push(msg);
       if (msg.op === S2C.WELCOME) {
         clearTimeout(timer);
-        resolve({ ws, selfId: msg.selfId, events });
+        resolve({ ws, selfId: msg.selfId, resumeToken: msg.resumeToken, events });
       }
     });
     ws.on('error', reject);
   });
+}
+
+async function connect(handle: string): Promise<Session> {
+  const ticket = await getTicket(handle);
+  return open(encode({ op: C2S.HELLO, ticket, protocol: PROTOCOL_VERSION }));
+}
+
+/** Reconexión por resume: el server prueba identidad con el resumeToken (no requiere ticket). */
+function resumeConnect(resumeToken: string): Promise<Session> {
+  return open(encode({ op: C2S.HELLO, ticket: '', protocol: PROTOCOL_VERSION, resumeToken }));
 }
 
 function findSelf(events: S2CMessage[], selfId: number): DeltaEntity | undefined {
@@ -87,21 +98,23 @@ async function main(): Promise<void> {
   const mark = a.events.length;
   const b = await connect('ana');
   await sleep(200);
-  if (a.events.slice(mark).some((e) => e.op === S2C.ENTITY_JOIN)) ok('ENTITY_JOIN recibido por el primer cliente');
+  if (a.events.slice(mark).some((e) => e.op === S2C.ENTITY_JOIN))
+    ok('ENTITY_JOIN recibido por el primer cliente');
   else bad('no llegó ENTITY_JOIN');
 
   // 4) ticket reusado se rechaza (un solo uso)
   const reuse = await getTicket('mallory');
   await new Promise<void>((resolve) => {
-    const ws = new WebSocket(WS_URL);
     let rejected = false;
+    const ws = new WebSocket(WS_URL);
     ws.on('open', () => {
       ws.send(encode({ op: C2S.HELLO, ticket: reuse, protocol: PROTOCOL_VERSION }));
-      // reusar el mismo ticket en una segunda conexión
       const ws2 = new WebSocket(WS_URL);
-      ws2.on('open', () => ws2.send(encode({ op: C2S.HELLO, ticket: reuse, protocol: PROTOCOL_VERSION })));
+      ws2.on('open', () =>
+        ws2.send(encode({ op: C2S.HELLO, ticket: reuse, protocol: PROTOCOL_VERSION })),
+      );
       ws2.on('message', (d: Buffer) => {
-        const m = decode<S2CMessage>(d); // frames binarios
+        const m = decode<S2CMessage>(d);
         if (m && m.op === S2C.ERROR) {
           rejected = true;
           ok('ticket reusado rechazado (ERROR)');
@@ -117,14 +130,25 @@ async function main(): Promise<void> {
     }, 1500);
   });
 
-  // 5) desconexión → ENTITY_LEAVE
+  // 5) BYE (salida limpia) → ENTITY_LEAVE PRONTO (no espera la gracia, docs/05 §2.2)
   const mark2 = a.events.length;
-  b.ws.close();
-  await sleep(250);
-  if (a.events.slice(mark2).some((e) => e.op === S2C.ENTITY_LEAVE)) ok('ENTITY_LEAVE tras desconexión');
-  else bad('no llegó ENTITY_LEAVE');
+  b.ws.send(encode({ op: C2S.BYE }));
+  await sleep(300);
+  if (a.events.slice(mark2).some((e) => e.op === S2C.ENTITY_LEAVE))
+    ok('ENTITY_LEAVE tras BYE (inmediato)');
+  else bad('no llegó ENTITY_LEAVE tras BYE');
 
-  a.ws.close();
+  // 6) caída ABRUPTA + RESUME dentro de la gracia → re-adopta la MISMA entidad
+  const c = await connect('beto');
+  const cId = c.selfId;
+  c.ws.close(); // caída abrupta (no BYE): la gracia conserva la entidad
+  await sleep(300);
+  const resumed = await resumeConnect(c.resumeToken);
+  if (resumed.selfId === cId) ok(`resume re-adoptó la misma entidad (selfId=${cId})`);
+  else bad(`resume creó una entidad nueva (${resumed.selfId} ≠ ${cId})`);
+
+  resumed.ws.send(encode({ op: C2S.BYE }));
+  a.ws.send(encode({ op: C2S.BYE }));
   console.log(fails === 0 ? '\n✅ world-server OK' : `\n❌ ${fails} fallo(s)`);
   await sleep(50);
   process.exit(fails === 0 ? 0 : 1);

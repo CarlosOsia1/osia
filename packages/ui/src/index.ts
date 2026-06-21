@@ -1,16 +1,13 @@
 /**
  * @osia/ui — Design System de OSIA (tokens + componentes con Italiana / Jost).
  *
- * Stub de Fase 0 · OSIA-S0.1. Los tokens completos y los componentes (incl. el
- * Vestíbulo / Bóveda Celeste) llegan en Fase 1. Ver docs/02-marca-design-system.md.
+ * La piel de OSIA vive aquí: tokens (CSS vars en `styles.css`, importado una vez por app)
+ * y primitivas React reutilizables. Ningún componente de las apps redefine estilos desde 0;
+ * todo consume esta capa. Ver docs/02-marca-design-system.md.
  */
 
-/** Paleta de marca OSIA (celestial / astral). */
-export const OSIA_COLORS = {
-  champan: '#CBB89A',
-  onix: '#0D0D0D',
-  marfil: '#F5F1E8',
-  taupe: '#8C7B66',
-} as const;
-
-export type OsiaColorToken = keyof typeof OSIA_COLORS;
+export { OSIA_COLORS, type OsiaColorToken } from './tokens';
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button';
+export { Panel, type PanelProps } from './Panel';
+export { Field, type FieldProps } from './Field';
+export { Dot } from './Dot';

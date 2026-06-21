@@ -55,11 +55,17 @@ test('round-trip WELCOME y DELTA con entidades', () => {
 });
 
 test('round-trip VOICE_SIGNAL (SDP grande) y VOICE_STATE', () => {
-  const sdp = 'v=0\r\n' + 'a=candidate:1 1 udp 2122260223 192.168.0.1 54321 typ host\r\n'.repeat(80); // ~5KB
+  const sdp =
+    'v=0\r\n' + 'a=candidate:1 1 udp 2122260223 192.168.0.1 54321 typ host\r\n'.repeat(80); // ~5KB
   const sig: VoiceSignalMsg = { op: C2S.VOICE_SIGNAL, dstId: 7, kind: 0, payload: sdp };
   assert.deepEqual(decode(encode(sig)), sig);
 
-  const relay: VoiceSignalRelayMsg = { op: S2C.VOICE_SIGNAL, srcId: 3, kind: 2, payload: '{"candidate":"x"}' };
+  const relay: VoiceSignalRelayMsg = {
+    op: S2C.VOICE_SIGNAL,
+    srcId: 3,
+    kind: 2,
+    payload: '{"candidate":"x"}',
+  };
   assert.deepEqual(decode(encode(relay)), relay);
 
   const st: VoiceStateMsg = { op: C2S.VOICE_STATE, flags: 3 };
@@ -72,6 +78,16 @@ test('round-trip VOICE_SIGNAL (SDP grande) y VOICE_STATE', () => {
 test('decode rechaza basura', () => {
   assert.equal(decode(new Uint8Array(0)), null); // vacío (sin opcode)
   assert.equal(decode(new Uint8Array([0xff])), null); // opcode desconocido
+});
+
+test('decode rechaza frames truncados / con prefijo mentiroso (bounds-check)', () => {
+  // INPUT completo, truncado a la mitad → null (no acepta datos corruptos).
+  const full = encode({ op: C2S.INPUT, seq: 1, f: 1, r: 0, yaw: 0, dtMs: 16 });
+  assert.equal(decode(full.subarray(0, full.byteLength - 5)), null);
+
+  // CHAT_SEND con prefijo de longitud u16 = 9999 pero SIN payload → null.
+  const liar = new Uint8Array([C2S.CHAT_SEND, 0x27, 0x0f]);
+  assert.equal(decode(liar), null);
 });
 
 test('normalizeChat/Handle sanea control, zero-width y RTL', () => {

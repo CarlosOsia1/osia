@@ -20,6 +20,17 @@ export const GROUND_RADIUS = 23.5; // límite del claro de Fase 0
 /** Instancias. */
 export const INSTANCE_CAPACITY = 12; // techo del hub en Fase 0
 
-/** Salud de conexión. */
-export const PING_INTERVAL_MS = 2000;
-export const CONNECTION_TIMEOUT_MS = 10000;
+/** AOI (interest management, docs/05 §5.3): entra a 40 m, sale a 45 m (histéresis). */
+export const AOI_ENTER_M = 40;
+export const AOI_EXIT_M = 45;
+/** Presupuesto de red objetivo por jugador/tick (docs/05 §5.4). */
+export const AOI_BUDGET_BYTES = 1500;
+
+/** Salud de conexión (alineado a docs/05 §2.2: ping 5s, timeout 15s, gracia 30s). */
+export const PING_INTERVAL_MS = 5000; // heartbeat WS: cada cuánto se hace ping
+export const CONNECTION_TIMEOUT_MS = 15000; // sin señal del cliente por este tiempo → terminar (3 pings)
+export const HELLO_TIMEOUT_MS = 5000; // un socket sin HELLO válido en este plazo se cierra (anti recurso/auth)
+export const RECONNECT_GRACE_MS = 30000; // la entidad se conserva tras una caída para permitir resume
+
+/** Tope de tamaño del payload de signaling de voz (SDP/ICE) — anti amplificación/DoS. */
+export const MAX_VOICE_PAYLOAD_BYTES = 16384;

@@ -12,11 +12,13 @@
   },
   "dependencies": {
     "@osia/atmosphere": "workspace:*",
+    "@osia/i18n": "workspace:*",
     "@osia/shared": "workspace:*",
     "@osia/ui": "workspace:*",
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "^9.1.2",
     "next": "^15.2.4",
+    "next-intl": "^3.26.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.184.0"

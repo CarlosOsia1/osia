@@ -1,37 +1,35 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { Dot } from '@osia/ui';
 import { useNetState } from '../net/useNet';
 
 /**
  * NetStatus — overlay HTML (fuera del Canvas) con el estado de presencia:
- * conexión + número de viajeros. Estética OSIA (ónix/champán).
+ * conexión + número de viajeros. Texto vía i18n (@osia/i18n), estética vía tokens (@osia/ui).
  */
-
-const CHAMPAN = '#cbb89a';
-const AMBER = '#e0a955';
-const DIM = '#8c7b66';
-
 export default function NetStatus() {
   const { status, count } = useNetState();
+  const t = useTranslations('net');
 
   let label: string;
-  let dot: string;
+  let dot: string; // token de color (CSS var)
   switch (status) {
     case 'connected':
-      label = `${count} ${count === 1 ? 'viajero' : 'viajeros'} en el claro`;
-      dot = CHAMPAN;
+      label = t('travelers', { count });
+      dot = 'var(--color-accent)';
       break;
     case 'connecting':
-      label = 'conectando…';
-      dot = AMBER;
+      label = t('connecting');
+      dot = 'var(--color-warning)';
       break;
     case 'reconnecting':
-      label = 'reconectando…';
-      dot = AMBER;
+      label = t('reconnecting');
+      dot = 'var(--color-warning)';
       break;
     default:
-      label = 'sin conexión';
-      dot = DIM;
+      label = t('offline');
+      dot = 'var(--color-text-subtle)';
       break;
   }
 
@@ -44,23 +42,15 @@ export default function NetStatus() {
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        color: DIM,
-        font: "11px/1 ui-monospace, 'SF Mono', Menlo, monospace",
+        color: 'var(--color-text-subtle)',
+        font: '11px/1 var(--font-mono)',
         letterSpacing: '0.12em',
         textTransform: 'lowercase',
         pointerEvents: 'none',
         userSelect: 'none',
       }}
     >
-      <span
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: '50%',
-          background: dot,
-          boxShadow: `0 0 8px ${dot}`,
-        }}
-      />
+      <Dot color={dot} glow />
       {label}
     </div>
   );

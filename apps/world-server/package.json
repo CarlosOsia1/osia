@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "verify": "tsx src/verify-client.ts",
-    "test": "echo \"@osia/world-server: ver script verify\" && exit 0"
+    "test": "tsx src/test.ts"
   },
   "dependencies": {
     "@osia/atmosphere": "workspace:*",
