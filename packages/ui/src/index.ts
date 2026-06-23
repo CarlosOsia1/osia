@@ -7,7 +7,15 @@
  */
 
 export { OSIA_COLORS, type OsiaColorToken } from './tokens';
+export {
+  ThemeProvider,
+  useTheme,
+  useReducedMotion,
+  type ThemePrefs,
+} from './ThemeProvider';
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button';
+export { Card, type CardProps } from './Card';
+export { Modal, type ModalProps } from './Modal';
 export { Panel, type PanelProps } from './Panel';
 export { Field, type FieldProps } from './Field';
 export { Dot } from './Dot';

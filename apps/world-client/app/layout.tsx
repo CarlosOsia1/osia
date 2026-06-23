@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { ThemeProvider } from '@osia/ui';
 import '@osia/ui/styles.css'; // tokens de marca + fuentes + clases de componentes (fuente única)
 import './globals.css';
 
@@ -25,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           este nodo, no oculta mismatches reales del árbol. */}
       <body suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <ThemeProvider>{children}</ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

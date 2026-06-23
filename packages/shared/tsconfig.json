@@ -1,8 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src"
+    // typecheck-only: @osia/shared se consume como src (main=src/index.ts), su dist NO
+    // se usa. Además re-exporta tipos de @osia/atmosphere (otro paquete src), que con
+    // outDir+rootDir rompería TS6059. Mismo patrón que apps/world-server.
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
   },
   "include": ["src"]
 }

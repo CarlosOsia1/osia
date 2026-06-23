@@ -6,10 +6,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { encode, decode } from './codec';
-import { C2S, S2C } from './opcodes';
+import { C2S, S2C, ErrorCode } from './opcodes';
+import { asEntityId } from '../domain/ids';
 import type {
   HelloMsg,
   InputMsg,
+  PingMsg,
+  PongMsg,
+  ChatSendMsg,
+  ChatBroadcastMsg,
+  ByeMsg,
+  EntityJoinMsg,
+  EntityLeaveMsg,
+  AtmosphereUpdateMsg,
+  ErrorMsg,
   WelcomeMsg,
   DeltaMsg,
   VoiceSignalMsg,
@@ -34,11 +44,11 @@ test('round-trip INPUT', () => {
 test('round-trip WELCOME y DELTA con entidades', () => {
   const welcome: WelcomeMsg = {
     op: S2C.WELCOME,
-    selfId: 1,
+    selfId: asEntityId(1),
     instanceId: 'hub',
     protocol: 1,
     tickHz: 20,
-    entities: [{ id: 1, handle: 'carlos', x: 0, z: 6, yaw: 0 }],
+    entities: [{ id: asEntityId(1), handle: 'carlos', x: 0, z: 6, yaw: 0 }],
     atmosphere: { biome: 'bosque-celeste', weather: { kind: 'despejado', intensity: 0 } },
     serverTime: 1_700_000_000_000,
     resumeToken: 'tok-abc',
@@ -49,7 +59,7 @@ test('round-trip WELCOME y DELTA con entidades', () => {
     op: S2C.DELTA,
     tick: 100,
     ackSeq: 42,
-    entities: [{ id: 1, x: 1.2, z: 5.5, yaw: 0.3 }],
+    entities: [{ id: asEntityId(1), x: 1.2, z: 5.5, yaw: 0.3 }],
   };
   assert.deepEqual(decode(encode(delta)), delta);
 });
@@ -57,12 +67,12 @@ test('round-trip WELCOME y DELTA con entidades', () => {
 test('round-trip VOICE_SIGNAL (SDP grande) y VOICE_STATE', () => {
   const sdp =
     'v=0\r\n' + 'a=candidate:1 1 udp 2122260223 192.168.0.1 54321 typ host\r\n'.repeat(80); // ~5KB
-  const sig: VoiceSignalMsg = { op: C2S.VOICE_SIGNAL, dstId: 7, kind: 0, payload: sdp };
+  const sig: VoiceSignalMsg = { op: C2S.VOICE_SIGNAL, dstId: asEntityId(7), kind: 0, payload: sdp };
   assert.deepEqual(decode(encode(sig)), sig);
 
   const relay: VoiceSignalRelayMsg = {
     op: S2C.VOICE_SIGNAL,
-    srcId: 3,
+    srcId: asEntityId(3),
     kind: 2,
     payload: '{"candidate":"x"}',
   };
@@ -71,8 +81,50 @@ test('round-trip VOICE_SIGNAL (SDP grande) y VOICE_STATE', () => {
   const st: VoiceStateMsg = { op: C2S.VOICE_STATE, flags: 3 };
   assert.deepEqual(decode(encode(st)), st);
 
-  const stRelay: VoiceStateRelayMsg = { op: S2C.VOICE_STATE, id: 5, flags: 7 };
+  const stRelay: VoiceStateRelayMsg = { op: S2C.VOICE_STATE, id: asEntityId(5), flags: 7 };
   assert.deepEqual(decode(encode(stRelay)), stRelay);
+});
+
+test('round-trip PING / PONG (sincronización de reloj)', () => {
+  const ping: PingMsg = { op: C2S.PING, t: 1_700_000_123_456 };
+  assert.deepEqual(decode(encode(ping)), ping);
+
+  const pong: PongMsg = { op: S2C.PONG, t: 1_700_000_123_456, serverTime: 1_700_000_123_999 };
+  assert.deepEqual(decode(encode(pong)), pong);
+});
+
+test('round-trip CHAT_SEND / CHAT_MSG', () => {
+  const send: ChatSendMsg = { op: C2S.CHAT_SEND, text: 'hola, mundo — ¿qué tal? 🌙' };
+  assert.deepEqual(decode(encode(send)), send);
+
+  const bcast: ChatBroadcastMsg = { op: S2C.CHAT_MSG, id: asEntityId(7), handle: 'Orión', text: 'buenas' };
+  assert.deepEqual(decode(encode(bcast)), bcast);
+});
+
+test('round-trip ENTITY_JOIN / ENTITY_LEAVE / BYE', () => {
+  const join: EntityJoinMsg = {
+    op: S2C.ENTITY_JOIN,
+    entity: { id: asEntityId(9), handle: 'Vega', x: 2.5, z: -3.25, yaw: 1.1 },
+  };
+  assert.deepEqual(decode(encode(join)), join);
+
+  const leave: EntityLeaveMsg = { op: S2C.ENTITY_LEAVE, id: asEntityId(9) };
+  assert.deepEqual(decode(encode(leave)), leave);
+
+  const bye: ByeMsg = { op: C2S.BYE };
+  assert.deepEqual(decode(encode(bye)), bye);
+});
+
+test('round-trip ATMOSPHERE_UPDATE / ERROR', () => {
+  const atmo: AtmosphereUpdateMsg = {
+    op: S2C.ATMOSPHERE_UPDATE,
+    biome: 'bosque-celeste',
+    weather: { kind: 'lluvia', intensity: 0.65 },
+  };
+  assert.deepEqual(decode(encode(atmo)), atmo);
+
+  const err: ErrorMsg = { op: S2C.ERROR, code: ErrorCode.BAD_TICKET, message: 'ticket inválido' };
+  assert.deepEqual(decode(encode(err)), err);
 });
 
 test('decode rechaza basura', () => {

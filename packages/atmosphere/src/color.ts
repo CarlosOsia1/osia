@@ -43,6 +43,11 @@ export function lerpRGB(c1: RGB, c2: RGB, k: number): RGB {
   return [clamp01(linearToSrgb(lin[0])), clamp01(linearToSrgb(lin[1])), clamp01(linearToSrgb(lin[2]))];
 }
 
+/** sRGB (0..1) → OKLab [L, a, b]. Base perceptual de las reglas de gamut (housePalette). */
+export function rgbToOklab(c: RGB): [number, number, number] {
+  return linearToOklab(srgbToLinear(c[0]), srgbToLinear(c[1]), srgbToLinear(c[2]));
+}
+
 /** '#rrggbb' → [r,g,b] en sRGB 0..1. */
 export function hexToRGB(hex: string): RGB {
   const h = hex.replace('#', '');

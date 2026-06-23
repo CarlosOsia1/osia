@@ -19,6 +19,8 @@ export default tseslint.config(
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      // CLAUDE.md §1.2: `any` prohibido (usar `unknown` + narrow). Se sube de warn a error.
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   {
@@ -56,6 +58,49 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
+    },
+  },
+  {
+    // Determinismo del Motor de Atmósfera (CLAUDE.md §6, docs/06): cliente y servidor deben
+    // calcular bit a bit lo MISMO. `Math.random` rompe la sincronía → PROHIBIDO (PRNG sembrado).
+    files: ['packages/atmosphere/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message:
+            'Math.random PROHIBIDO en @osia/atmosphere: el motor es determinista. Usá un PRNG sembrado (mulberry32). Ver CLAUDE.md §6.',
+        },
+      ],
+    },
+  },
+  {
+    // i18n (CLAUDE.md §3.2): CERO strings de UI hardcodeados. Todo texto visible sale de
+    // @osia/i18n vía t('...'). Caza texto literal en JSX y en atributos mostrables.
+    files: ['apps/world-client/app/**/*.tsx', 'apps/world-client/src/**/*.tsx', 'packages/ui/src/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'JSXText[value=/[A-Za-zÀ-ÿ]/]',
+          message: "Texto de UI hardcodeado: usá i18n (t('...')) de @osia/i18n. Ver CLAUDE.md §3.2.",
+        },
+        {
+          selector:
+            'JSXAttribute[name.name=/^(placeholder|title|alt|aria-label)$/] > Literal[value=/[A-Za-zÀ-ÿ]/]',
+          message: 'Atributo de UI con texto hardcodeado: usá i18n (t(...)). Ver CLAUDE.md §3.2.',
+        },
+        {
+          // Tipografía de marca (CLAUDE.md §2.5): solo Italiana (--font-display) + Jost (--font-ui).
+          // La mono del sistema NO es fuente de marca y está PROHIBIDA en la UI de producto.
+          selector: 'Literal[value=/--font-mono|monospace/]',
+          message:
+            'Fuente fuera del sistema de marca: usá var(--font-ui) (Jost) o var(--font-display) (Italiana). La mono del SO no se usa en UI. Ver CLAUDE.md §2.5.',
+        },
+      ],
     },
   },
 );

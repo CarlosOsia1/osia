@@ -14,6 +14,7 @@
  */
 
 import { C2S, S2C } from './opcodes';
+import { asEntityId } from '../domain/ids';
 import type { NetMessage, C2SMessage, S2CMessage } from './messages';
 
 const te = new TextEncoder();
@@ -225,7 +226,7 @@ export function encode(msg: NetMessage): Uint8Array {
       w.str(msg.message);
       break;
     default:
-      break; // SNAPSHOT u opcodes no usados (no se envían)
+      break; // opcodes reservados sin mensaje en F0 (SNAPSHOT/PORTAL_ENTER/INTERACT/ATMOSPHERE_EVENT/PRESENCE)
   }
   return w.out();
 }
@@ -254,7 +255,7 @@ export function decode<T extends NetMessage = NetMessage>(
       case C2S.BYE:
         return { op } as T;
       case C2S.VOICE_SIGNAL:
-        return { op, dstId: rd.u32(), kind: rd.u8(), payload: rd.str() } as T;
+        return { op, dstId: asEntityId(rd.u32()), kind: rd.u8(), payload: rd.str() } as T;
       case C2S.VOICE_STATE:
         return { op, flags: rd.u8() } as T;
       // ---- S2C ----
@@ -267,7 +268,7 @@ export function decode<T extends NetMessage = NetMessage>(
         const entities = [];
         for (let i = 0; i < n; i++) {
           entities.push({
-            id: rd.u32(),
+            id: asEntityId(rd.u32()),
             handle: rd.str(),
             x: rd.f64(),
             z: rd.f64(),
@@ -281,7 +282,7 @@ export function decode<T extends NetMessage = NetMessage>(
         const resumeToken = rd.str();
         return {
           op,
-          selfId,
+          selfId: asEntityId(selfId),
           instanceId,
           protocol,
           tickHz,
@@ -297,26 +298,26 @@ export function decode<T extends NetMessage = NetMessage>(
         const n = rd.u16();
         const entities = [];
         for (let i = 0; i < n; i++)
-          entities.push({ id: rd.u32(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() });
+          entities.push({ id: asEntityId(rd.u32()), x: rd.f64(), z: rd.f64(), yaw: rd.f64() });
         return { op, tick, ackSeq, entities } as T;
       }
       case S2C.ENTITY_JOIN:
         return {
           op,
-          entity: { id: rd.u32(), handle: rd.str(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() },
+          entity: { id: asEntityId(rd.u32()), handle: rd.str(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() },
         } as T;
       case S2C.ENTITY_LEAVE:
-        return { op, id: rd.u32() } as T;
+        return { op, id: asEntityId(rd.u32()) } as T;
       case S2C.PONG:
         return { op, t: rd.f64(), serverTime: rd.f64() } as T;
       case S2C.CHAT_MSG:
-        return { op, id: rd.u32(), handle: rd.str(), text: rd.str() } as T;
+        return { op, id: asEntityId(rd.u32()), handle: rd.str(), text: rd.str() } as T;
       case S2C.ATMOSPHERE_UPDATE:
         return { op, biome: rd.str(), weather: { kind: rd.str(), intensity: rd.f64() } } as T;
       case S2C.VOICE_SIGNAL:
-        return { op, srcId: rd.u32(), kind: rd.u8(), payload: rd.str() } as T;
+        return { op, srcId: asEntityId(rd.u32()), kind: rd.u8(), payload: rd.str() } as T;
       case S2C.VOICE_STATE:
-        return { op, id: rd.u32(), flags: rd.u8() } as T;
+        return { op, id: asEntityId(rd.u32()), flags: rd.u8() } as T;
       case S2C.ERROR:
         return { op, code: rd.u8(), message: rd.str() } as T;
       default:

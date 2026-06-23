@@ -34,6 +34,35 @@
     "micLevel": "nivel del micrófono",
     "pttHint": "mantené V para hablar"
   },
+  "hud": {
+    "perfTitle": "OSIA · perf",
+    "time": "hora",
+    "fps": "fps",
+    "drawCalls": "draw calls",
+    "triangles": "triángulos",
+    "geometries": "geometrías",
+    "textures": "texturas",
+    "renderScale": "render scale",
+    "hideHint": "` para ocultar",
+    "atmoTitle": "OSIA · test atmósfera · (b)",
+    "previewLocal": "preview local",
+    "live": "en vivo",
+    "liveAction": "En vivo",
+    "biome": "Bioma",
+    "weatherLabel": "Clima",
+    "sourceOverride": "override",
+    "sourceServer": "server",
+    "timeScale": "Tiempo (20 min/ciclo)",
+    "realClock": "real",
+    "pause": "pausar",
+    "weather": {
+      "despejado": "Despejado",
+      "lluvia": "Lluvia",
+      "nieve": "Nieve",
+      "tormenta-arena": "Arena",
+      "niebla": "Niebla"
+    }
+  },
   "lang": {
     "label": "idioma"
   }

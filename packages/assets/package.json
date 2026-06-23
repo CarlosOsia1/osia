@@ -10,8 +10,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:fonts": "node scripts/build-fonts.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
     "test": "echo \"@osia/assets: sin tests aún\" && exit 0"
+  },
+  "devDependencies": {
+    "subset-font": "^2.5.0"
   }
 }

@@ -43,7 +43,7 @@ export default function NetStatus() {
         alignItems: 'center',
         gap: 8,
         color: 'var(--color-text-subtle)',
-        font: '11px/1 var(--font-mono)',
+        font: '11px/1 var(--font-ui)',
         letterSpacing: '0.12em',
         textTransform: 'lowercase',
         pointerEvents: 'none',

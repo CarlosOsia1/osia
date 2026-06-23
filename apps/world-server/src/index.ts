@@ -29,6 +29,8 @@ import {
   HELLO_TIMEOUT_MS,
   RECONNECT_GRACE_MS,
   MAX_VOICE_PAYLOAD_BYTES,
+  asEntityId,
+  type EntityId,
   type C2SMessage,
   type S2CMessage,
   type HelloMsg,
@@ -53,14 +55,14 @@ const voiceEnc = new TextEncoder(); // medir el tamaño en bytes del payload de 
 
 type Conn = {
   ws: WebSocket;
-  entityId: number | null;
+  entityId: EntityId | null;
   lastSeen: number; // último instante con señal del cliente (pong/mensaje) → timeout de heartbeat
   helloTimer?: ReturnType<typeof setTimeout>; // cierra el socket si no llega HELLO a tiempo
   chat?: TokenBucket; // anti-spam de chat (creado al primer mensaje)
   voiceBucket?: TokenBucket; // anti-flood del signaling de voz
 };
 const conns = new Set<Conn>();
-const peers = new Map<number, Conn>(); // entityId → conn (ruteo O(1) del signaling de voz)
+const peers = new Map<EntityId, Conn>(); // entityId → conn (ruteo O(1) del signaling de voz)
 
 /** Limpia el temporizador de HELLO una vez la conexión se autenticó (alta o resume). */
 function clearHelloTimer(conn: Conn): void {
@@ -254,7 +256,7 @@ async function onHello(conn: Conn, msg: HelloMsg): Promise<void> {
     return void conn.ws.close();
   }
 
-  const id = nextEntityId++;
+  const id = asEntityId(nextEntityId++);
   conn.entityId = id;
   clearHelloTimer(conn); // autenticado por ticket válido
   peers.set(id, conn);
@@ -356,7 +358,7 @@ function onVoiceState(conn: Conn, msg: VoiceStateMsg): void {
   broadcastExcept(conn, { op: S2C.VOICE_STATE, id: conn.entityId, flags });
 }
 
-function dropEntity(id: number): void {
+function dropEntity(id: EntityId): void {
   graceTimers.delete(id);
   const rt = hub.entities.get(id);
   if (!rt || !rt.disconnected) return; // ya re-adoptada por un resume → no borrar

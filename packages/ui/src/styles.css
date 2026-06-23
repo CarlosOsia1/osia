@@ -7,19 +7,20 @@
  */
 
 /* ============================ Fuentes de marca ============================ */
-/* TTF por ahora (sirven desde /public/fonts del app). La conversión a woff2 subset
-   es tarea de packages/assets (reduce ~60% el peso). Ver docs/08 §11. */
+/* woff2 subset latin (~70-80% más livianas que el TTF). Las genera el pipeline de
+   packages/assets (`pnpm --filter @osia/assets build:fonts`) desde brand/fonts; quedan
+   en packages/ui/fonts (dueño) y se copian al /public del app que las sirve. Ver docs/08 §11. */
 @font-face {
   font-family: 'Italiana';
-  src: url('/fonts/Italiana-Regular.ttf') format('truetype');
+  src: url('/fonts/Italiana-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Jost';
-  src: url('/fonts/Jost-Variable.ttf') format('truetype-variations');
-  font-weight: 100 900;
+  src: url('/fonts/Jost-Variable.woff2') format('woff2');
+  font-weight: 100 900; /* variable: el subset conserva el eje wght (fvar/gvar) */
   font-style: normal;
   font-display: swap;
 }
@@ -49,6 +50,10 @@
   --color-surface-2: var(--osia-onyx-800);
   --color-surface-hover: var(--osia-onyx-700);
   --color-overlay: rgba(8, 8, 8, 0.72);
+  /* Superficies HUD translúcidas (Panel / overlays sobre el mundo 3D). */
+  --color-hud-surface: rgba(20, 18, 15, 0.55);
+  --color-hud-surface-solid: rgba(12, 11, 9, 0.86);
+  --color-border-accent: rgba(203, 184, 154, 0.4);
 
   --color-text: var(--osia-ivory-50);
   --color-text-strong: var(--osia-ivory-0);
@@ -71,9 +76,13 @@
   --color-danger: #c98a7e;
   --color-info: #9aafc2;
 
-  /* ---------- Tipografía ---------- */
+  /* ---------- Tipografía (manual de marca: SOLO 2 fuentes; ver CLAUDE.md §2.5) ---------- */
+  /* Italiana: SOLO marca/titulares ceremoniales (OSIA, El Mundo). Escasa como el champán. */
   --font-display: 'Italiana', Georgia, 'Times New Roman', serif;
+  /* Jost: TODO lo demás (UI, HUD, software, botones, lecturas, números con tabular-nums). */
   --font-ui: 'Jost', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* NO es fuente de marca (es la mono del SO, distinta en cada máquina): PROHIBIDA en UI de
+     producto. Reservada solo para contenido técnico crudo (código/hashes) con eslint-disable. */
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
   --tracking-tight: -0.01em;
   --tracking-normal: 0;
@@ -99,6 +108,11 @@
   --radius-lg: 14px;
   --radius-xl: 24px;
   --radius-full: 9999px;
+
+  /* ---------- Tamaños ---------- */
+  --size-dot: 8px;
+  /* Mínimo táctil accesible (WCAG / docs/02 §9): se aplica en pointer:coarse. */
+  --hit-target-min: 44px;
 
   /* ---------- Elevación (luz/borde > sombra en dark-first) ---------- */
   --elev-1: 0 1px 0 rgba(203, 184, 154, 0.04) inset, 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -162,6 +176,18 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* Estado loading: deshabilitado + spinner; el texto se atenúa pero no salta. */
+.osia-btn--loading {
+  cursor: progress;
+}
+.osia-btn__spinner {
+  inline-size: 1em;
+  block-size: 1em;
+  border-radius: var(--radius-full);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: osia-spin var(--dur-slow) linear infinite;
+}
 .osia-btn--primary {
   background: var(--color-accent);
   color: var(--color-on-accent);
@@ -189,17 +215,101 @@
   background: var(--color-accent-soft);
   border-color: var(--color-border-strong);
 }
+/* Target táctil accesible en dispositivos de puntero grueso (móvil): ≥44px (docs/02 §9).
+   No infla la UI densa de escritorio (mouse), solo donde se toca con el dedo. */
+@media (pointer: coarse) {
+  .osia-btn {
+    min-block-size: var(--hit-target-min);
+  }
+}
+
+@keyframes osia-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Card: superficie de contenido (más opaca que Panel, para leer) ---- */
+.osia-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-1);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+.osia-card--pad {
+  padding: var(--space-5);
+}
+.osia-card--interactive {
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out-soft),
+    box-shadow var(--dur-fast) var(--ease-out-soft);
+}
+.osia-card--interactive:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--elev-2);
+}
+
+/* ---- Modal: diálogo accesible (overlay + panel centrado) ---- */
+.osia-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: var(--color-overlay);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: osia-fade-in var(--dur-base) var(--ease-out-soft);
+}
+.osia-modal {
+  position: relative;
+  inline-size: min(100%, 30rem);
+  max-block-size: 85vh;
+  overflow: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-3);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  padding: var(--space-6);
+  animation: osia-rise var(--dur-base) var(--ease-out-soft);
+}
+.osia-modal:focus-visible {
+  outline: none;
+}
+.osia-modal__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: var(--tracking-wide);
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-strong);
+}
+@keyframes osia-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes osia-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
 
 /* ---- Panel: superficie HUD translúcida (no roba el centro de la pantalla) ---- */
 .osia-panel {
-  background: rgba(20, 18, 15, 0.55);
+  background: var(--color-hud-surface);
   border-radius: var(--radius-md);
   backdrop-filter: blur(6px);
   color: var(--color-text);
   font-family: var(--font-ui);
 }
 .osia-panel--solid {
-  background: rgba(12, 11, 9, 0.86);
+  background: var(--color-hud-surface-solid);
 }
 
 /* ---- Field: input de chat ---- */
@@ -208,8 +318,8 @@
   box-sizing: border-box;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(203, 184, 154, 0.4);
-  background: rgba(12, 11, 9, 0.86);
+  border: 1px solid var(--color-border-accent);
+  background: var(--color-hud-surface-solid);
   color: var(--color-text);
   font: 400 14px/1.3 var(--font-ui);
   outline: none;
@@ -223,8 +333,8 @@
 /* ---- PresenceDot ---- */
 .osia-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: var(--size-dot);
+  height: var(--size-dot);
   border-radius: var(--radius-full);
   flex: none;
 }
@@ -243,12 +353,21 @@
   color: var(--color-text);
 }
 
-/* Accesibilidad: respeta reduce-motion (docs/02 §5.5). */
+/* Accesibilidad: respeta reduce-motion (docs/02 §5.5). El cruce de umbral degrada a
+   fade; sin loops ni desplazamientos. El spinner mantiene un giro mínimo (es feedback
+   funcional, no decorativo), pero más lento. */
 @media (prefers-reduced-motion: reduce) {
   .osia-btn {
     transition-duration: var(--dur-fast);
   }
   .osia-btn:hover:not(:disabled) {
     transform: none;
+  }
+  .osia-modal__backdrop,
+  .osia-modal {
+    animation: osia-fade-in var(--dur-fast) var(--ease-out-soft);
+  }
+  .osia-btn__spinner {
+    animation-duration: 1.2s;
   }
 }

@@ -11,6 +11,7 @@ import {
   INSTANCE_CAPACITY,
   AOI_ENTER_M,
   AOI_EXIT_M,
+  type EntityId,
   type EntityState,
   type DeltaEntity,
 } from '@osia/shared';
@@ -32,9 +33,9 @@ const AOI_EXIT_SQ = AOI_EXIT_M * AOI_EXIT_M;
 
 export class Instance {
   readonly id: string;
-  readonly entities = new Map<number, EntityRuntime>();
+  readonly entities = new Map<EntityId, EntityRuntime>();
   /** viewerId → ids de entidades actualmente visibles para ese viewer (AOI con histéresis). */
-  private readonly visible = new Map<number, Set<number>>();
+  private readonly visible = new Map<EntityId, Set<EntityId>>();
   private readonly scratch = { x: 0, z: 0 }; // reutilizado en step() (cero asignaciones/tick)
 
   constructor(id: string) {
@@ -45,7 +46,7 @@ export class Instance {
     return this.entities.size >= INSTANCE_CAPACITY;
   }
 
-  add(id: number, handle: string, spawn: { x: number; z: number }, token: string): EntityRuntime {
+  add(id: EntityId, handle: string, spawn: { x: number; z: number }, token: string): EntityRuntime {
     const rt: EntityRuntime = {
       state: { id, handle, x: spawn.x, z: spawn.z, yaw: 0 },
       inputs: [],
@@ -58,7 +59,7 @@ export class Instance {
     return rt;
   }
 
-  remove(id: number): void {
+  remove(id: EntityId): void {
     this.entities.delete(id);
     this.visible.delete(id);
     for (const set of this.visible.values()) set.delete(id);
@@ -93,7 +94,7 @@ export class Instance {
     for (const viewer of ents) {
       let set = this.visible.get(viewer.state.id);
       if (!set) {
-        set = new Set<number>();
+        set = new Set<EntityId>();
         this.visible.set(viewer.state.id, set);
       }
       for (const target of ents) {
@@ -113,7 +114,7 @@ export class Instance {
    * estado autoritativo para reconciliar) + las visibles por AOI. En F0 el claro entero
    * cae dentro del AOI, así que no excluye a nadie; el mecanismo queda listo para hubs llenos.
    */
-  visibleDeltaFor(viewerId: number): DeltaEntity[] {
+  visibleDeltaFor(viewerId: EntityId): DeltaEntity[] {
     const set = this.visible.get(viewerId);
     const out: DeltaEntity[] = [];
     for (const e of this.entities.values()) {

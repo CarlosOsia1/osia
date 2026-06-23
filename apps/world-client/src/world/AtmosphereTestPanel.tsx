@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { Button, Panel } from '@osia/ui';
 import { BIOMES, type WeatherKind } from '@osia/atmosphere';
 import {
   world,
@@ -15,19 +17,11 @@ import { setTimeScale, setPaused, resetClock } from './worldClockRuntime';
  * AtmosphereTestPanel — controles de TEST (se quitan luego). El clima REAL lo dicta
  * el server (sincronizado entre todos); aquí podés hacer un PREVIEW LOCAL de bioma y
  * clima (override) sin afectar a nadie, o volver a "En vivo" para seguir al server.
- * También acelera/pausa el ciclo día/noche. Overlay HTML. Toggle con la tecla "b".
+ *
+ * UI por @osia/ui (Button/Panel + tokens); texto vía i18n (@osia/i18n). Toggle: tecla "b".
  */
 
-const CHAMPAN = '#cbb89a';
-const DIM = '#8c7b66';
-
-const WEATHERS: { kind: WeatherKind; label: string }[] = [
-  { kind: 'despejado', label: 'Despejado' },
-  { kind: 'lluvia', label: 'Lluvia' },
-  { kind: 'nieve', label: 'Nieve' },
-  { kind: 'tormenta-arena', label: 'Arena' },
-  { kind: 'niebla', label: 'Niebla' },
-];
+const WEATHER_KINDS: WeatherKind[] = ['despejado', 'lluvia', 'nieve', 'tormenta-arena', 'niebla'];
 
 const SPEEDS = [
   { v: 1, label: '×1' },
@@ -36,28 +30,11 @@ const SPEEDS = [
   { v: 240, label: '×240' },
 ];
 
-function Btn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '5px 9px',
-        fontSize: 11,
-        letterSpacing: '0.04em',
-        cursor: 'pointer',
-        color: active ? '#0d0d0d' : CHAMPAN,
-        background: active ? CHAMPAN : 'transparent',
-        border: `1px solid ${active ? CHAMPAN : 'rgba(203,184,154,0.3)'}`,
-        borderRadius: 7,
-        fontFamily: 'inherit',
-      }}
-    >
-      {children}
-    </button>
-  );
-}
+const labelStyle = { color: 'var(--color-text-subtle)', marginBottom: 5 } as const;
+const rowStyle = { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 } as const;
 
 export default function AtmosphereTestPanel() {
+  const t = useTranslations('hud');
   const [open, setOpen] = useState(true);
   const [, setTick] = useState(0);
   const [speed, setSpeed] = useState<number | 'pause' | 'real'>('real');
@@ -100,80 +77,95 @@ export default function AtmosphereTestPanel() {
   const shownPct = Math.round(world.weather.intensity * 100);
 
   return (
-    <div
+    <Panel
       style={{
         position: 'absolute',
-        bottom: 20,
-        right: 20,
+        bottom: 'var(--space-5)',
+        right: 'var(--space-5)',
         width: 232,
         padding: '12px 14px',
-        background: 'rgba(13,13,13,0.72)',
-        backdropFilter: 'blur(7px)',
-        border: '1px solid rgba(203,184,154,0.18)',
-        borderRadius: 12,
-        color: CHAMPAN,
-        font: "11px/1.5 ui-monospace, 'SF Mono', Menlo, monospace",
+        font: '11px/1.5 var(--font-ui)',
         userSelect: 'none',
       }}
     >
-      <div style={{ color: DIM, textTransform: 'uppercase', letterSpacing: '0.22em', fontSize: 9, marginBottom: 10 }}>
-        OSIA · test atmósfera · (b)
+      <div
+        style={{
+          color: 'var(--color-text-subtle)',
+          textTransform: 'uppercase',
+          letterSpacing: 'var(--tracking-overline)',
+          fontSize: 9,
+          marginBottom: 10,
+        }}
+      >
+        {t('atmoTitle')}
       </div>
 
       {/* Estado actual + volver al server */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 }}>
-        <span style={{ color: DIM }}>
-          {overriding ? 'preview local' : 'en vivo'} · {world.weather.kind} {shownPct}%
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 11,
+        }}
+      >
+        <span style={{ color: 'var(--color-text-subtle)' }}>
+          {overriding ? t('previewLocal') : t('live')} · {t(`weather.${world.weather.kind}`)} {shownPct}%
         </span>
-        <Btn active={!overriding} onClick={goLive}>
-          En vivo
-        </Btn>
+        <Button size="sm" active={!overriding} onClick={goLive}>
+          {t('liveAction')}
+        </Button>
       </div>
 
-      <div style={{ color: DIM, marginBottom: 5 }}>Bioma</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 }}>
+      <div style={labelStyle}>{t('biome')}</div>
+      <div style={rowStyle}>
         {BIOMES.map((b) => (
-          <Btn key={b.id} active={biomeSel === b.id} onClick={() => pickBiome(b.id)}>
+          <Button key={b.id} size="sm" active={biomeSel === b.id} onClick={() => pickBiome(b.id)}>
             {b.name}
-          </Btn>
+          </Button>
         ))}
       </div>
 
-      <div style={{ color: DIM, marginBottom: 5 }}>Clima {overriding ? '(override)' : '(server)'}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 }}>
-        {WEATHERS.map((w) => (
-          <Btn key={w.kind} active={weatherSel === w.kind} onClick={() => pickWeather(w.kind)}>
-            {w.label}
-          </Btn>
+      <div style={labelStyle}>
+        {t('weatherLabel')} ({overriding ? t('sourceOverride') : t('sourceServer')})
+      </div>
+      <div style={rowStyle}>
+        {WEATHER_KINDS.map((k) => (
+          <Button key={k} size="sm" active={weatherSel === k} onClick={() => pickWeather(k)}>
+            {t(`weather.${k}`)}
+          </Button>
         ))}
       </div>
 
-      <div style={{ color: DIM, marginBottom: 5 }}>Tiempo (20 min/ciclo)</div>
+      <div style={labelStyle}>{t('timeScale')}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
         {SPEEDS.map((s) => (
-          <Btn key={s.v} active={speed === s.v} onClick={() => pickSpeed(s.v)}>
+          <Button key={s.v} size="sm" active={speed === s.v} onClick={() => pickSpeed(s.v)}>
             {s.label}
-          </Btn>
+          </Button>
         ))}
-        <Btn
+        <Button
+          size="sm"
           active={speed === 'pause'}
+          aria-label={t('pause')}
           onClick={() => {
             setSpeed('pause');
             setPaused(true);
           }}
         >
           ⏸
-        </Btn>
-        <Btn
+        </Button>
+        <Button
+          size="sm"
           active={speed === 'real'}
           onClick={() => {
             setSpeed('real');
             resetClock();
           }}
         >
-          real
-        </Btn>
+          {t('realClock')}
+        </Button>
       </div>
-    </div>
+    </Panel>
   );
 }

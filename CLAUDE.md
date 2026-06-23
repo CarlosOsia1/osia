@@ -136,6 +136,29 @@ packages/ui/src/
   consumidores de `@osia/ui`. Hacerlo **antes/al inicio de Sprint 1** (es cimiento; rehacerlo
   después es caro).
 
+### 2.5 Tipografía de marca (VINCULANTE — solo 2 fuentes, para siempre)
+
+Fuente de verdad: el **manual de marca oficial** (`brand/OSIA_manual_de_marca.pdf`): _"Display/
+titulares: **Italiana (Regular)**. Cuerpo/UI/software: **Jost (Light–SemiBold)**."_ El ecosistema
+usa **exactamente dos fuentes**. No hay una tercera. Esta regla la fijó Carlos explícitamente y es
+permanente.
+
+- **Italiana** (`--font-display`) — **SOLO** textos de **marca y momentos ceremoniales**: el
+  wordmark/título "OSIA", "El Mundo", titulares de hero, el umbral de entrada, títulos de modal.
+  Es **escasa como el champán**: si todo fuera Italiana, nada destacaría.
+- **Jost** (`--font-ui`) — **absolutamente TODO lo demás**: UI, HUD, software, botones, etiquetas,
+  lecturas de estado, nameplates, chat, voz, settings, formularios, **y los paneles de dev/debug**
+  (sin excepción). Es la voz por defecto del producto.
+- **Números** (fps, contadores, coordenadas): Jost con `font-variant-numeric: tabular-nums`, no una
+  monoespaciada.
+- **PROHIBIDA en UI de producto:** la monoespaciada del sistema (`--font-mono` = `ui-monospace…`)
+  **no es una fuente de marca** y se ve distinta en cada SO. No se usa en el HUD ni en ninguna
+  pantalla. El token queda solo como utilidad para contenido técnico crudo (código/hashes) si
+  algún día hiciera falta, y con `eslint-disable` explícito.
+- **Regla mecánica:** se elige fuente por **token de rol** (`--font-display` / `--font-ui`), nunca
+  por nombre de familia ni por `monospace` directo. Un lint prohíbe `--font-mono`/`monospace` en la
+  UI (apps + `@osia/ui`). Las fuentes se sirven como **woff2 subset** (pipeline `@osia/assets`).
+
 ---
 
 ## 3. Internacionalización (i18n) — EN + ES desde ya

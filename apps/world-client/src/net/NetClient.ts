@@ -20,6 +20,7 @@ import {
   ErrorCode,
   normalizeChat,
   PROTOCOL_VERSION,
+  asEntityId,
   type S2CMessage,
 } from '@osia/shared';
 import { netConfig } from './config';
@@ -319,7 +320,9 @@ export class NetClient {
   sendVoiceSignal(dstId: number, kind: number, payload: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
     if (voiceEnc.encode(payload).length > 62000) return; // guard en BYTES UTF-8 (str() usa u16; el WS corta >64KB)
-    this.ws.send(encode({ op: C2S.VOICE_SIGNAL, dstId, kind, payload }));
+    // dstId es el id de un par (originado en el decode, ya entidad); se marca como EntityId
+    // al re-entrar al contrato tipado, igual que el server lo hace al acuñarlo.
+    this.ws.send(encode({ op: C2S.VOICE_SIGNAL, dstId: asEntityId(dstId), kind, payload }));
   }
 
   sendVoiceState(flags: number): void {

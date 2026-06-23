@@ -12,6 +12,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: ButtonSize;
   /** Marca el botón como "encendido" (p.ej. modo activo). */
   active?: boolean;
+  /** En proceso: deshabilita, marca aria-busy y muestra un spinner. */
+  loading?: boolean;
 };
 
 const VARIANT: Record<ButtonVariant, string> = {
@@ -26,8 +28,11 @@ export function Button({
   variant = 'secondary',
   size = 'md',
   active = false,
+  loading = false,
   className,
   type,
+  disabled,
+  children,
   ...rest
 }: ButtonProps) {
   const cls = [
@@ -35,9 +40,21 @@ export function Button({
     VARIANT[variant],
     SIZE[size],
     active ? 'osia-btn--active' : '',
+    loading ? 'osia-btn--loading' : '',
     className,
   ]
     .filter(Boolean)
     .join(' ');
-  return <button type={type ?? 'button'} className={cls} {...rest} />;
+  return (
+    <button
+      type={type ?? 'button'}
+      className={cls}
+      disabled={disabled ?? loading}
+      aria-busy={loading || undefined}
+      {...rest}
+    >
+      {loading && <span className="osia-btn__spinner" aria-hidden="true" />}
+      {children}
+    </button>
+  );
 }
