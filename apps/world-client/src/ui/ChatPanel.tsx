@@ -134,7 +134,7 @@ export default function ChatPanel() {
                 maxWidth: '100%',
                 padding: '4px 10px',
                 color: 'var(--color-text)',
-                font: '400 13px/1.4 var(--font-ui)',
+                font: '400 var(--text-md)/var(--leading-base) var(--font-ui)',
                 wordBreak: 'break-word',
                 opacity,
                 transition: 'opacity .3s linear',
@@ -156,9 +156,9 @@ export default function ChatPanel() {
             padding: '3px 9px',
             marginBottom: 6,
             borderRadius: 'var(--radius-sm)',
-            background: 'rgba(201,138,126,0.18)',
+            background: 'var(--color-danger-soft)',
             color: 'var(--color-danger)',
-            font: '400 11px/1.3 var(--font-ui)',
+            font: '400 var(--text-sm)/var(--leading-snug) var(--font-ui)',
           }}
         >
           {chatNotice === 'rateLimited' ? t('rateLimited') : chatNotice}

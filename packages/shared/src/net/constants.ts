@@ -17,6 +17,10 @@ export const SEND_HZ = 20;
 export const MOVE_SPEED = 4.4; // m/s
 export const GROUND_RADIUS = 23.5; // límite del claro de Fase 0
 
+/** Anti-cheat / anti-flood de inputs (server-authoritative). */
+export const MAX_QUEUED_INPUTS = 120; // techo de la cola de inputs por entidad (descarta flood)
+export const MAX_INPUT_DT_S = 0.1; // dt máximo admitido por input (100 ms) — clampa teleport por dt inflado
+
 /** Instancias. */
 export const INSTANCE_CAPACITY = 12; // techo del hub en Fase 0
 

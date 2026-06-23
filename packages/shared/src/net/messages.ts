@@ -4,16 +4,15 @@
  */
 
 import { C2S, S2C } from './opcodes';
+import type { WeatherKind } from '@osia/atmosphere';
 import type { EntityId } from '../domain/ids';
 import type { EntityState, DeltaEntity } from './entities';
+import type { VoiceSignalKind } from './voiceState';
 
 export type { EntityState, DeltaEntity };
 
-/**
- * Clima que viaja por la red. `kind` es un WeatherKind de @osia/atmosphere, tipado
- * como string aquí para no acoplar la capa de red a la de atmósfera.
- */
-export type WireWeather = { kind: string; intensity: number };
+/** Clima que viaja por la red. `kind` es el WeatherKind de dominio (re-exportado por @osia/shared). */
+export type WireWeather = { kind: WeatherKind; intensity: number };
 /** Estado de atmósfera autoritativo del mundo: bioma + clima. */
 export type AtmosphereState = { biome: string; weather: WireWeather };
 
@@ -23,8 +22,8 @@ export type InputMsg = { op: typeof C2S.INPUT; seq: number; f: number; r: number
 export type PingMsg = { op: typeof C2S.PING; t: number };
 export type ChatSendMsg = { op: typeof C2S.CHAT_SEND; text: string };
 export type ByeMsg = { op: typeof C2S.BYE };
-/** Voz P2P: el cliente tuneliza SDP/ICE hacia otro par (dstId); el server reescribe a S2C. kind: 0=offer 1=answer 2=ice 3=ice-end. */
-export type VoiceSignalMsg = { op: typeof C2S.VOICE_SIGNAL; dstId: EntityId; kind: number; payload: string };
+/** Voz P2P: el cliente tuneliza SDP/ICE hacia otro par (dstId); el server reescribe a S2C. */
+export type VoiceSignalMsg = { op: typeof C2S.VOICE_SIGNAL; dstId: EntityId; kind: VoiceSignalKind; payload: string };
 /** Estado de voz propio (bits: 1=mic 2=hablando 4=sordo) anunciado al roster. */
 export type VoiceStateMsg = { op: typeof C2S.VOICE_STATE; flags: number };
 
@@ -50,7 +49,7 @@ export type EntityLeaveMsg = { op: typeof S2C.ENTITY_LEAVE; id: EntityId };
 export type PongMsg = { op: typeof S2C.PONG; t: number; serverTime: number };
 export type ChatBroadcastMsg = { op: typeof S2C.CHAT_MSG; id: EntityId; handle: string; text: string };
 /** Voz P2P relayada: SDP/ICE de srcId (inyectado por el server, anti-spoof). */
-export type VoiceSignalRelayMsg = { op: typeof S2C.VOICE_SIGNAL; srcId: EntityId; kind: number; payload: string };
+export type VoiceSignalRelayMsg = { op: typeof S2C.VOICE_SIGNAL; srcId: EntityId; kind: VoiceSignalKind; payload: string };
 /** Estado de voz de otro par (id) difundido al roster. */
 export type VoiceStateRelayMsg = { op: typeof S2C.VOICE_STATE; id: EntityId; flags: number };
 export type ErrorMsg = { op: typeof S2C.ERROR; code: number; message: string };

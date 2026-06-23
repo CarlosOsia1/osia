@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OSIA_COLORS } from '@osia/ui';
+import { prefersReducedMotion } from './motionPrefs';
 
 /**
  * Scene — contenido de la primera escena de OSIA (S0.2).
@@ -14,6 +15,26 @@ import { OSIA_COLORS } from '@osia/ui';
  */
 
 type Tree = { position: [number, number, number]; scale: number; tint: THREE.Color };
+
+/** Meceo de viento de los pinos (constantes nombradas, §1.2; se congela con reduced-motion). */
+const WIND = {
+  swayAmp: 0.0165, // amplitud del mecido principal
+  swaySecondaryAmp: 0.012, // segundo eje (movimiento orgánico)
+  freqPrimary: 1.1,
+  freqSecondary: 0.85,
+  secondaryPhase: 1.2,
+  phaseStep: 1.3, // desfase de fase por árbol → bosque "vivo", no sincronizado
+};
+
+/** Bosquecillo: anillo de pinos alrededor del claro. */
+const FOREST = {
+  count: 14,
+  ringRadiusBase: 7,
+  ringRadiusStep: 1.8, // r = base + (i % 3) * step
+  scaleBase: 0.8,
+  scaleStep: 0.25, // scale = base + (i % 4) * step
+  tintCycle: 5, // tinte = lerp(taupe→deep, (i % cycle) / cycle)
+};
 
 /**
  * Forest — los pinos como InstancedMesh (S0.2 · instancing).
@@ -62,16 +83,17 @@ function Forest({ trees }: { trees: Tree[] }) {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tRef = useRef(0);
   useFrame((_, delta) => {
+    if (prefersReducedMotion()) return; // §9: sin loop de viento; los pinos quedan quietos
     tRef.current += delta;
     const t = tRef.current;
     for (let i = 0; i < trees.length; i++) {
       const tree = trees[i]!;
-      const phase = i * 1.3;
+      const phase = i * WIND.phaseStep;
       dummy.position.set(tree.position[0], tree.position[1], tree.position[2]);
       dummy.rotation.set(
-        Math.sin(t * 1.1 + phase) * 0.0165, // mecido principal (suave, 30%)
+        Math.sin(t * WIND.freqPrimary + phase) * WIND.swayAmp, // mecido principal
         0,
-        Math.sin(t * 0.85 + phase + 1.2) * 0.012, // segundo eje (movimiento orgánico)
+        Math.sin(t * WIND.freqSecondary + phase + WIND.secondaryPhase) * WIND.swaySecondaryAmp, // segundo eje
       );
       dummy.scale.setScalar(tree.scale);
       dummy.updateMatrix();
@@ -106,13 +128,13 @@ export function Scene() {
   const trees = useMemo(() => {
     const base = new THREE.Color(OSIA_COLORS.taupe);
     const deep = new THREE.Color('#2f3a30');
-    return Array.from({ length: 14 }, (_, i) => {
-      const a = (i / 14) * Math.PI * 2;
-      const r = 7 + (i % 3) * 1.8;
-      const tint = base.clone().lerp(deep, (i % 5) / 5);
+    return Array.from({ length: FOREST.count }, (_, i) => {
+      const a = (i / FOREST.count) * Math.PI * 2;
+      const r = FOREST.ringRadiusBase + (i % 3) * FOREST.ringRadiusStep;
+      const tint = base.clone().lerp(deep, (i % FOREST.tintCycle) / FOREST.tintCycle);
       return {
         position: [Math.cos(a) * r, 0, Math.sin(a) * r] as [number, number, number],
-        scale: 0.8 + (i % 4) * 0.25,
+        scale: FOREST.scaleBase + (i % 4) * FOREST.scaleStep,
         tint,
       };
     });

@@ -7,6 +7,7 @@ import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uniform, positionLocal, range, vec3, sin, cos, float, mod } from 'three/tsl';
 import { precipKind } from '@osia/atmosphere';
 import { world } from './atmosphereRuntime';
+import { prefersReducedMotion } from './motionPrefs';
 import { SNOW, FX_BOX } from './weatherConfig';
 
 /**
@@ -77,7 +78,7 @@ export default function Precipitation() {
     }
     mesh.visible = true;
     mesh.position.copy(camera.position); // la caja sigue al jugador
-    timeU.value += delta; // ← único trabajo de CPU por frame
+    if (!prefersReducedMotion()) timeU.value += delta; // §9: congela la caída con reduced-motion
     (mesh.material as MeshBasicNodeMaterial).opacity =
       SNOW.opacity * Math.min(1, world.weather.intensity * 1.2);
   });

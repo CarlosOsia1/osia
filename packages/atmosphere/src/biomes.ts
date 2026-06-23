@@ -4,46 +4,10 @@
  * climas que pueden ocurrir. Cielos azules con gradiente, niebla baja y tintada.
  */
 
-import { hexToRGB } from './color';
+import { makeParams as mk } from './params';
 import { CELESTIAL_CYCLE } from './presets';
-import type { AtmosphereKeyframe, AtmosphereParams } from './types';
+import type { AtmosphereKeyframe } from './types';
 import type { WeatherKind } from './weather';
-
-const UP = [0, 1, 0] as const;
-
-function mk(o: {
-  skyTop: string;
-  skyHorizon: string;
-  fog: string;
-  fogDensity: number;
-  sunColor: string;
-  sunIntensity: number;
-  moonColor: string;
-  moonIntensity: number;
-  ambientColor: string;
-  ambientIntensity: number;
-  exposure: number;
-  bloom: number;
-  stars: number;
-}): AtmosphereParams {
-  return {
-    skyTop: hexToRGB(o.skyTop),
-    skyHorizon: hexToRGB(o.skyHorizon),
-    fogColor: hexToRGB(o.fog),
-    fogDensity: o.fogDensity,
-    sunDir: UP,
-    sunColor: hexToRGB(o.sunColor),
-    sunIntensity: o.sunIntensity,
-    moonDir: UP,
-    moonColor: hexToRGB(o.moonColor),
-    moonIntensity: o.moonIntensity,
-    ambientColor: hexToRGB(o.ambientColor),
-    ambientIntensity: o.ambientIntensity,
-    exposure: o.exposure,
-    bloom: o.bloom,
-    starsIntensity: o.stars,
-  };
-}
 
 const T_MOON = '#cdd8ec';
 const D_MOON = '#cbbfe0';

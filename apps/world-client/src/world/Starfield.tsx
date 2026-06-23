@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { PointsNodeMaterial } from 'three/webgpu';
+import { mulberry32 } from '@osia/atmosphere';
 import { OSIA_COLORS } from '@osia/ui';
 import { atmo } from './atmosphereRuntime';
 
@@ -12,19 +13,9 @@ import { atmo } from './atmosphereRuntime';
  *
  * Reemplaza a <Stars> de drei, que usa ShaderMaterial GLSL y NO corre en el
  * WebGPURenderer. PointsNodeMaterial (TSL) funciona en WebGPU y en el fallback
- * WebGL2. Distribución determinista (PRNG sembrado, sin Math.random en render)
- * sobre la cúpula celeste superior.
+ * WebGL2. Distribución determinista (PRNG sembrado de @osia/atmosphere, sin
+ * Math.random en render) sobre la cúpula celeste superior.
  */
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 export default function Starfield({ count = 1600, radius = 120 }: { count?: number; radius?: number }) {
   const camera = useThree((s) => s.camera);
   const points = useMemo(() => {

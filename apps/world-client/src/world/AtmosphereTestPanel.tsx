@@ -84,7 +84,7 @@ export default function AtmosphereTestPanel() {
         right: 'var(--space-5)',
         width: 232,
         padding: '12px 14px',
-        font: '11px/1.5 var(--font-ui)',
+        font: 'var(--text-sm)/var(--leading-normal) var(--font-ui)',
         userSelect: 'none',
       }}
     >
@@ -93,7 +93,7 @@ export default function AtmosphereTestPanel() {
           color: 'var(--color-text-subtle)',
           textTransform: 'uppercase',
           letterSpacing: 'var(--tracking-overline)',
-          fontSize: 9,
+          fontSize: 'var(--text-2xs)',
           marginBottom: 10,
         }}
       >

@@ -77,7 +77,7 @@ export default function PerfHUD() {
         padding: '12px 14px',
         border: '1px solid var(--color-border-accent)',
         color: 'var(--color-accent)',
-        font: '11px/1.7 var(--font-ui)',
+        font: 'var(--text-sm)/var(--leading-loose) var(--font-ui)',
         letterSpacing: 'var(--tracking-wide)',
         pointerEvents: 'none',
         userSelect: 'none',
@@ -88,7 +88,7 @@ export default function PerfHUD() {
           color: C_DIM,
           textTransform: 'uppercase',
           letterSpacing: 'var(--tracking-overline)',
-          fontSize: 9,
+          fontSize: 'var(--text-2xs)',
           marginBottom: 8,
         }}
       >

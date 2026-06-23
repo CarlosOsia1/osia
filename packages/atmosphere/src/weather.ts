@@ -2,28 +2,53 @@
  * Clima (S0.7 v2) — capa EFIMERA sobre el preset del bioma. Modifica los params
  * resueltos (niebla, exposicion, sol, color) y dice que particula renderizar.
  *
- * FUERZA por tipo (lo atmosferico, NO las particulas): la lluvia/nieve lavaban
- * todo a blanco por la niebla del clima; se reduce su efecto. Las particulas
- * siguen cayendo a intensidad plena.
+ * El tuning por clima vive en datos (STRENGTH + FX), no en literales del switch:
+ * agregar/ajustar un clima es editar la tabla, no ramas con números mágicos (§1.2/§1.1-O).
  */
 
 import { lerp, clamp01 } from './math';
 import { lerpRGB, hexToRGB } from './color';
 import type { AtmosphereParams, RGB } from './types';
 
-export type WeatherKind = 'despejado' | 'lluvia' | 'nieve' | 'tormenta-arena' | 'niebla';
+/** Catálogo (dato) de climas — fuente única; el tipo se deriva de él (DRY). */
+export const WEATHER_KINDS = ['despejado', 'lluvia', 'nieve', 'tormenta-arena', 'niebla'] as const;
+export type WeatherKind = (typeof WEATHER_KINDS)[number];
 export type WeatherState = { kind: WeatherKind; intensity: number }; // intensity 0..1
+
+/** Narrow de un string del cable a WeatherKind (evita casts inseguros en el codec). */
+export function isWeatherKind(s: string): s is WeatherKind {
+  return (WEATHER_KINDS as readonly string[]).includes(s);
+}
 
 export const CLEAR: WeatherState = { kind: 'despejado', intensity: 0 };
 
-/** Cuánto del efecto atmosférico aplica cada clima (pedido de Carlos). */
+/**
+ * Fracción del efecto ATMOSFÉRICO (niebla/color, NO las partículas) que aplica cada clima.
+ * Lluvia/nieve tiñen poco el aire: la carga visual la llevan las gotas/copos que caen a
+ * intensidad plena. Niebla y tormenta SÍ dominan la escena (el aire mismo es el efecto).
+ */
 const STRENGTH: Record<WeatherKind, number> = {
   despejado: 0,
-  lluvia: 0.1, // -90%
-  nieve: 0.4, // -60%
-  'tormenta-arena': 0.8, // -30% sobre el -30% previo (tapaba demasiado)
+  lluvia: 0.1,
+  nieve: 0.4,
+  'tormenta-arena': 0.8,
   niebla: 0.6,
 };
+
+/**
+ * Cómo se ilumina la bruma/polvo según la hora (`night` 0=día .. 1=noche): la NIEBLA
+ * (mist) dispersa la luz lunar y debe seguir visible de noche (piso alto); el POLVO de
+ * arena no brilla y se apaga de noche (piso bajo). `*Base` = factor de día; `+ *Gain*night` lo sube de noche.
+ */
+const NIGHT = { fogGlowBase: 0.65, fogGlowGain: 0.35, sandDimBase: 0.45, sandDimGain: 0.55 } as const;
+
+/** Coeficientes de tuning por clima (datos): pisos/multiplicadores de niebla, mezclas de color, etc. */
+const FX = {
+  lluvia: { fogFloor: 0.012, fogMult: 1.8, greyDesat: 0.5, fogMix: 0.6, exposureMul: 0.82, sunMul: 0.55, skyDesat: 0.5, skyMix: 0.5, bloomMul: 0.8 },
+  nieve: { fogFloor: 0.012, fogMult: 1.6, fogLighten: 0.4, fogMix: 0.5, exposureMul: 1.03, sunMul: 0.8 },
+  'tormenta-arena': { fogFloor: 0.05, fogMult: 3.0, fogMix: 0.9, exposureMul: 0.92, sunMul: 0.5, skyMix: 0.65, skyHorizonMix: 0.85, ambientMix: 0.8, ambientAdd: 0.6 },
+  niebla: { fogFloor: 0.05, fogMult: 2.8, fogMix: 0.78, sunMul: 0.7, exposureMul: 0.98, skyMix: 0.7, skyHorizonMix: 0.82, ambientMix: 0.6, ambientAdd: 0.45 },
+} as const;
 
 const GREY: RGB = hexToRGB('#8b94a0');
 const SAND: RGB = hexToRGB('#c2a25f'); // arena AMARILLA/dorada
@@ -45,12 +70,11 @@ export function applyWeather(p: AtmosphereParams, w: WeatherState): AtmospherePa
   const i = clamp01(w.intensity) * STRENGTH[w.kind];
   if (i <= 0) return p;
 
-  // La niebla/polvo se ILUMINA con la luz disponible. Pero son distintos: la NIEBLA
-  // (mist) DISPERSA la luz lunar → brilla suave de noche y debe verse (piso alto). El
-  // POLVO de arena NO brilla → se oscurece de noche (piso bajo). `1` = día.
+  // La niebla/polvo se ILUMINA con la luz disponible (ver NIGHT): la niebla brilla de
+  // noche (glow lunar), la arena se apaga. `1` = día.
   const night = 1 - clamp01(p.starsIntensity);
-  const dayN = 0.65 + 0.35 * night; // niebla: visible de noche (glow lunar)
-  const dayS = 0.45 + 0.55 * night; // arena: oscura de noche (polvo apagado)
+  const dayN = NIGHT.fogGlowBase + NIGHT.fogGlowGain * night; // niebla: visible de noche
+  const dayS = NIGHT.sandDimBase + NIGHT.sandDimGain * night; // arena: oscura de noche
   const W = scale(WHITE, dayN);
   const S = scale(SAND, dayS);
 
@@ -65,45 +89,53 @@ export function applyWeather(p: AtmosphereParams, w: WeatherState): AtmospherePa
   let ambientIntensity = p.ambientIntensity;
 
   switch (w.kind) {
-    case 'lluvia':
-      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, 0.012) * 1.8, i);
-      fogColor = lerpRGB(p.fogColor, desat(GREY, 0.5), i * 0.6);
-      exposure = lerp(p.exposure, p.exposure * 0.82, i);
-      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * 0.55, i);
-      skyTop = lerpRGB(p.skyTop, desat(p.skyTop, 0.5), i * 0.5);
-      skyHorizon = lerpRGB(p.skyHorizon, desat(p.skyHorizon, 0.5), i * 0.5);
-      bloom = lerp(p.bloom, p.bloom * 0.8, i);
+    case 'lluvia': {
+      const fx = FX.lluvia;
+      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, fx.fogFloor) * fx.fogMult, i);
+      fogColor = lerpRGB(p.fogColor, desat(GREY, fx.greyDesat), i * fx.fogMix);
+      exposure = lerp(p.exposure, p.exposure * fx.exposureMul, i);
+      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * fx.sunMul, i);
+      skyTop = lerpRGB(p.skyTop, desat(p.skyTop, fx.skyDesat), i * fx.skyMix);
+      skyHorizon = lerpRGB(p.skyHorizon, desat(p.skyHorizon, fx.skyDesat), i * fx.skyMix);
+      bloom = lerp(p.bloom, p.bloom * fx.bloomMul, i);
       break;
-    case 'nieve':
-      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, 0.012) * 1.6, i);
-      fogColor = lerpRGB(p.fogColor, lighten(p.fogColor, 0.4), i * 0.5);
-      exposure = lerp(p.exposure, p.exposure * 1.03, i);
-      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * 0.8, i);
+    }
+    case 'nieve': {
+      const fx = FX.nieve;
+      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, fx.fogFloor) * fx.fogMult, i);
+      fogColor = lerpRGB(p.fogColor, lighten(p.fogColor, fx.fogLighten), i * fx.fogMix);
+      exposure = lerp(p.exposure, p.exposure * fx.exposureMul, i);
+      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * fx.sunMul, i);
       break;
-    case 'tormenta-arena':
+    }
+    case 'tormenta-arena': {
       // Fog ALTO y AMARILLO. El polvo brillante DISPERSA luz: se sube y tinta el
       // ambiente de arena, así lo cercano NO queda como silueta negra contra la bruma.
-      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, 0.05) * 3.0, i);
-      fogColor = lerpRGB(p.fogColor, S, i * 0.9);
-      exposure = lerp(p.exposure, p.exposure * 0.92, i);
-      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * 0.5, i);
-      skyTop = lerpRGB(p.skyTop, S, i * 0.65);
-      skyHorizon = lerpRGB(p.skyHorizon, S, i * 0.85);
-      ambientColor = lerpRGB(p.ambientColor, S, i * 0.8);
-      ambientIntensity = lerp(p.ambientIntensity, p.ambientIntensity + 0.6 * dayS, i);
+      const fx = FX['tormenta-arena'];
+      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, fx.fogFloor) * fx.fogMult, i);
+      fogColor = lerpRGB(p.fogColor, S, i * fx.fogMix);
+      exposure = lerp(p.exposure, p.exposure * fx.exposureMul, i);
+      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * fx.sunMul, i);
+      skyTop = lerpRGB(p.skyTop, S, i * fx.skyMix);
+      skyHorizon = lerpRGB(p.skyHorizon, S, i * fx.skyHorizonMix);
+      ambientColor = lerpRGB(p.ambientColor, S, i * fx.ambientMix);
+      ambientIntensity = lerp(p.ambientIntensity, p.ambientIntensity + fx.ambientAdd * dayS, i);
       break;
-    case 'niebla':
+    }
+    case 'niebla': {
       // Fog ALTO y BLANCO. Luz difusa: ambiente hacia blanco para que lo cercano se
       // BAÑE de niebla (no siluetas negras) y de noche se vea bruma blanca, no un degradado.
-      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, 0.05) * 2.8, i);
-      fogColor = lerpRGB(p.fogColor, W, i * 0.78);
-      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * 0.7, i);
-      exposure = lerp(p.exposure, p.exposure * 0.98, i);
-      skyTop = lerpRGB(p.skyTop, W, i * 0.7);
-      skyHorizon = lerpRGB(p.skyHorizon, W, i * 0.82);
-      ambientColor = lerpRGB(p.ambientColor, W, i * 0.6);
-      ambientIntensity = lerp(p.ambientIntensity, p.ambientIntensity + 0.45 * dayN, i);
+      const fx = FX.niebla;
+      fogDensity = lerp(p.fogDensity, Math.max(p.fogDensity, fx.fogFloor) * fx.fogMult, i);
+      fogColor = lerpRGB(p.fogColor, W, i * fx.fogMix);
+      sunIntensity = lerp(p.sunIntensity, p.sunIntensity * fx.sunMul, i);
+      exposure = lerp(p.exposure, p.exposure * fx.exposureMul, i);
+      skyTop = lerpRGB(p.skyTop, W, i * fx.skyMix);
+      skyHorizon = lerpRGB(p.skyHorizon, W, i * fx.skyHorizonMix);
+      ambientColor = lerpRGB(p.ambientColor, W, i * fx.ambientMix);
+      ambientIntensity = lerp(p.ambientIntensity, p.ambientIntensity + fx.ambientAdd * dayN, i);
       break;
+    }
   }
 
   return { ...p, fogDensity, fogColor, exposure, sunIntensity, skyTop, skyHorizon, bloom, ambientColor, ambientIntensity };

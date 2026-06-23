@@ -115,7 +115,7 @@ export default function VoiceHUD() {
             gap: 6,
             padding: '4px 10px',
             color: 'var(--color-text)',
-            font: '500 12px/1.2 var(--font-ui)',
+            font: '500 var(--text-base)/var(--leading-tight) var(--font-ui)',
           }}
         >
           <Dot color="var(--color-success)" />
@@ -132,7 +132,7 @@ export default function VoiceHUD() {
             <span
               style={{
                 color: 'var(--color-danger)',
-                font: '400 10px/1.2 var(--font-ui)',
+                font: '400 var(--text-xs)/var(--leading-tight) var(--font-ui)',
                 maxWidth: 200,
                 textAlign: 'right',
               }}
@@ -153,7 +153,7 @@ export default function VoiceHUD() {
               gap: 6,
               padding: '5px 10px',
               borderRadius: 'var(--radius-md)',
-              background: muted ? 'rgba(201,138,126,0.18)' : 'var(--color-accent-soft)',
+              background: muted ? 'var(--color-danger-soft)' : 'var(--color-accent-soft)',
               color: 'var(--color-accent)',
             }}
           >
@@ -174,7 +174,7 @@ export default function VoiceHUD() {
               width: 44,
               height: 6,
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255,255,255,0.12)',
+              background: 'var(--color-track)',
               overflow: 'hidden',
             }}
             title={t('micLevel')}

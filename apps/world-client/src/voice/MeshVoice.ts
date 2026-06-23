@@ -12,7 +12,7 @@
  *  - Gate del mic por GANANCIA (SpatialGraph), no por micTrack.enabled (el VAD no se bloquea).
  */
 
-import { VOICE_FLAG } from '@osia/shared';
+import { VOICE_FLAG, VOICE_SIGNAL_KIND } from '@osia/shared';
 import { getIceServers } from './iceConfig';
 import { spatialGraph } from './SpatialGraph';
 import type { NetClient } from '../net/NetClient';
@@ -22,6 +22,14 @@ const RADIUS_IN = 15; // abre conexión al acercarse
 const RADIUS_OUT = 20; // cierra al alejarse (histéresis)
 const VAD_THRESH = 0.014; // umbral RMS aproximado
 const VAD_HANG_MS = 600; // hangover de release (no clipea finales de palabra)
+
+// Diagnóstico de voz: solo en dev o con el flag explícito (no ensucia la consola del
+// usuario en producción ni filtra el flujo de signaling P2P). §10.
+const VOICE_DEBUG =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_DEBUG_VOICE === '1';
+function vlog(...args: unknown[]): void {
+  if (VOICE_DEBUG) console.info(...args);
+}
 
 type Peer = {
   pc: RTCPeerConnection;
@@ -100,7 +108,7 @@ class MeshVoice {
       for (const [, p] of this.peers) this.addMicTo(p.pc); // a las PCs ya abiertas
       this.startVad();
       this.publishState();
-      console.info(
+      vlog(
         '[voz] mic ON; AudioContext:',
         spatialGraph.state(),
         '; pares:',
@@ -136,7 +144,7 @@ class MeshVoice {
     spatialGraph.setMicGate(really);
     if (this.speaking !== really) {
       this.speaking = really;
-      console.info('[voz] tu mic:', really ? 'HABLANDO (enviando)' : 'silencio');
+      vlog('[voz] tu mic:', really ? 'HABLANDO (enviando)' : 'silencio');
       this.publishState();
     }
   }
@@ -190,7 +198,7 @@ class MeshVoice {
     this.active.add(id);
     spatialGraph.addPeer(id);
     const polite = this.net.selfId > id;
-    console.info('[voz] abriendo conexión con', id, '(polite=' + polite + ')');
+    vlog('[voz] abriendo conexión con', id, '(polite=' + polite + ')');
     const peer: Peer = {
       pc,
       polite,
@@ -206,10 +214,10 @@ class MeshVoice {
       // Construimos el stream desde el track para no perder el audio.
       const stream = e.streams[0] ?? new MediaStream([e.track]);
       spatialGraph.setPeerStream(id, stream);
-      console.info('[voz] audio recibido de', id);
+      vlog('[voz] audio recibido de', id);
     };
     pc.onicecandidate = (e) => {
-      if (e.candidate) this.net?.sendVoiceSignal(id, 2, JSON.stringify(e.candidate));
+      if (e.candidate) this.net?.sendVoiceSignal(id, VOICE_SIGNAL_KIND.ICE, JSON.stringify(e.candidate));
     };
     pc.onnegotiationneeded = () => {
       void (async () => {
@@ -217,8 +225,8 @@ class MeshVoice {
           peer.makingOffer = true;
           await pc.setLocalDescription();
           if (pc.localDescription) {
-            this.net?.sendVoiceSignal(id, 0, JSON.stringify(pc.localDescription));
-            console.info('[voz] → oferta a', id);
+            this.net?.sendVoiceSignal(id, VOICE_SIGNAL_KIND.OFFER, JSON.stringify(pc.localDescription));
+            vlog('[voz] → oferta a', id);
           }
         } catch {
           /* ignorar */
@@ -228,7 +236,7 @@ class MeshVoice {
       })();
     };
     pc.onconnectionstatechange = () => {
-      console.info('[voz] peer', id, '→', pc.connectionState, '/ ice:', pc.iceConnectionState);
+      vlog('[voz] peer', id, '→', pc.connectionState, '/ ice:', pc.iceConnectionState);
       if (pc.connectionState === 'failed') {
         try {
           pc.restartIce();
@@ -302,22 +310,22 @@ class MeshVoice {
       // legítima (asimetría de gating: el remoto nos gateó antes que nosotros a él) → abrir
       // reactivamente. Answers/candidates sin peer, o ids fuera de la roster, se ignoran (huérfanos).
       const inRoster = this.net?.getRemoteIds().includes(src) ?? false;
-      if (kind !== 0 || !inRoster || this.active.size >= AUDIBLE_CAP) return;
+      if (kind !== VOICE_SIGNAL_KIND.OFFER || !inRoster || this.active.size >= AUDIBLE_CAP) return;
       this.openPeer(src); // PN resuelve el glare (ambos lados ofertan; el impolite ignora)
     }
     const peer = this.peers.get(src);
     if (!peer) return;
     const pc = peer.pc;
-    console.info('[voz] ← señal kind', kind, 'de', src);
+    vlog('[voz] ← señal kind', kind, 'de', src);
     try {
-      if (kind === 0 || kind === 1) {
+      if (kind === VOICE_SIGNAL_KIND.OFFER || kind === VOICE_SIGNAL_KIND.ANSWER) {
         const desc = JSON.parse(payload) as RTCSessionDescriptionInit;
         const readyForOffer =
           !peer.makingOffer && (pc.signalingState === 'stable' || peer.settingRemoteAnswer);
-        const offerCollision = kind === 0 && !readyForOffer;
+        const offerCollision = kind === VOICE_SIGNAL_KIND.OFFER && !readyForOffer;
         peer.ignoreOffer = !peer.polite && offerCollision;
         if (peer.ignoreOffer) return;
-        peer.settingRemoteAnswer = kind === 1;
+        peer.settingRemoteAnswer = kind === VOICE_SIGNAL_KIND.ANSWER;
         await pc.setRemoteDescription(desc); // rollback implícito del lado polite
         peer.settingRemoteAnswer = false;
         for (const c of peer.pending) {
@@ -328,12 +336,12 @@ class MeshVoice {
           }
         }
         peer.pending.length = 0;
-        if (kind === 0) {
+        if (kind === VOICE_SIGNAL_KIND.OFFER) {
           await pc.setLocalDescription();
           if (pc.localDescription)
-            this.net?.sendVoiceSignal(src, 1, JSON.stringify(pc.localDescription));
+            this.net?.sendVoiceSignal(src, VOICE_SIGNAL_KIND.ANSWER, JSON.stringify(pc.localDescription));
         }
-      } else if (kind === 2) {
+      } else if (kind === VOICE_SIGNAL_KIND.ICE) {
         const cand = JSON.parse(payload) as RTCIceCandidateInit;
         if (!pc.remoteDescription) {
           peer.pending.push(cand); // los ICE suelen ganarle al SDP → bufferear

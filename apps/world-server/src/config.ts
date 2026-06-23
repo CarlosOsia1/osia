@@ -21,9 +21,14 @@ export const config = {
   publicWsUrl: process.env.WORLD_PUBLIC_WS_URL ?? `ws://localhost:${port}/world`,
 } as const;
 
-// Seguridad: en PRODUCCIÓN no arrancar con el secret de dev (suplantación de tickets trivial).
-if (config.isProd && config.ticketSecret === DEV_TICKET_SECRET) {
+// Seguridad (§8): en PRODUCCIÓN el secret no puede ser el default NI uno débil. Un HS256
+// con secret corto/baja entropía se fuerza por fuerza bruta → suplantación de tickets.
+const MIN_SECRET_LEN = 32;
+if (
+  config.isProd &&
+  (config.ticketSecret === DEV_TICKET_SECRET || config.ticketSecret.length < MIN_SECRET_LEN)
+) {
   throw new Error(
-    'WORLD_TICKET_SECRET es el default inseguro en producción — configurá uno propio.',
+    `WORLD_TICKET_SECRET ausente, default inseguro, o demasiado corto (<${MIN_SECRET_LEN} chars) en producción — configurá uno robusto.`,
   );
 }

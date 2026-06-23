@@ -20,8 +20,10 @@ import {
   ErrorCode,
   normalizeChat,
   PROTOCOL_VERSION,
+  MAX_VOICE_PAYLOAD_BYTES,
   asEntityId,
   type S2CMessage,
+  type VoiceSignalKind,
 } from '@osia/shared';
 import { netConfig } from './config';
 import {
@@ -317,9 +319,11 @@ export class NetClient {
   }
 
   /** Voz: tuneliza SDP/ICE hacia un par. El server lo reescribe a S2C con srcId (anti-spoof). */
-  sendVoiceSignal(dstId: number, kind: number, payload: string): void {
+  sendVoiceSignal(dstId: number, kind: VoiceSignalKind, payload: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
-    if (voiceEnc.encode(payload).length > 62000) return; // guard en BYTES UTF-8 (str() usa u16; el WS corta >64KB)
+    // Mismo límite de NEGOCIO que el server autoritativo (no un literal divergente): un payload
+    // mayor lo descartaría el server en silencio (relay byte-ciego), rompiendo la negociación.
+    if (voiceEnc.encode(payload).length > MAX_VOICE_PAYLOAD_BYTES) return;
     // dstId es el id de un par (originado en el decode, ya entidad); se marca como EntityId
     // al re-entrar al contrato tipado, igual que el server lo hace al acuñarlo.
     this.ws.send(encode({ op: C2S.VOICE_SIGNAL, dstId: asEntityId(dstId), kind, payload }));
@@ -334,28 +338,46 @@ export class NetClient {
     return [...this.remotes.keys()];
   }
 
-  /** Muestra interpolada de una entidad remota en `renderTime` (ms, performance.now). */
-  sampleRemote(id: number, renderTime: number): Sample | null {
+  /** Ids remotos como iterador (sin materializar un array): para el hot path de useFrame (§7). */
+  remoteIds(): IterableIterator<number> {
+    return this.remotes.keys();
+  }
+
+  /**
+   * Muestra interpolada de una entidad remota en `renderTime`, ESCRITA en `out` (reutilizable,
+   * cero asignaciones por frame — §7). Devuelve true si hubo muestra, false si no.
+   */
+  sampleRemote(id: number, renderTime: number, out: Sample): boolean {
     const r = this.remotes.get(id);
-    if (!r || r.buffer.length === 0) return null;
+    if (!r || r.buffer.length === 0) return false;
     const buf = r.buffer;
     const first = buf[0]!;
-    if (renderTime <= first.t) return first;
+    if (renderTime <= first.t) {
+      out.t = first.t;
+      out.x = first.x;
+      out.z = first.z;
+      out.yaw = first.yaw;
+      return true;
+    }
     for (let i = 0; i < buf.length - 1; i++) {
       const a = buf[i]!;
       const b = buf[i + 1]!;
       if (renderTime >= a.t && renderTime <= b.t) {
         const span = Math.max(1, b.t - a.t);
         const k = (renderTime - a.t) / span;
-        return {
-          t: renderTime,
-          x: a.x + (b.x - a.x) * k,
-          z: a.z + (b.z - a.z) * k,
-          yaw: a.yaw + (b.yaw - a.yaw) * k,
-        };
+        out.t = renderTime;
+        out.x = a.x + (b.x - a.x) * k;
+        out.z = a.z + (b.z - a.z) * k;
+        out.yaw = a.yaw + (b.yaw - a.yaw) * k;
+        return true;
       }
     }
-    return buf[buf.length - 1]!; // clamp al último (sin extrapolar)
+    const last = buf[buf.length - 1]!; // clamp al último (sin extrapolar)
+    out.t = last.t;
+    out.x = last.x;
+    out.z = last.z;
+    out.yaw = last.yaw;
+    return true;
   }
 
   private publish(status?: NetStatus): void {

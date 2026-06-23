@@ -26,9 +26,9 @@ function ScreenMessage({ children }: { children: React.ReactNode }) {
         placeItems: 'center',
         color: 'var(--color-accent)',
         fontFamily: 'var(--font-ui)',
-        letterSpacing: '0.25em',
+        letterSpacing: 'var(--tracking-widest)',
         textTransform: 'lowercase',
-        fontSize: 14,
+        fontSize: 'var(--text-lg)',
       }}
     >
       {children}
@@ -53,8 +53,8 @@ export default function Page() {
           left: 28,
           color: 'var(--atmo-tint, var(--color-accent))',
           fontFamily: 'var(--font-display)',
-          letterSpacing: '0.35em',
-          fontSize: 18,
+          letterSpacing: 'var(--tracking-cosmic)',
+          fontSize: 'var(--text-xl)',
           pointerEvents: 'none',
           userSelect: 'none',
         }}
@@ -70,8 +70,8 @@ export default function Page() {
           left: 28,
           color: 'var(--color-text-subtle)',
           fontFamily: 'var(--font-ui)',
-          letterSpacing: '0.18em',
-          fontSize: 11,
+          letterSpacing: 'var(--tracking-caps)',
+          fontSize: 'var(--text-sm)',
           textTransform: 'uppercase',
           pointerEvents: 'none',
           userSelect: 'none',

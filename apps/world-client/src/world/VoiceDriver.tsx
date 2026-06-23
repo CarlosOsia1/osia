@@ -4,6 +4,8 @@ import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getNetClient } from '../net/useNet';
+import { INTERP_DELAY_MS } from '../net/config';
+import type { Sample } from '../net/NetClient';
 import { meshVoice } from '../voice/MeshVoice';
 import { spatialGraph } from '../voice/SpatialGraph';
 
@@ -14,6 +16,7 @@ import { spatialGraph } from '../voice/SpatialGraph';
  */
 
 const HEAD_Y = 1.6; // altura de la "boca" del avatar remoto
+const NEIGHBOR_INTERVAL_S = 0.3; // recálculo del gating de proximidad
 
 export default function VoiceDriver() {
   const camera = useThree((s) => s.camera);
@@ -21,6 +24,10 @@ export default function VoiceDriver() {
   const fwd = useRef(new THREE.Vector3()).current;
   const up = useRef(new THREE.Vector3()).current;
   const acc = useRef(0);
+  // Buffers reutilizados (cero asignaciones por frame, §7): la muestra y el array de vecinos
+  // con sus entradas se reescriben en sitio en vez de crear objetos nuevos a 60 fps.
+  const sample = useRef<Sample>({ t: 0, x: 0, z: 0, yaw: 0 }).current;
+  const frame = useRef<{ id: number; dist: number }[]>([]).current;
 
   useFrame((_, delta) => {
     if (!spatialGraph.ready) return;
@@ -35,21 +42,23 @@ export default function VoiceDriver() {
     );
 
     const self = net.serverSelf;
-    const renderTime = performance.now() - 100;
-    const frame: { id: number; dist: number }[] = [];
-    for (const id of net.getRemoteIds()) {
-      const s = net.sampleRemote(id, renderTime);
-      if (!s) continue;
-      const dist = self ? Math.hypot(s.x - self.x, s.z - self.z) : 0;
-      spatialGraph.setPeerPosition(id, s.x, HEAD_Y, s.z, dist);
-      frame.push({ id, dist });
+    const renderTime = performance.now() - INTERP_DELAY_MS;
+    let n = 0;
+    for (const id of net.remoteIds()) {
+      if (!net.sampleRemote(id, renderTime, sample)) continue;
+      const dist = self ? Math.hypot(sample.x - self.x, sample.z - self.z) : 0;
+      spatialGraph.setPeerPosition(id, sample.x, HEAD_Y, sample.z, dist);
+      const e = frame[n] ?? (frame[n] = { id: 0, dist: 0 });
+      e.id = id;
+      e.dist = dist;
+      n++;
     }
 
     // Gating de proximidad cada ~300 ms (reusa las distancias ya calculadas este frame).
     acc.current += delta;
-    if (acc.current >= 0.3 && self) {
+    if (acc.current >= NEIGHBOR_INTERVAL_S && self) {
       acc.current = 0;
-      meshVoice.updateNeighbors(frame.sort((a, b) => a.dist - b.dist));
+      meshVoice.updateNeighbors(frame.slice(0, n).sort((a, b) => a.dist - b.dist));
     }
   });
 

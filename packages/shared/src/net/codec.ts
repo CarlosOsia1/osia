@@ -13,8 +13,10 @@
  * se implementa cuando se MIDA que la banda real supera el presupuesto, no antes.
  */
 
+import { isWeatherKind } from '@osia/atmosphere';
 import { C2S, S2C } from './opcodes';
 import { asEntityId } from '../domain/ids';
+import { isVoiceSignalKind } from './voiceState';
 import type { NetMessage, C2SMessage, S2CMessage } from './messages';
 
 const te = new TextEncoder();
@@ -254,8 +256,12 @@ export function decode<T extends NetMessage = NetMessage>(
         return { op, text: rd.str() } as T;
       case C2S.BYE:
         return { op } as T;
-      case C2S.VOICE_SIGNAL:
-        return { op, dstId: asEntityId(rd.u32()), kind: rd.u8(), payload: rd.str() } as T;
+      case C2S.VOICE_SIGNAL: {
+        const dstId = asEntityId(rd.u32());
+        const kind = rd.u8();
+        if (!isVoiceSignalKind(kind)) return null; // frame malformado → rechazar
+        return { op, dstId, kind, payload: rd.str() } as T;
+      }
       case C2S.VOICE_STATE:
         return { op, flags: rd.u8() } as T;
       // ---- S2C ----
@@ -287,7 +293,7 @@ export function decode<T extends NetMessage = NetMessage>(
           protocol,
           tickHz,
           entities,
-          atmosphere: { biome, weather: { kind, intensity } },
+          atmosphere: { biome, weather: { kind: isWeatherKind(kind) ? kind : 'despejado', intensity } },
           serverTime,
           resumeToken,
         } as T;
@@ -312,10 +318,17 @@ export function decode<T extends NetMessage = NetMessage>(
         return { op, t: rd.f64(), serverTime: rd.f64() } as T;
       case S2C.CHAT_MSG:
         return { op, id: asEntityId(rd.u32()), handle: rd.str(), text: rd.str() } as T;
-      case S2C.ATMOSPHERE_UPDATE:
-        return { op, biome: rd.str(), weather: { kind: rd.str(), intensity: rd.f64() } } as T;
-      case S2C.VOICE_SIGNAL:
-        return { op, srcId: asEntityId(rd.u32()), kind: rd.u8(), payload: rd.str() } as T;
+      case S2C.ATMOSPHERE_UPDATE: {
+        const biome = rd.str();
+        const k = rd.str();
+        return { op, biome, weather: { kind: isWeatherKind(k) ? k : 'despejado', intensity: rd.f64() } } as T;
+      }
+      case S2C.VOICE_SIGNAL: {
+        const srcId = asEntityId(rd.u32());
+        const kind = rd.u8();
+        if (!isVoiceSignalKind(kind)) return null; // frame malformado → rechazar
+        return { op, srcId, kind, payload: rd.str() } as T;
+      }
       case S2C.VOICE_STATE:
         return { op, id: asEntityId(rd.u32()), flags: rd.u8() } as T;
       case S2C.ERROR:

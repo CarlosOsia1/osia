@@ -7,6 +7,7 @@ import { LineBasicNodeMaterial } from 'three/webgpu';
 import { uniform, attribute, vec3, vec2, sin, cos, float } from 'three/tsl';
 import { precipKind, mulberry32 } from '@osia/atmosphere';
 import { world, atmo } from './atmosphereRuntime';
+import { prefersReducedMotion } from './motionPrefs';
 import { RAIN, SAND, FX_BOX } from './weatherConfig';
 
 /**
@@ -102,7 +103,7 @@ export default function RainStreaks() {
     }
     lines.visible = true;
     lines.position.copy(camera.position);
-    timeU.value += delta; // ← único trabajo de CPU por frame
+    if (!prefersReducedMotion()) timeU.value += delta; // §9: congela la caída con reduced-motion
     const isRain = kind === 'rain';
     const night = atmo.current.starsIntensity; // 0 día → 1 noche
 

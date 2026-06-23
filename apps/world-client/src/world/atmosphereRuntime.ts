@@ -14,7 +14,6 @@ import {
   resolveAtmosphere,
   CELESTIAL_CYCLE,
   type AtmosphereParams,
-  type WeatherKind,
   type WeatherState,
 } from '@osia/atmosphere';
 
@@ -37,10 +36,11 @@ export const world = {
   weather: clear(),
 };
 
-/** Aplica el estado de atmósfera que llega del server (autoritativo). */
-export function applyServerAtmosphere(biome: string, weather: { kind: string; intensity: number }): void {
+/** Aplica el estado de atmósfera que llega del server (autoritativo). El `kind` ya viene
+ *  validado como WeatherKind por el codec (decode), sin casts inseguros. */
+export function applyServerAtmosphere(biome: string, weather: WeatherState): void {
   world.liveBiomeId = biome;
-  world.liveWeather = { kind: weather.kind as WeatherKind, intensity: weather.intensity };
+  world.liveWeather = { kind: weather.kind, intensity: weather.intensity };
 }
 
 /** El panel de test escribe estos overrides (preview LOCAL, no afecta a otros). */

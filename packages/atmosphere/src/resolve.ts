@@ -25,16 +25,22 @@ export function moonDirFor(t: number): Vec3 {
   return norm([-Math.cos(angle), -Math.sin(angle), -0.35]);
 }
 
-export function lerpParams(a: AtmosphereParams, b: AtmosphereParams, k: number): AtmosphereParams {
+/** Params SIN direcciones: lo único interpolable entre keyframes. Las direcciones sol/luna
+ *  son analíticas por hora (sunDirFor/moonDirFor), no se interpolan entre keyframes. */
+export type LerpableParams = Omit<AtmosphereParams, 'sunDir' | 'moonDir'>;
+
+/**
+ * Interpola los params interpolables entre dos keyframes. NO toca sunDir/moonDir (no son
+ * suyas: las compone resolveAtmosphere por hora). Función correcta por sí sola (sin parche externo).
+ */
+export function lerpParams(a: AtmosphereParams, b: AtmosphereParams, k: number): LerpableParams {
   return {
     skyTop: lerpRGB(a.skyTop, b.skyTop, k),
     skyHorizon: lerpRGB(a.skyHorizon, b.skyHorizon, k),
     fogColor: lerpRGB(a.fogColor, b.fogColor, k),
     fogDensity: lerp(a.fogDensity, b.fogDensity, k),
-    sunDir: a.sunDir, // sustituido por sunDirFor en resolveAtmosphere
     sunColor: lerpRGB(a.sunColor, b.sunColor, k),
     sunIntensity: lerp(a.sunIntensity, b.sunIntensity, k),
-    moonDir: a.moonDir,
     moonColor: lerpRGB(a.moonColor, b.moonColor, k),
     moonIntensity: lerp(a.moonIntensity, b.moonIntensity, k),
     ambientColor: lerpRGB(a.ambientColor, b.ambientColor, k),

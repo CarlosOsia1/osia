@@ -5,27 +5,27 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OSIA_COLORS } from '@osia/ui';
 import { getNetClient, useNetState } from '../net/useNet';
+import { INTERP_DELAY_MS } from '../net/config';
+import type { Sample } from '../net/NetClient';
 import AvatarMesh from './AvatarMesh';
 
 /**
  * RemotePlayers (S0.5-H3) — un avatar por entidad remota, interpolado con render-delay
- * (~100 ms) entre snapshots. El roster (join/leave) viene del store; las posiciones, por
- * refs en useFrame (sin re-render).
+ * (INTERP_DELAY_MS) entre snapshots. El roster (join/leave) viene del store; las posiciones,
+ * por refs en useFrame (sin re-render).
  */
-
-const INTERP_DELAY = 100; // ms
 
 function RemoteAvatar({ id }: { id: number }) {
   const group = useRef<THREE.Group>(null);
   const net = useRef(getNetClient()).current;
   const prev = useRef(new THREE.Vector3());
   const inited = useRef(false);
+  const s = useRef<Sample>({ t: 0, x: 0, z: 0, yaw: 0 }).current; // muestra reutilizable (sin alloc/frame)
 
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    const s = net.sampleRemote(id, performance.now() - INTERP_DELAY);
-    if (!s) return;
+    if (!net.sampleRemote(id, performance.now() - INTERP_DELAY_MS, s)) return;
     if (!inited.current) {
       g.position.set(s.x, 0, s.z);
       prev.current.set(s.x, 0, s.z);
