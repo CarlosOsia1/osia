@@ -1,0 +1,26 @@
+{
+  "name": "@osia/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "eslint app i18n",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"@osia/web: sin tests aún\" && exit 0"
+  },
+  "dependencies": {
+    "@osia/i18n": "workspace:*",
+    "@osia/shared": "workspace:*",
+    "@osia/ui": "workspace:*",
+    "next": "^15.2.4",
+    "next-intl": "^3.26.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4"
+  }
+}

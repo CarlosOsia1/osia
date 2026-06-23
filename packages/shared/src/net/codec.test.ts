@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { encode, decode } from './codec';
-import { C2S, S2C, ErrorCode } from './opcodes';
+import { C2S, S2C, WireErrorCode } from './opcodes';
 import { asEntityId } from '../domain/ids';
 import type {
   HelloMsg,
@@ -123,7 +123,7 @@ test('round-trip ATMOSPHERE_UPDATE / ERROR', () => {
   };
   assert.deepEqual(decode(encode(atmo)), atmo);
 
-  const err: ErrorMsg = { op: S2C.ERROR, code: ErrorCode.BAD_TICKET, message: 'ticket inválido' };
+  const err: ErrorMsg = { op: S2C.ERROR, code: WireErrorCode.BAD_TICKET, message: 'ticket inválido' };
   assert.deepEqual(decode(encode(err)), err);
 });
 

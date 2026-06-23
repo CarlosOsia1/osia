@@ -10,7 +10,7 @@ import type { IncomingMessage } from 'node:http';
 import {
   C2S,
   S2C,
-  ErrorCode,
+  WireErrorCode,
   normalizeChat,
   PROTOCOL_VERSION,
   TICK_HZ,
@@ -49,7 +49,7 @@ const VOICE_REFILL_MS = 20;
 export function registerConnection(world: World, ws: WebSocket, req: IncomingMessage): void {
   // §8: la allowlist no debe ser eludible omitiendo el header Origin (rechazado en prod).
   if (!originAllowed(req.headers.origin)) {
-    send(ws, { op: S2C.ERROR, code: ErrorCode.BAD_MESSAGE, message: 'origin no permitido' });
+    send(ws, { op: S2C.ERROR, code: WireErrorCode.BAD_MESSAGE, message: 'origin no permitido' });
     ws.close();
     return;
   }
@@ -58,7 +58,7 @@ export function registerConnection(world: World, ws: WebSocket, req: IncomingMes
   // HELLO_TIMEOUT (docs/05 §2.1): un socket que no se autentica a tiempo se cierra.
   conn.helloTimer = setTimeout(() => {
     if (conn.entityId === null) {
-      send(ws, { op: S2C.ERROR, code: ErrorCode.TIMEOUT, message: 'esperaba HELLO' });
+      send(ws, { op: S2C.ERROR, code: WireErrorCode.TIMEOUT, message: 'esperaba HELLO' });
       ws.close();
     }
   }, HELLO_TIMEOUT_MS);
@@ -89,9 +89,9 @@ function spawnPoint(i: number): { x: number; z: number } {
 async function onMessage(world: World, conn: Conn, raw: Uint8Array): Promise<void> {
   const msg = decode<C2SMessage>(raw);
   if (!msg)
-    return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_MESSAGE, message: 'mensaje inválido' });
+    return void send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_MESSAGE, message: 'mensaje inválido' });
   if (conn.entityId === null && msg.op !== C2S.HELLO) {
-    return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_MESSAGE, message: 'esperaba HELLO' });
+    return void send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_MESSAGE, message: 'esperaba HELLO' });
   }
   switch (msg.op) {
     case C2S.HELLO:
@@ -123,7 +123,7 @@ async function onMessage(world: World, conn: Conn, raw: Uint8Array): Promise<voi
 async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
   if (conn.entityId !== null) return;
   if (msg.protocol !== PROTOCOL_VERSION) {
-    send(conn.ws, { op: S2C.ERROR, code: ErrorCode.PROTOCOL_MISMATCH, message: 'protocolo' });
+    send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.PROTOCOL_MISMATCH, message: 'protocolo' });
     return void conn.ws.close();
   }
   const { hub, director } = world;
@@ -164,12 +164,12 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
   try {
     handle = (await verifyTicket(msg.ticket)).handle;
   } catch {
-    send(conn.ws, { op: S2C.ERROR, code: ErrorCode.BAD_TICKET, message: 'ticket inválido' });
+    send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_TICKET, message: 'ticket inválido' });
     return void conn.ws.close();
   }
 
   if (hub.full) {
-    send(conn.ws, { op: S2C.ERROR, code: ErrorCode.INSTANCE_FULL, message: 'instancia llena' });
+    send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.INSTANCE_FULL, message: 'instancia llena' });
     return void conn.ws.close();
   }
 
@@ -224,7 +224,7 @@ function onChat(world: World, conn: Conn, msg: ChatSendMsg): void {
   const rt = world.hub.entities.get(conn.entityId);
   if (!rt) return;
   if (!takeChatToken(conn)) {
-    return void send(conn.ws, { op: S2C.ERROR, code: ErrorCode.RATE_LIMIT, message: 'demasiados mensajes' });
+    return void send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.RATE_LIMIT, message: 'demasiados mensajes' });
   }
   const text = normalizeChat(msg.text); // mismo saneo que el cliente (autoridad)
   if (text) broadcastAll(world.conns, { op: S2C.CHAT_MSG, id: rt.state.id, handle: rt.state.handle, text });

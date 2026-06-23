@@ -65,5 +65,10 @@
   },
   "lang": {
     "label": "idioma"
+  },
+  "web": {
+    "kicker": "Vestíbulo",
+    "building": "Fase 1 en construcción — el Vestíbulo nace delgado.",
+    "styleguide": "Ver el design system"
   }
 }

@@ -65,5 +65,10 @@
   },
   "lang": {
     "label": "language"
+  },
+  "web": {
+    "kicker": "Vestibule",
+    "building": "Phase 1 in progress — the Vestibule is born thin.",
+    "styleguide": "View the design system"
   }
 }

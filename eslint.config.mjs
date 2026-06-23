@@ -79,8 +79,10 @@ export default tseslint.config(
   {
     // i18n (CLAUDE.md §3.2): CERO strings de UI hardcodeados. Todo texto visible sale de
     // @osia/i18n vía t('...'). Caza texto literal en JSX y en atributos mostrables.
-    files: ['apps/world-client/app/**/*.tsx', 'apps/world-client/src/**/*.tsx', 'packages/ui/src/**/*.tsx'],
-    ignores: ['**/*.test.tsx'],
+    // Aplica a TODA app del ecosistema (world-client, web, futuras social/games) + @osia/ui.
+    // Excepción: `app/styleguide/**` es una herramienta de DEV (no UI de producto), no copy.
+    files: ['apps/**/app/**/*.tsx', 'apps/**/src/**/*.tsx', 'packages/ui/src/**/*.tsx'],
+    ignores: ['**/*.test.tsx', '**/app/styleguide/**'],
     rules: {
       'no-restricted-syntax': [
         'error',

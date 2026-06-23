@@ -10,8 +10,18 @@ export const OSIA = {
 /** Identificadores de las superficies (apps) del ecosistema. */
 export type OsiaSurfaceId = 'mundo' | 'social' | 'juegos';
 
-// --- Identificadores de dominio (branded, anti primitive-obsession) ---
+// --- Identificadores y enums de dominio (branded + espejo de los CHECK del ER) ---
 export * from './domain/ids';
+export * from './domain/enums';
+
+// --- Contratos REST (sobre de error, paginación, DTOs de identidad) ---
+export * from './rest';
+
+// --- Esquemas Zod (validación REST en servidor + formularios en cliente) ---
+export * from './schemas';
+
+// --- Catálogo declarativo de experiencias del Vestíbulo ---
+export * from './catalog/experiences';
 
 // --- Contrato de red (mundo en tiempo real) ---
 export * from './net/opcodes';

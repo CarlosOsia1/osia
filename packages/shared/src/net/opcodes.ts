@@ -36,8 +36,12 @@ export const S2C = {
 export type C2SOpcode = (typeof C2S)[keyof typeof C2S];
 export type S2COpcode = (typeof S2C)[keyof typeof S2C];
 
-/** Códigos de error en mensajes ERROR (0x8E). */
-export const ErrorCode = {
+/**
+ * Códigos de error del frame binario ERROR (0x8E) — numéricos por compacidad en el cable.
+ * Distinto de la taxonomía REST `ErrorCode` (string, docs/10 §5.1, en `rest/errors.ts`):
+ * esto es nivel-cable del world-server; aquélla es el contrato HTTP del ecosistema.
+ */
+export const WireErrorCode = {
   BAD_TICKET: 1,
   PROTOCOL_MISMATCH: 2,
   INSTANCE_FULL: 3,
@@ -46,4 +50,4 @@ export const ErrorCode = {
   TIMEOUT: 6,
 } as const;
 
-export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
+export type WireErrorCodeValue = (typeof WireErrorCode)[keyof typeof WireErrorCode];

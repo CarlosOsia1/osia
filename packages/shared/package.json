@@ -9,12 +9,13 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@osia/atmosphere": "workspace:*"
+    "@osia/atmosphere": "workspace:*",
+    "zod": "^3.23.8"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "tsx src/net/codec.test.ts"
+    "test": "tsx src/net/codec.test.ts && tsx src/contracts.test.ts"
   }
 }

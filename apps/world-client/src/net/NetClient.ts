@@ -17,7 +17,7 @@ import {
   decode,
   C2S,
   S2C,
-  ErrorCode,
+  WireErrorCode,
   normalizeChat,
   PROTOCOL_VERSION,
   MAX_VOICE_PAYLOAD_BYTES,
@@ -282,7 +282,7 @@ export class NetClient {
       }
       case S2C.ERROR: {
         // Código estable; el componente lo traduce (i18n). NetClient no arma copy de UI.
-        if (msg.code === ErrorCode.RATE_LIMIT) setChatNotice('rateLimited');
+        if (msg.code === WireErrorCode.RATE_LIMIT) setChatNotice('rateLimited');
         break;
       }
       case S2C.VOICE_SIGNAL: {
