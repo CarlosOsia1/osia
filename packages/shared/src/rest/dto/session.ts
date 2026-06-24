@@ -30,9 +30,12 @@ export type SessionDto = {
   passport: Passport;
 };
 
-/** Respuesta `201` de `POST /v1/auth/signup`: cuenta + perfil + sesión iniciada. */
+/**
+ * Respuesta `201` de `POST /v1/auth/signup`: cuenta + perfil. `session` es `null` hasta verificar
+ * el email (invite-only + verificación obligatoria, F1-DoD-3); la sesión real llega en S1.5.
+ */
 export type SignupResultDto = {
   account: AccountDto;
   profile: ProfileDto;
-  session: SessionDto;
+  session: SessionDto | null;
 };
