@@ -12,6 +12,8 @@ import {
 import type { Request, Response } from 'express';
 import {
   ErrorCode,
+  SESSION_REFRESH_COOKIE,
+  SESSION_REFRESH_MAX_AGE_MS,
   loginSchema,
   resendVerificationSchema,
   signupSchema,
@@ -34,9 +36,9 @@ import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
 
-/** Nombre de la cookie de refresh (HttpOnly) que sostiene el SSO entre apps. */
-const RT_COOKIE = 'osia.rt';
-const RT_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 días
+/** Cookie de refresh (HttpOnly) que sostiene el SSO entre apps — nombre/vida compartidos. */
+const RT_COOKIE = SESSION_REFRESH_COOKIE;
+const RT_MAX_AGE_MS = SESSION_REFRESH_MAX_AGE_MS;
 
 /**
  * Auth (contexto identity): signup (gate invite-only), login, refresh, logout, session.

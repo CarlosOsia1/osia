@@ -23,6 +23,9 @@ export * from './schemas';
 // --- Catálogo declarativo de experiencias del Vestíbulo ---
 export * from './catalog/experiences';
 
+// --- Constantes de auth/SSO (cookie de refresh compartida) ---
+export * from './auth';
+
 // --- Contrato de red (mundo en tiempo real) ---
 export * from './net/opcodes';
 export * from './net/constants';

@@ -22,7 +22,9 @@ export function LoginForm() {
     mutationFn: () => identity.login({ email, password }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: OSIA_SESSION_KEY });
-      router.push('/passport');
+      // Honra ?next= (del middleware) si es una ruta interna; si no, al pasaporte.
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.push(next && next.startsWith('/') ? next : '/passport');
     },
   });
 
