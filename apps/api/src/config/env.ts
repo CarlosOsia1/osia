@@ -21,6 +21,10 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+  // World ticket (HS256) compartido con el world-server: DEBE coincidir con su WORLD_TICKET_SECRET.
+  WORLD_TICKET_SECRET: z.string().min(1).default('osia-dev-ticket-secret-change-me'),
+  // URL pública del WS que se devuelve al cliente al emitir el ticket.
+  WORLD_WS_URL: z.string().min(1).default('ws://localhost:2567/world'),
 });
 
 export type Env = z.infer<typeof envSchema> & {

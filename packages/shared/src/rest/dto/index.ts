@@ -5,3 +5,4 @@ export * from './profile';
 export * from './avatar';
 export * from './invitation';
 export * from './session';
+export * from './world-ticket';
