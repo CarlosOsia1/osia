@@ -12,6 +12,7 @@ export {
   useTheme,
   useReducedMotion,
   type ThemePrefs,
+  type ReducedMotionPref,
 } from './ThemeProvider';
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button';
 export { Card, type CardProps } from './Card';
@@ -21,4 +22,5 @@ export { Field, type FieldProps } from './Field';
 export { PasswordField, type PasswordFieldProps } from './PasswordField';
 export { CodeInput, type CodeInputProps } from './CodeInput';
 export { FormError } from './FormError';
+export { Switch, type SwitchProps } from './Switch';
 export { Dot } from './Dot';

@@ -6,6 +6,10 @@ import { ProfileController } from './web/profile.controller';
 import { ProfileService } from './application/profile.service';
 import { PROFILE_REPOSITORY } from './application/ports/out/profile.repository';
 import { PgProfileRepository } from './infrastructure/postgres/profile.repository';
+import { AvatarController } from './web/avatar.controller';
+import { AvatarService } from './application/avatar.service';
+import { AVATAR_REPOSITORY } from './application/ports/out/avatar.repository';
+import { PgAvatarRepository } from './infrastructure/postgres/avatar.repository';
 import { JoinWaitlistUseCase } from './application/use-cases/join-waitlist.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
@@ -30,9 +34,16 @@ import { AuthGuard } from '../common/auth.guard';
  * adapters concretos solo se cablean aquí.
  */
 @Module({
-  controllers: [AuthController, WaitlistController, WorldController, ProfileController],
+  controllers: [
+    AuthController,
+    WaitlistController,
+    WorldController,
+    ProfileController,
+    AvatarController,
+  ],
   providers: [
     ProfileService,
+    AvatarService,
     JoinWaitlistUseCase,
     SignupUseCase,
     LoginUseCase,
@@ -47,6 +58,7 @@ import { AuthGuard } from '../common/auth.guard';
     { provide: ACCOUNT_REPOSITORY, useClass: PgAccountRepository },
     { provide: WORLD_TICKET_PORT, useClass: JoseWorldTicketAdapter },
     { provide: PROFILE_REPOSITORY, useClass: PgProfileRepository },
+    { provide: AVATAR_REPOSITORY, useClass: PgAvatarRepository },
   ],
 })
 export class IdentityModule {}

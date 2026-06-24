@@ -4,3 +4,4 @@ export * from './auth';
 export * from './waitlist';
 export * from './world';
 export * from './profile';
+export * from './avatar';

@@ -1,12 +1,17 @@
 import {
   asAccountId,
   asProfileId,
+  PROFILE_PREFS_DEFAULT,
   type AccountDto,
   type AccountRole,
   type AccountStatus,
+  type AvatarConfig,
+  type AvatarDto,
+  type AvatarKind,
   type Passport,
   type ProfileBrief,
   type ProfileDto,
+  type ProfilePrefs,
   type ProfilePrivacy,
 } from '@osia/shared';
 
@@ -45,11 +50,12 @@ export type ProfileRow = {
   popularity_points: number;
   reputation: number;
   privacy: ProfilePrivacy;
+  prefs: Partial<ProfilePrefs>;
   created_at: Date;
 };
 
 export const PROFILE_COLS =
-  'id, account_id, handle, display_name, bio, avatar_url, accent_color, popularity_points, reputation, privacy, created_at';
+  'id, account_id, handle, display_name, bio, avatar_url, accent_color, popularity_points, reputation, privacy, prefs, created_at';
 
 export function toProfileDto(row: ProfileRow): ProfileDto {
   return {
@@ -63,6 +69,8 @@ export function toProfileDto(row: ProfileRow): ProfileDto {
     bio: row.bio,
     reputation: row.reputation,
     privacy: row.privacy,
+    // Claves ausentes en el jsonb caen al default de marca (sin migración de datos).
+    prefs: { ...PROFILE_PREFS_DEFAULT, ...row.prefs },
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -111,6 +119,29 @@ export function toPassport(accountId: string, row: PassportRow): Passport {
     // El acceso al Mundo requiere email verificado (F1-DoD-3, §8).
     scopes: emailVerified ? ['world:join'] : [],
     featureFlags: { world: emailVerified, social: false, games: false },
+  };
+}
+
+export type AvatarRow = {
+  id: string;
+  account_id: string;
+  kind: AvatarKind;
+  config: AvatarConfig;
+  gltf_url: string | null;
+  is_active: boolean;
+  created_at: Date;
+};
+
+export const AVATAR_COLS = 'id, account_id, kind, config, gltf_url, is_active, created_at';
+
+export function toAvatarDto(row: AvatarRow): AvatarDto {
+  return {
+    id: row.id,
+    kind: row.kind,
+    config: row.config,
+    gltfUrl: row.gltf_url,
+    isActive: row.is_active,
+    createdAt: row.created_at.toISOString(),
   };
 }
 

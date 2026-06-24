@@ -41,6 +41,11 @@ export class PgProfileRepository implements ProfileRepository {
       sets.push(`accent_color = $${i++}`);
       values.push(patch.accentColor);
     }
+    if (patch.prefs !== undefined) {
+      // Mezcla sobre el jsonb existente (no reemplaza): claves omitidas se conservan.
+      sets.push(`prefs = prefs || $${i++}::jsonb`);
+      values.push(JSON.stringify(patch.prefs));
+    }
 
     if (sets.length === 0) {
       const current = await this.getMine(accountId);

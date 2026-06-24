@@ -1,9 +1,13 @@
 import { DEFAULT_WORLD_ID } from '@osia/shared';
 import type {
+  AvatarDto,
   LoginInput,
+  ProfileDto,
   SessionDto,
   SignupInput,
   SignupResultDto,
+  UpdateAvatarInput,
+  UpdateProfileInput,
   VerifyEmailInput,
   WaitlistEntryDto,
   WaitlistInput,
@@ -107,6 +111,48 @@ export class OsiaIdentityClient {
     await this.request<void>('/v1/auth/logout', { method: 'POST' });
     this.accessToken = null;
     this.accessExpiresAt = 0;
+  }
+
+  /** Perfil propio (vista privada). Requiere sesión. */
+  async getMyProfile(): Promise<ProfileDto> {
+    const token = await this.ensureAccessToken();
+    const { profile } = await this.request<{ profile: ProfileDto }>('/v1/profiles/me', {
+      method: 'GET',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    return profile;
+  }
+
+  /** Edita el perfil propio (parcial). */
+  async updateMyProfile(patch: UpdateProfileInput): Promise<ProfileDto> {
+    const token = await this.ensureAccessToken();
+    const { profile } = await this.request<{ profile: ProfileDto }>('/v1/profiles/me', {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(patch),
+    });
+    return profile;
+  }
+
+  /** Avatar activo propio. Requiere sesión. */
+  async getMyAvatar(): Promise<AvatarDto> {
+    const token = await this.ensureAccessToken();
+    const { avatar } = await this.request<{ avatar: AvatarDto }>('/v1/avatars/me', {
+      method: 'GET',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    return avatar;
+  }
+
+  /** Edita la config del avatar activo (parcial). */
+  async updateMyAvatar(patch: UpdateAvatarInput): Promise<AvatarDto> {
+    const token = await this.ensureAccessToken();
+    const { avatar } = await this.request<{ avatar: AvatarDto }>('/v1/avatars/me', {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${token}` },
+      body: JSON.stringify(patch),
+    });
+    return avatar;
   }
 
   /** Pide un world ticket (S1.3-H5) para entrar al Mundo; usa el access token vigente. */
