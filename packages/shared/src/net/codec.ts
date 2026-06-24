@@ -169,6 +169,7 @@ export function encode(msg: NetMessage): Uint8Array {
       for (const e of msg.entities) {
         w.u32(e.id);
         w.str(e.handle);
+        w.str(e.accentColor);
         w.f64(e.x);
         w.f64(e.z);
         w.f64(e.yaw);
@@ -193,6 +194,7 @@ export function encode(msg: NetMessage): Uint8Array {
     case S2C.ENTITY_JOIN:
       w.u32(msg.entity.id);
       w.str(msg.entity.handle);
+      w.str(msg.entity.accentColor);
       w.f64(msg.entity.x);
       w.f64(msg.entity.z);
       w.f64(msg.entity.yaw);
@@ -276,6 +278,7 @@ export function decode<T extends NetMessage = NetMessage>(
           entities.push({
             id: asEntityId(rd.u32()),
             handle: rd.str(),
+            accentColor: rd.str(),
             x: rd.f64(),
             z: rd.f64(),
             yaw: rd.f64(),
@@ -310,7 +313,14 @@ export function decode<T extends NetMessage = NetMessage>(
       case S2C.ENTITY_JOIN:
         return {
           op,
-          entity: { id: asEntityId(rd.u32()), handle: rd.str(), x: rd.f64(), z: rd.f64(), yaw: rd.f64() },
+          entity: {
+            id: asEntityId(rd.u32()),
+            handle: rd.str(),
+            accentColor: rd.str(),
+            x: rd.f64(),
+            z: rd.f64(),
+            yaw: rd.f64(),
+          },
         } as T;
       case S2C.ENTITY_LEAVE:
         return { op, id: asEntityId(rd.u32()) } as T;

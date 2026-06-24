@@ -65,6 +65,8 @@ export const ACCENT_PALETTE = [
   '#F5F1E8', // marfil
 ] as const;
 export type AccentColor = (typeof ACCENT_PALETTE)[number];
+/** Acento por defecto (champán): residentes sin acento elegido y entidades anónimas de F0. */
+export const DEFAULT_ACCENT_COLOR: AccentColor = ACCENT_PALETTE[0];
 export const isAccentInPalette = (v: unknown): v is AccentColor =>
   typeof v === 'string' && (ACCENT_PALETTE as readonly string[]).includes(v);
 /** Forma válida de un `accentColor` (hex de 6 dígitos, espejo del CHECK del ER). */

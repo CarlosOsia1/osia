@@ -28,6 +28,7 @@ export class IssueWorldTicketUseCase {
       handle: passport.profile.handle,
       worldId,
       accountId,
+      accentColor: passport.profile.accentColor,
     });
     return { ticket, expiresIn, wsUrl: this.env.WORLD_WS_URL };
   }

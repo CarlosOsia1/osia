@@ -14,7 +14,15 @@ export async function issueTicket(handle: string, worldId: string): Promise<stri
   return issueWorldTicket({ handle, worldId }, config.ticketSecret);
 }
 
-export type TicketPayload = { handle: string; worldId: string; jti: string };
+export type TicketPayload = {
+  handle: string;
+  worldId: string;
+  /** Cuenta del residente (S1.8; ausente en el anónimo F0) — para asociar la presencia. */
+  accountId?: string;
+  /** Acento del pasaporte (S1.8-H2) — el server lo difunde sin tocar la DB. */
+  accentColor?: string;
+  jti: string;
+};
 
 export async function verifyTicket(token: string): Promise<TicketPayload> {
   const v = await verifyWorldTicket(token, config.ticketSecret);
@@ -24,5 +32,11 @@ export async function verifyTicket(token: string): Promise<TicketPayload> {
   if (usedJti.has(v.jti)) throw new Error('ticket reusado');
   usedJti.set(v.jti, now + WORLD_TICKET_TTL_MS);
 
-  return { handle: v.handle, worldId: v.worldId, jti: v.jti };
+  return {
+    handle: v.handle,
+    worldId: v.worldId,
+    accountId: v.accountId,
+    accentColor: v.accentColor,
+    jti: v.jti,
+  };
 }

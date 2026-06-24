@@ -48,7 +48,7 @@ test('round-trip WELCOME y DELTA con entidades', () => {
     instanceId: 'hub',
     protocol: 1,
     tickHz: 20,
-    entities: [{ id: asEntityId(1), handle: 'carlos', x: 0, z: 6, yaw: 0 }],
+    entities: [{ id: asEntityId(1), handle: 'carlos', accentColor: '#CBB89A', x: 0, z: 6, yaw: 0 }],
     atmosphere: { biome: 'bosque-celeste', weather: { kind: 'despejado', intensity: 0 } },
     serverTime: 1_700_000_000_000,
     resumeToken: 'tok-abc',
@@ -104,7 +104,7 @@ test('round-trip CHAT_SEND / CHAT_MSG', () => {
 test('round-trip ENTITY_JOIN / ENTITY_LEAVE / BYE', () => {
   const join: EntityJoinMsg = {
     op: S2C.ENTITY_JOIN,
-    entity: { id: asEntityId(9), handle: 'Vega', x: 2.5, z: -3.25, yaw: 1.1 },
+    entity: { id: asEntityId(9), handle: 'Vega', accentColor: '#B8A07E', x: 2.5, z: -3.25, yaw: 1.1 },
   };
   assert.deepEqual(decode(encode(join)), join);
 

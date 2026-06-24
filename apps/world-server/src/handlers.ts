@@ -19,6 +19,7 @@ import {
   MAX_VOICE_PAYLOAD_BYTES,
   MAX_QUEUED_INPUTS,
   MAX_INPUT_DT_S,
+  DEFAULT_ACCENT_COLOR,
   decode,
   type EntityId,
   type C2SMessage,
@@ -159,10 +160,14 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
     }
   }
 
-  // ALTA NUEVA: requiere ticket válido.
+  // ALTA NUEVA: requiere ticket válido. Del ticket sale la identidad (handle real + acento del
+  // pasaporte en F1); el anónimo F0 cae al acento por defecto.
   let handle: string;
+  let accentColor: string;
   try {
-    handle = (await verifyTicket(msg.ticket)).handle;
+    const verified = await verifyTicket(msg.ticket);
+    handle = verified.handle;
+    accentColor = verified.accentColor ?? DEFAULT_ACCENT_COLOR;
   } catch {
     send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_TICKET, message: 'ticket inválido' });
     return void conn.ws.close();
@@ -178,7 +183,7 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
   clearHelloTimer(conn); // autenticado por ticket válido
   world.peers.set(id, conn);
   const token = randomUUID();
-  const rt = hub.add(id, handle, spawnPoint(hub.entities.size), token);
+  const rt = hub.add(id, handle, accentColor, spawnPoint(hub.entities.size), token);
 
   send(conn.ws, {
     op: S2C.WELCOME,

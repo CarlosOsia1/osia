@@ -21,6 +21,7 @@ import {
   normalizeChat,
   PROTOCOL_VERSION,
   DEFAULT_WORLD_ID,
+  DEFAULT_ACCENT_COLOR,
   MAX_VOICE_PAYLOAD_BYTES,
   asEntityId,
   type S2CMessage,
@@ -40,7 +41,7 @@ import { applyServerAtmosphere } from '../world/atmosphereRuntime';
 import { reportServerOffset } from './serverClock';
 
 export type Sample = { t: number; x: number; z: number; yaw: number };
-type Remote = { handle: string; buffer: Sample[] };
+type Remote = { handle: string; accentColor: string; buffer: Sample[] };
 
 const HANDLES = [
   'Orión',
@@ -258,6 +259,7 @@ export class NetClient {
           else
             this.remotes.set(e.id, {
               handle: e.handle,
+              accentColor: e.accentColor,
               buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }],
             });
         }
@@ -278,7 +280,8 @@ export class NetClient {
           }
           let r = this.remotes.get(e.id);
           if (!r) {
-            r = { handle: '', buffer: [] }; // el handle llega por WELCOME/ENTITY_JOIN, no en el DELTA
+            // handle/acento llegan por WELCOME/ENTITY_JOIN, no en el DELTA: default hasta entonces.
+            r = { handle: '', accentColor: DEFAULT_ACCENT_COLOR, buffer: [] };
             this.remotes.set(e.id, r);
             this.publish();
           }
@@ -295,6 +298,7 @@ export class NetClient {
         if (e.id !== this.selfId && !this.remotes.has(e.id)) {
           this.remotes.set(e.id, {
             handle: e.handle,
+            accentColor: e.accentColor,
             buffer: [{ t: performance.now(), x: e.x, z: e.z, yaw: e.yaw }],
           });
           this.publish();
@@ -417,7 +421,11 @@ export class NetClient {
   }
 
   private publish(status?: NetStatus): void {
-    const remotes = [...this.remotes.entries()].map(([id, r]) => ({ id, handle: r.handle }));
+    const remotes = [...this.remotes.entries()].map(([id, r]) => ({
+      id,
+      handle: r.handle,
+      accentColor: r.accentColor,
+    }));
     setNetState({
       ...(status ? { status } : {}),
       selfId: this.selfId,

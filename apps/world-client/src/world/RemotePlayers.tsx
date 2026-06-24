@@ -2,20 +2,30 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { OSIA_COLORS } from '@osia/ui';
+import { Nameplate } from '@osia/ui';
 import { getNetClient, useNetState } from '../net/useNet';
 import { INTERP_DELAY_MS } from '../net/config';
 import type { Sample } from '../net/NetClient';
 import AvatarMesh from './AvatarMesh';
 
 /**
- * RemotePlayers (S0.5-H3) — un avatar por entidad remota, interpolado con render-delay
- * (INTERP_DELAY_MS) entre snapshots. El roster (join/leave) viene del store; las posiciones,
- * por refs en useFrame (sin re-render).
+ * RemotePlayers (S0.5-H3 / S1.8-H2) — un avatar por entidad remota, interpolado con render-delay
+ * (INTERP_DELAY_MS) entre snapshots. El roster (join/leave + identidad: handle + acento) viene del
+ * store; las posiciones, por refs en useFrame (sin re-render). El avatar se tiñe con el acento del
+ * residente y lleva su nameplate (identidad visible).
  */
 
-function RemoteAvatar({ id }: { id: number }) {
+function RemoteAvatar({
+  id,
+  handle,
+  accentColor,
+}: {
+  id: number;
+  handle: string;
+  accentColor: string;
+}) {
   const group = useRef<THREE.Group>(null);
   const net = useRef(getNetClient()).current;
   const prev = useRef(new THREE.Vector3());
@@ -41,7 +51,12 @@ function RemoteAvatar({ id }: { id: number }) {
 
   return (
     <group ref={group}>
-      <AvatarMesh cloakColor={OSIA_COLORS.taupe} />
+      <AvatarMesh cloakColor={accentColor} />
+      {handle ? (
+        <Html position={[0, 2.6, 0]} center distanceFactor={11}>
+          <Nameplate name={handle} accentColor={accentColor} />
+        </Html>
+      ) : null}
     </group>
   );
 }
@@ -51,7 +66,7 @@ export default function RemotePlayers() {
   return (
     <>
       {remotes.map((r) => (
-        <RemoteAvatar key={r.id} id={r.id} />
+        <RemoteAvatar key={r.id} id={r.id} handle={r.handle} accentColor={r.accentColor} />
       ))}
     </>
   );

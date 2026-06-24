@@ -519,6 +519,31 @@
   flex: none;
 }
 
+/* ---- Nameplate: nombre del residente sobre su avatar (HUD diegético) ---- */
+.osia-nameplate {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: rgba(13, 13, 13, 0.6);
+  backdrop-filter: blur(4px);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+.osia-nameplate__dot {
+  flex: none;
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: var(--radius-full);
+}
+
 /* ---- Tipografía utilitaria ---- */
 .osia-overline {
   font-family: var(--font-ui);

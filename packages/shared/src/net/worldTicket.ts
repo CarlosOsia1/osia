@@ -15,6 +15,7 @@ export async function issueWorldTicket(claims: WorldTicketClaims, secret: string
   const key = new TextEncoder().encode(secret);
   const payload: Record<string, string> = { handle: claims.handle, worldId: claims.worldId };
   if (claims.accountId) payload.accountId = claims.accountId;
+  if (claims.accentColor) payload.accentColor = claims.accentColor;
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setJti(randomUUID())
@@ -34,6 +35,7 @@ export async function verifyWorldTicket(token: string, secret: string): Promise<
     handle: typeof payload.handle === 'string' ? payload.handle : 'anónimo',
     worldId: typeof payload.worldId === 'string' ? payload.worldId : DEFAULT_WORLD_ID,
     accountId: typeof payload.accountId === 'string' ? payload.accountId : undefined,
+    accentColor: typeof payload.accentColor === 'string' ? payload.accentColor : undefined,
     jti: payload.jti,
   };
 }

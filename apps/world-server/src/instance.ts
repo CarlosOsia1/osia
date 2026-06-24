@@ -46,9 +46,15 @@ export class Instance {
     return this.entities.size >= INSTANCE_CAPACITY;
   }
 
-  add(id: EntityId, handle: string, spawn: { x: number; z: number }, token: string): EntityRuntime {
+  add(
+    id: EntityId,
+    handle: string,
+    accentColor: string,
+    spawn: { x: number; z: number },
+    token: string,
+  ): EntityRuntime {
     const rt: EntityRuntime = {
-      state: { id, handle, x: spawn.x, z: spawn.z, yaw: 0 },
+      state: { id, handle, accentColor, x: spawn.x, z: spawn.z, yaw: 0 },
       inputs: [],
       lastSeq: 0,
       token,

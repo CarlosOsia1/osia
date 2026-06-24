@@ -11,7 +11,7 @@ export type NetStatus =
   | 'reconnecting'
   | 'error'
   | 'unauthenticated';
-export type RemoteInfo = { id: number; handle: string };
+export type RemoteInfo = { id: number; handle: string; accentColor: string };
 export type ChatLine = { key: number; id: number; handle: string; text: string; at: number };
 
 export type NetState = {

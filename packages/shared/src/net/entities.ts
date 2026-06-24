@@ -5,10 +5,13 @@
 
 import type { EntityId } from '../domain/ids';
 
-/** Estado completo de una entidad (jugador). Fase 0: posición en el plano + yaw. */
+/** Estado completo de una entidad (jugador). F0: posición + yaw. F1 (S1.8-H2): acento del pasaporte
+ *  (identidad visible). Se envía en WELCOME/ENTITY_JOIN (cold path), NO en el DELTA por tick. */
 export type EntityState = {
   id: EntityId;
   handle: string;
+  /** Color de acento del residente (hex de la paleta de marca); tinte de avatar + nameplate. */
+  accentColor: string;
   x: number;
   z: number;
   yaw: number;

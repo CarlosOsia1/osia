@@ -60,4 +60,6 @@ export type WorldTicketClaims = {
   worldId: string;
   /** Cuenta del residente (Fase 1; ausente en el self-issue anónimo de Fase 0). */
   accountId?: string;
+  /** Acento del pasaporte (S1.8-H2): viaja en el ticket para que el world-server lo difunda sin DB. */
+  accentColor?: string;
 };
