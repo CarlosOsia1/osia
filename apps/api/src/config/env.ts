@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEV_WORLD_TICKET_SECRET } from '@osia/shared';
 
 /**
  * Esquema del entorno de apps/api, validado por Zod en el arranque: si falta o está mal una var,
@@ -22,7 +23,7 @@ const envSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   // World ticket (HS256) compartido con el world-server: DEBE coincidir con su WORLD_TICKET_SECRET.
-  WORLD_TICKET_SECRET: z.string().min(1).default('osia-dev-ticket-secret-change-me'),
+  WORLD_TICKET_SECRET: z.string().min(1).default(DEV_WORLD_TICKET_SECRET),
   // URL pública del WS que se devuelve al cliente al emitir el ticket.
   WORLD_WS_URL: z.string().min(1).default('ws://localhost:2567/world'),
 });

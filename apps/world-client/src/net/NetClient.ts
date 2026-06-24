@@ -20,6 +20,7 @@ import {
   WireErrorCode,
   normalizeChat,
   PROTOCOL_VERSION,
+  DEFAULT_WORLD_ID,
   MAX_VOICE_PAYLOAD_BYTES,
   asEntityId,
   type S2CMessage,
@@ -141,7 +142,7 @@ export class NetClient {
       const res = await fetch(`${netConfig.apiUrl}/world/tickets`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ worldId: 'osia', handle: this.handle }),
+        body: JSON.stringify({ worldId: DEFAULT_WORLD_ID, handle: this.handle }),
       });
       if (!res.ok) throw new Error(`ticket http ${res.status}`);
       const data = (await res.json()) as { ticket: string; wsUrl?: string };

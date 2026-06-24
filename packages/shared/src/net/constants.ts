@@ -38,3 +38,26 @@ export const RECONNECT_GRACE_MS = 30000; // la entidad se conserva tras una caí
 
 /** Tope de tamaño del payload de signaling de voz (SDP/ICE) — anti amplificación/DoS. */
 export const MAX_VOICE_PAYLOAD_BYTES = 16384;
+
+/** Id del mundo compartido por defecto (Fase 0/1). Contrato cliente↔servidor (no repetir el literal). */
+export const DEFAULT_WORLD_ID = 'osia';
+
+/**
+ * World ticket (JWT HS256 efímero, docs/05 §2.1). Contrato CRUZADO: lo FIRMA apps/api y lo
+ * VERIFICA world-server, así que estos valores DEBEN vivir una sola vez (si se desincronizan,
+ * los tickets se rechazan en silencio).
+ */
+export const WORLD_TICKET_TTL_S = 60;
+export const WORLD_TICKET_TTL_MS = WORLD_TICKET_TTL_S * 1000;
+/** Secreto de DEV — fallback compartido entre emisor y verificador. En prod va por env. */
+export const DEV_WORLD_TICKET_SECRET = 'osia-dev-ticket-secret-change-me';
+/** Longitud mínima del secreto en producción (anti fuerza bruta del HS256). */
+export const WORLD_TICKET_MIN_SECRET_LEN = 32;
+
+/** Claims firmados en el world ticket. */
+export type WorldTicketClaims = {
+  handle: string;
+  worldId: string;
+  /** Cuenta del residente (Fase 1; ausente en el self-issue anónimo de Fase 0). */
+  accountId?: string;
+};

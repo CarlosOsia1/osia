@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SignJWT } from 'jose';
-import { randomUUID } from 'node:crypto';
+import { WORLD_TICKET_TTL_S } from '@osia/shared';
+import { issueWorldTicket } from '@osia/shared/worldTicket';
 import { APP_ENV } from '../../../config/config.module';
 import type { Env } from '../../../config/env';
 import type {
@@ -8,31 +8,20 @@ import type {
   WorldTicketPort,
 } from '../../application/ports/out/world-ticket.port';
 
-const TTL_SECONDS = 60;
-
 /**
- * Emite el world ticket: JWT HS256 efímero (~60s, jti un-solo-uso) firmado con el secreto
- * compartido con el world-server, que lo verifica por FIRMA sin tocar la DB (docs/05 §2.1).
+ * Emite el world ticket usando el firmante COMPARTIDO de @osia/shared (mismo alg/jti/TTL que el
+ * verificador del world-server). El secreto viene del entorno (default de dev compartido).
  */
 @Injectable()
 export class JoseWorldTicketAdapter implements WorldTicketPort {
-  private readonly secret: Uint8Array;
+  private readonly secret: string;
 
   constructor(@Inject(APP_ENV) env: Env) {
-    this.secret = new TextEncoder().encode(env.WORLD_TICKET_SECRET);
+    this.secret = env.WORLD_TICKET_SECRET;
   }
 
   async issue(claims: WorldTicketClaims): Promise<{ ticket: string; expiresIn: number }> {
-    const ticket = await new SignJWT({
-      handle: claims.handle,
-      worldId: claims.worldId,
-      accountId: claims.accountId,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setJti(randomUUID())
-      .setIssuedAt()
-      .setExpirationTime(`${TTL_SECONDS}s`)
-      .sign(this.secret);
-    return { ticket, expiresIn: TTL_SECONDS };
+    const ticket = await issueWorldTicket(claims, this.secret);
+    return { ticket, expiresIn: WORLD_TICKET_TTL_S };
   }
 }

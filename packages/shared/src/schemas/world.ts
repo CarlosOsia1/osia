@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { DEFAULT_WORLD_ID } from '../net/constants';
 
 /** `POST /v1/world/tickets` — pedir un world ticket para entrar al Mundo (docs/10 §2.1). */
 export const worldTicketSchema = z.object({
-  worldId: z.string().min(1).default('osia'),
+  worldId: z.string().min(1).default(DEFAULT_WORLD_ID),
   desiredRoom: z.string().optional(),
   desiredInstance: z.string().optional(),
 });

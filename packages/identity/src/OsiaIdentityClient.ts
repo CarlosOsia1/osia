@@ -1,3 +1,4 @@
+import { DEFAULT_WORLD_ID } from '@osia/shared';
 import type {
   LoginInput,
   SessionDto,
@@ -109,7 +110,7 @@ export class OsiaIdentityClient {
   }
 
   /** Pide un world ticket (S1.3-H5) para entrar al Mundo; usa el access token vigente. */
-  async requestWorldTicket(worldId = 'osia'): Promise<WorldTicketDto> {
+  async requestWorldTicket(worldId: string = DEFAULT_WORLD_ID): Promise<WorldTicketDto> {
     const token = await this.ensureAccessToken();
     return this.request<WorldTicketDto>('/v1/world/tickets', {
       method: 'POST',

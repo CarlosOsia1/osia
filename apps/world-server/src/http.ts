@@ -4,7 +4,7 @@
  */
 
 import { createServer, type Server, type ServerResponse } from 'node:http';
-import { normalizeHandle } from '@osia/shared';
+import { normalizeHandle, DEFAULT_WORLD_ID } from '@osia/shared';
 import { config } from './config';
 import { issueTicket } from './ticket';
 import { KeyedRateLimiter } from './rateLimit';
@@ -74,7 +74,7 @@ export function createHttpServer(world: World): Server {
           try {
             const parsed = JSON.parse(body || '{}') as { worldId?: string; handle?: string };
             const handle = normalizeHandle(parsed.handle ?? ''); // saneo (anti-spoof RTL/zero-width)
-            const worldId = String(parsed.worldId ?? 'osia');
+            const worldId = String(parsed.worldId ?? DEFAULT_WORLD_ID);
             const ticket = await issueTicket(handle, worldId);
             res
               .writeHead(200, { 'content-type': 'application/json' })

@@ -12,6 +12,7 @@ import {
   C2S,
   S2C,
   PROTOCOL_VERSION,
+  DEFAULT_WORLD_ID,
   type S2CMessage,
   type DeltaEntity,
 } from '@osia/shared';
@@ -24,7 +25,7 @@ async function getTicket(handle: string): Promise<string> {
   const res = await fetch(`${HTTP}/world/tickets`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ worldId: 'osia', handle }),
+    body: JSON.stringify({ worldId: DEFAULT_WORLD_ID, handle }),
   });
   const json = (await res.json()) as { ticket: string };
   return json.ticket;
