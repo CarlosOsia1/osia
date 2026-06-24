@@ -26,8 +26,10 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
     onSuccess: () => router.push(`/verify?email=${encodeURIComponent(form.email)}`),
   });
 
-  const set = (key: keyof typeof form) => (e: { currentTarget: { value: string } }) =>
-    setForm((f) => ({ ...f, [key]: e.currentTarget.value }));
+  const set = (key: keyof typeof form) => (e: { currentTarget: { value: string } }) => {
+    const value = e.currentTarget.value; // capturar sincrónicamente (el evento se recicla luego)
+    setForm((f) => ({ ...f, [key]: value }));
+  };
 
   function onSubmit(e: FormEvent<HTMLFormElement>): void {
     e.preventDefault();

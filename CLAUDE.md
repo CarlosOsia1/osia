@@ -183,6 +183,13 @@ textos están hardcodeados, mayormente en español). Carlos pidió crear toda la
   test/lint de paridad de claves debe fallar si una clave existe en un idioma y no en el otro.
 - **Default `es` (es-CO), fallback/segundo idioma `en`.** El usuario puede cambiar; persistir la
   preferencia.
+- **Español NEUTRO — sin acento argentino/rioplatense (sin voseo). REGLA PERMANENTE de Carlos.**
+  El `es-CO` usa **tuteo neutro**, nunca voseo: «Crea» no «Creá», «Verifica» no «Verificá»,
+  «Ingresa» no «Ingresá», «Revisa» no «Revisá», «Prueba» no «Probá», «eres» no «sos», «tienes» no
+  «tenés», «mantén» no «mantené», «escribe» no «escribí», «espera» no «esperá». Tono sobrio,
+  atemporal, sin localismos. **Aplica a TODO: el copy de producto (i18n en/es) Y la comunicación
+  de Claude con Carlos** (mensajes, explicaciones). Carlos lo pidió explícito: «no quiero acentos
+  argentinos en ningún lado».
 - **Formato con ICU:** plurales, fechas y números vía el formateador de `next-intl` (no concatenar
   strings ni formatear a mano).
 - **Separar idioma de UI vs. lenguaje de dominio.** El **glosario** ([`docs/11`](./docs/11-glosario-dominio.md)) define el lenguaje
