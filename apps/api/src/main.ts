@@ -1,14 +1,30 @@
+import './load-env'; // PRIMER import: carga .env antes que nada lea process.env
 import 'reflect-metadata';
+import helmet from 'helmet';
+import type { NextFunction, Request, Response } from 'express';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { loadEnv } from './config/env';
 
-/** Composition root de apps/api (NestJS hexagonal). Verá su forma completa en S1.3. */
+/** Composition root de apps/api (NestJS hexagonal). */
 async function bootstrap(): Promise<void> {
+  const env = loadEnv();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  // Todas las rutas REST cuelgan de /v1 (docs/10 §1.2); /healthz queda fuera del versionado.
-  app.setGlobalPrefix('v1', { exclude: ['healthz'] });
-  const port = Number(process.env.PORT ?? 4000);
-  await app.listen(port);
+  app.useLogger(app.get(Logger)); // Pino como logger de Nest
+
+  // §8 Seguridad: helmet (nosniff/frame DENY/HSTS/…) + Permissions-Policy (la API no usa mic/cam/geo).
+  app.use(helmet({ frameguard: { action: 'deny' } })); // §8: frame DENY (no SAMEORIGIN)
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Permissions-Policy', 'microphone=(), camera=(), geolocation=()');
+    next();
+  });
+  // CORS allowlist (nunca '*'); credentials para la cookie de refresh del SSO.
+  app.enableCors({ origin: [...env.corsOrigins], credentials: true });
+
+  // Todas las rutas REST cuelgan de /v1 (docs/10 §1.2); las health probes quedan fuera.
+  app.setGlobalPrefix('v1', { exclude: ['healthz', 'healthz/ready'] });
+  await app.listen(env.PORT);
 }
 
 void bootstrap();
