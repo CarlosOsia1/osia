@@ -8,7 +8,8 @@
     "travelers": "{count, plural, one {# viajero en el claro} other {# viajeros en el claro}}",
     "connecting": "conectando…",
     "reconnecting": "reconectando…",
-    "offline": "sin conexión"
+    "offline": "sin conexión",
+    "unauthenticated": "tu sesión expiró — vuelve al Vestíbulo"
   },
   "chat": {
     "ariaPanel": "chat del mundo",

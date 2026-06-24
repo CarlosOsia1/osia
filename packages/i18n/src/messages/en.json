@@ -8,7 +8,8 @@
     "travelers": "{count, plural, one {# traveler in the clearing} other {# travelers in the clearing}}",
     "connecting": "connecting…",
     "reconnecting": "reconnecting…",
-    "offline": "offline"
+    "offline": "offline",
+    "unauthenticated": "your session expired — back to the Vestibule"
   },
   "chat": {
     "ariaPanel": "world chat",

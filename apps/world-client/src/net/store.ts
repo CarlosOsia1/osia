@@ -4,7 +4,13 @@
  * lee por refs en useFrame, sin re-render). Consumido vía useSyncExternalStore.
  */
 
-export type NetStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+export type NetStatus =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'error'
+  | 'unauthenticated';
 export type RemoteInfo = { id: number; handle: string };
 export type ChatLine = { key: number; id: number; handle: string; text: string; at: number };
 

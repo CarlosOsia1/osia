@@ -27,6 +27,10 @@ export default function NetStatus() {
       label = t('reconnecting');
       dot = 'var(--color-warning)';
       break;
+    case 'unauthenticated':
+      label = t('unauthenticated');
+      dot = 'var(--color-danger)';
+      break;
     default:
       label = t('offline');
       dot = 'var(--color-text-subtle)';

@@ -13,6 +13,7 @@
   "dependencies": {
     "@osia/atmosphere": "workspace:*",
     "@osia/i18n": "workspace:*",
+    "@osia/identity": "workspace:*",
     "@osia/shared": "workspace:*",
     "@osia/ui": "workspace:*",
     "@react-three/drei": "^10.0.6",

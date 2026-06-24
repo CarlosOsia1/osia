@@ -157,6 +157,9 @@ importers:
       '@osia/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@osia/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
       '@osia/shared':
         specifier: workspace:*
         version: link:../../packages/shared

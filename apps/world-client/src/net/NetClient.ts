@@ -88,6 +88,31 @@ function loadHandle(): string {
   return h;
 }
 
+export type WorldTicket = { ticket: string; wsUrl?: string };
+/** Abstracción de obtención de ticket (inversión de dependencias, §1.5-D): el NetClient no sabe
+ *  si el ticket viene anónimo del world-server (F0) o autenticado de apps/api (S1.8). */
+export type TicketProvider = () => Promise<WorldTicket>;
+
+/** Provider por defecto (F0): ticket ANÓNIMO del world-server con handle aleatorio. */
+function anonymousTicketProvider(handle: string): TicketProvider {
+  return async () => {
+    const res = await fetch(`${netConfig.apiUrl}/world/tickets`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ worldId: DEFAULT_WORLD_ID, handle }),
+    });
+    if (!res.ok) throw new Error(`ticket http ${res.status}`);
+    return (await res.json()) as WorldTicket;
+  };
+}
+
+/** ¿El error del provider indica falta de sesión (→ volver al Vestíbulo, sin reintentar)? */
+function isUnauthenticated(e: unknown): boolean {
+  return (
+    typeof e === 'object' && e !== null && (e as { unauthenticated?: boolean }).unauthenticated === true
+  );
+}
+
 export class NetClient {
   readonly handle = loadHandle(); // estable entre reloads (misma pestaña)
   selfId: number | null = null;
@@ -97,6 +122,15 @@ export class NetClient {
   onVoiceSignal: ((srcId: number, kind: number, payload: string) => void) | null = null;
   onVoiceState: ((id: number, flags: number) => void) | null = null;
   onReset: (() => void) | null = null; // (re)WELCOME → MeshVoice cierra las PCs
+  /** Se invoca si el ticket no se pudo emitir por falta de sesión (S1.8 → volver al Vestíbulo). */
+  onUnauthenticated: (() => void) | null = null;
+
+  private readonly ticketProvider: TicketProvider;
+
+  constructor(opts?: { ticketProvider?: TicketProvider; onUnauthenticated?: () => void }) {
+    this.ticketProvider = opts?.ticketProvider ?? anonymousTicketProvider(this.handle);
+    if (opts?.onUnauthenticated) this.onUnauthenticated = opts.onUnauthenticated;
+  }
 
   private ws: WebSocket | null = null;
   private wantConnected = false;
@@ -139,13 +173,7 @@ export class NetClient {
     if (!this.wantConnected || myEpoch !== this.epoch) return;
     this.publish(this.attempts > 0 ? 'reconnecting' : 'connecting');
     try {
-      const res = await fetch(`${netConfig.apiUrl}/world/tickets`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ worldId: DEFAULT_WORLD_ID, handle: this.handle }),
-      });
-      if (!res.ok) throw new Error(`ticket http ${res.status}`);
-      const data = (await res.json()) as { ticket: string; wsUrl?: string };
+      const data = await this.ticketProvider();
       // Si llegó un disconnect o un open() más nuevo mientras pedíamos el ticket, abortar.
       if (!this.wantConnected || myEpoch !== this.epoch) return;
 
@@ -168,7 +196,14 @@ export class NetClient {
         if (this.ws === ws) this.onClose(); // ignora el close de un socket ya reemplazado
       };
       ws.onerror = () => ws.close();
-    } catch {
+    } catch (e) {
+      // Sin sesión / ticket denegado (S1.8): no reintentar, volver al Vestíbulo.
+      if (isUnauthenticated(e)) {
+        this.wantConnected = false;
+        this.publish('unauthenticated');
+        this.onUnauthenticated?.();
+        return;
+      }
       if (myEpoch === this.epoch) this.scheduleReconnect();
     }
   }
