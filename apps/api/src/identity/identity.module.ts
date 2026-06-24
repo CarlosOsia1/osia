@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './web/auth.controller';
 import { WaitlistController } from './web/waitlist.controller';
 import { WorldController } from './web/world.controller';
+import { ProfileController } from './web/profile.controller';
+import { ProfileService } from './application/profile.service';
+import { PROFILE_REPOSITORY } from './application/ports/out/profile.repository';
+import { PgProfileRepository } from './infrastructure/postgres/profile.repository';
 import { JoinWaitlistUseCase } from './application/use-cases/join-waitlist.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
@@ -26,8 +30,9 @@ import { AuthGuard } from '../common/auth.guard';
  * adapters concretos solo se cablean aquí.
  */
 @Module({
-  controllers: [AuthController, WaitlistController, WorldController],
+  controllers: [AuthController, WaitlistController, WorldController, ProfileController],
   providers: [
+    ProfileService,
     JoinWaitlistUseCase,
     SignupUseCase,
     LoginUseCase,
@@ -41,6 +46,7 @@ import { AuthGuard } from '../common/auth.guard';
     { provide: INVITATION_REPOSITORY, useClass: PgInvitationRepository },
     { provide: ACCOUNT_REPOSITORY, useClass: PgAccountRepository },
     { provide: WORLD_TICKET_PORT, useClass: JoseWorldTicketAdapter },
+    { provide: PROFILE_REPOSITORY, useClass: PgProfileRepository },
   ],
 })
 export class IdentityModule {}

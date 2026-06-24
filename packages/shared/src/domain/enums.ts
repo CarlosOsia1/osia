@@ -51,6 +51,22 @@ export const isWorldInstanceStatus = makeGuard(WORLD_INSTANCE_STATUS_VALUES);
 // --- marca en el dato ---
 /** Acento por defecto del pasaporte: champán (ER §3.3 — la marca vive en el dato). */
 export const ACCENT_COLOR_DEFAULT = '#CBB89A';
+
+/**
+ * Acentos PERMITIDOS del pasaporte: paleta cálida de marca (no color libre, §S1.6-H1). El editor
+ * de perfil solo ofrece estos; el servidor valida pertenencia. Derivados de los primitivos (docs/02).
+ */
+export const ACCENT_PALETTE = [
+  '#CBB89A', // champán (default)
+  '#B8A07E', // champán oscuro
+  '#DBCBB2', // champán claro
+  '#B3A488', // taupe claro
+  '#8C7B66', // taupe
+  '#F5F1E8', // marfil
+] as const;
+export type AccentColor = (typeof ACCENT_PALETTE)[number];
+export const isAccentInPalette = (v: unknown): v is AccentColor =>
+  typeof v === 'string' && (ACCENT_PALETTE as readonly string[]).includes(v);
 /** Forma válida de un `accentColor` (hex de 6 dígitos, espejo del CHECK del ER). */
 export const ACCENT_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 export const isAccentColor = (v: unknown): v is string =>

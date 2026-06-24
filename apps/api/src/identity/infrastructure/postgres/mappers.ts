@@ -5,6 +5,7 @@ import {
   type AccountRole,
   type AccountStatus,
   type Passport,
+  type ProfileBrief,
   type ProfileDto,
   type ProfilePrivacy,
 } from '@osia/shared';
@@ -63,6 +64,18 @@ export function toProfileDto(row: ProfileRow): ProfileDto {
     reputation: row.reputation,
     privacy: row.privacy,
     createdAt: row.created_at.toISOString(),
+  };
+}
+
+/** Vista pública acotada del perfil (`GET /v1/profiles/{handle}`). */
+export function toProfileBrief(row: ProfileRow): ProfileBrief {
+  return {
+    profileId: asProfileId(row.id),
+    handle: row.handle,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_url,
+    accentColor: row.accent_color,
+    popularityPoints: row.popularity_points,
   };
 }
 
