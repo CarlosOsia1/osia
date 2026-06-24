@@ -12,8 +12,10 @@
   },
   "dependencies": {
     "@osia/i18n": "workspace:*",
+    "@osia/identity": "workspace:*",
     "@osia/shared": "workspace:*",
     "@osia/ui": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
     "next": "^15.2.4",
     "next-intl": "^3.26.0",
     "react": "^19.0.0",

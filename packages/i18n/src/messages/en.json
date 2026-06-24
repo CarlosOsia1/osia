@@ -70,5 +70,17 @@
     "kicker": "Vestibule",
     "building": "Phase 1 in progress — the Vestibule is born thin.",
     "styleguide": "View the design system"
+  },
+  "landing": {
+    "kicker": "By invitation",
+    "manifesto": "The art of the essential. A calm world, on foot, with voice. Entry is scarce, like champagne.",
+    "waitlistTitle": "Reserve your place"
+  },
+  "waitlist": {
+    "placeholder": "you@email.com",
+    "submit": "Join the list",
+    "success": "You're on the list. We'll write when your door opens.",
+    "error": "Something went wrong. Try again.",
+    "duplicate": "You're already on the list."
   }
 }

@@ -70,5 +70,17 @@
     "kicker": "Vestíbulo",
     "building": "Fase 1 en construcción — el Vestíbulo nace delgado.",
     "styleguide": "Ver el design system"
+  },
+  "landing": {
+    "kicker": "Por invitación",
+    "manifesto": "El arte de lo esencial. Un mundo tranquilo, a pie, con voz. La entrada es escasa, como el champán.",
+    "waitlistTitle": "Reservá tu lugar"
+  },
+  "waitlist": {
+    "placeholder": "tu@correo.com",
+    "submit": "Unirme a la lista",
+    "success": "Estás en la lista. Te escribiremos cuando se abra tu puerta.",
+    "error": "Algo salió mal. Probá de nuevo.",
+    "duplicate": "Ya estás en la lista."
   }
 }

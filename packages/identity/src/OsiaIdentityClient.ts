@@ -1,4 +1,10 @@
-import type { LoginInput, SessionDto, WorldTicketDto } from '@osia/shared';
+import type {
+  LoginInput,
+  SessionDto,
+  WaitlistEntryDto,
+  WaitlistInput,
+  WorldTicketDto,
+} from '@osia/shared';
 
 /** Error tipado del API que el cliente expone (mapea el sobre ApiError). */
 export class OsiaApiError extends Error {
@@ -33,6 +39,15 @@ export class OsiaIdentityClient {
 
   constructor(private readonly opts: OsiaIdentityClientOptions) {
     this.fetchImpl = opts.fetchImpl ?? fetch.bind(globalThis);
+  }
+
+  /** Alta pública e idempotente en la waitlist (no requiere sesión). */
+  async joinWaitlist(input: WaitlistInput): Promise<WaitlistEntryDto> {
+    const { entry } = await this.request<{ entry: WaitlistEntryDto }>('/v1/waitlist', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+    return entry;
   }
 
   async login(input: LoginInput): Promise<SessionDto> {
