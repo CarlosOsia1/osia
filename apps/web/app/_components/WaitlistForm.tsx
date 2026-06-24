@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { Button, Field } from '@osia/ui';
+import { Button, Field, FormError } from '@osia/ui';
 import { OsiaApiError } from '@osia/identity';
 import { identity } from '../../lib/identity';
 
@@ -60,11 +60,7 @@ export function WaitlistForm() {
       <Button type="submit" variant="primary" size="lg" loading={mutation.isPending}>
         {t('submit')}
       </Button>
-      {errorMsg && (
-        <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 'var(--text-sm)', margin: 0 }}>
-          {errorMsg}
-        </p>
-      )}
+      {errorMsg && <FormError>{errorMsg}</FormError>}
     </form>
   );
 }

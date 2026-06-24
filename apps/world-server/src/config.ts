@@ -1,13 +1,9 @@
 /** Configuración del world-server desde el entorno (con defaults de dev). */
 
-import { DEV_WORLD_TICKET_SECRET, WORLD_TICKET_MIN_SECRET_LEN } from '@osia/shared';
+import { DEV_WORLD_TICKET_SECRET, WORLD_TICKET_MIN_SECRET_LEN, parseCsvList } from '@osia/shared';
 
-function envList(name: string, fallback: string): string[] {
-  return (process.env[name] ?? fallback)
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+const envList = (name: string, fallback: string): string[] =>
+  parseCsvList(process.env[name] ?? fallback);
 
 const port = Number(process.env.WORLD_SERVER_PORT ?? 2567);
 

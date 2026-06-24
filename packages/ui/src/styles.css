@@ -389,6 +389,14 @@
   border-color: var(--color-danger);
 }
 
+/* ---- FormError: mensaje de error de formulario ---- */
+.osia-form-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
 /* ---- PresenceDot ---- */
 .osia-dot {
   display: inline-block;

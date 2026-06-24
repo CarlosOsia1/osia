@@ -35,6 +35,9 @@ export * from './net/voiceState';
 // --- Utilidades de texto ---
 export * from './text/sanitizeChat';
 
+// --- Utilidades de entorno ---
+export * from './util/env-list';
+
 // --- Tipos del Motor de Atmósfera (única superficie de import; S0.7-H1) ---
 // Re-exportados para que cliente y servidor consuman los MISMOS tipos del cielo
 // desde @osia/shared. La lógica vive en @osia/atmosphere (pura); aquí solo el contrato.

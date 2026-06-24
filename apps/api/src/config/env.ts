@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEV_WORLD_TICKET_SECRET } from '@osia/shared';
+import { DEV_WORLD_TICKET_SECRET, parseCsvList } from '@osia/shared';
 
 /**
  * Esquema del entorno de apps/api, validado por Zod en el arranque: si falta o está mal una var,
@@ -44,8 +44,6 @@ export function loadEnv(): Env {
   return {
     ...data,
     isProd: data.NODE_ENV === 'production',
-    corsOrigins: data.CORS_ORIGINS.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    corsOrigins: parseCsvList(data.CORS_ORIGINS),
   };
 }

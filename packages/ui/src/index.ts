@@ -19,4 +19,5 @@ export { Modal, type ModalProps } from './Modal';
 export { Panel, type PanelProps } from './Panel';
 export { Field, type FieldProps } from './Field';
 export { CodeInput, type CodeInputProps } from './CodeInput';
+export { FormError } from './FormError';
 export { Dot } from './Dot';

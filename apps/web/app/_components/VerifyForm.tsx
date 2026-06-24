@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, CodeInput } from '@osia/ui';
+import { Button, CodeInput, FormError } from '@osia/ui';
 import { OSIA_SESSION_KEY, OsiaApiError } from '@osia/identity';
 import { identity } from '../../lib/identity';
 
@@ -55,11 +55,7 @@ export function VerifyForm({ email }: { email: string }) {
         onChange={setCode}
         onComplete={(value) => verify.mutate(value)}
       />
-      {errorMsg && (
-        <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 'var(--text-sm)', margin: 0 }}>
-          {errorMsg}
-        </p>
-      )}
+      {errorMsg && <FormError>{errorMsg}</FormError>}
       <div style={{ display: 'grid', gap: 'var(--space-3)', justifyItems: 'center' }}>
         <Button
           variant="primary"

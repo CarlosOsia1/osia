@@ -4,7 +4,7 @@ import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { Button, Field } from '@osia/ui';
+import { Button, Field, FormError } from '@osia/ui';
 import { OsiaApiError } from '@osia/identity';
 import { HANDLE_PATTERN, type SignupInput } from '@osia/shared';
 import { identity } from '../../lib/identity';
@@ -147,11 +147,7 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
       <Button type="submit" variant="primary" size="lg" loading={mutation.isPending}>
         {t('submit')}
       </Button>
-      {error && (
-        <p role="alert" style={{ color: 'var(--color-danger)', fontSize: 'var(--text-sm)', margin: 0, textAlign: 'center' }}>
-          {error}
-        </p>
-      )}
+      {error && <FormError style={{ textAlign: 'center' }}>{error}</FormError>}
     </form>
   );
 }
