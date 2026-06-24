@@ -1,6 +1,8 @@
 import type {
   LoginInput,
   SessionDto,
+  SignupInput,
+  SignupResultDto,
   WaitlistEntryDto,
   WaitlistInput,
   WorldTicketDto,
@@ -48,6 +50,14 @@ export class OsiaIdentityClient {
       body: JSON.stringify(input),
     });
     return entry;
+  }
+
+  /** Registro por invitación (gate server-side). No inicia sesión: requiere verificar email. */
+  async signup(input: SignupInput): Promise<SignupResultDto> {
+    return this.request<SignupResultDto>('/v1/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
   }
 
   async login(input: LoginInput): Promise<SessionDto> {

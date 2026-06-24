@@ -82,5 +82,21 @@
     "success": "Estás en la lista. Te escribiremos cuando se abra tu puerta.",
     "error": "Algo salió mal. Probá de nuevo.",
     "duplicate": "Ya estás en la lista."
+  },
+  "signup": {
+    "kicker": "Por invitación",
+    "title": "Creá tu pasaporte",
+    "code": "Código de invitación",
+    "email": "tu@correo.com",
+    "handle": "tu handle (a-z, 0-9, _)",
+    "displayName": "Tu nombre",
+    "password": "Contraseña (mín. 8)",
+    "submit": "Crear cuenta",
+    "success": "Cuenta creada. Revisá tu correo para verificar tu email y cruzar el umbral.",
+    "errInvite": "Invitación inválida o ya usada.",
+    "errExpired": "Esa invitación ya expiró.",
+    "errHandle": "Ese handle ya está tomado.",
+    "errValidation": "Revisá los datos del formulario.",
+    "errGeneric": "Algo salió mal. Probá de nuevo."
   }
 }

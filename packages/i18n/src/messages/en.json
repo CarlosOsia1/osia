@@ -82,5 +82,21 @@
     "success": "You're on the list. We'll write when your door opens.",
     "error": "Something went wrong. Try again.",
     "duplicate": "You're already on the list."
+  },
+  "signup": {
+    "kicker": "By invitation",
+    "title": "Create your passport",
+    "code": "Invitation code",
+    "email": "you@email.com",
+    "handle": "your handle (a-z, 0-9, _)",
+    "displayName": "Your name",
+    "password": "Password (min 8)",
+    "submit": "Create account",
+    "success": "Account created. Check your inbox to verify your email and cross the threshold.",
+    "errInvite": "Invalid or already-used invitation.",
+    "errExpired": "That invitation has expired.",
+    "errHandle": "That handle is already taken.",
+    "errValidation": "Check the form fields.",
+    "errGeneric": "Something went wrong. Try again."
   }
 }
