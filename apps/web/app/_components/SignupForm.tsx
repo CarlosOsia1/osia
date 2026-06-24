@@ -78,32 +78,48 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
   return (
     <form onSubmit={onSubmit} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
       <Labeled label={t('codeLabel')}>
-        {(id) => <Field id={id} value={form.code} onChange={set('code')} required />}
+        {(id) => (
+          <Field id={id} name="invitation-code" autoComplete="off" value={form.code} onChange={set('code')} required />
+        )}
       </Labeled>
       <Labeled label={t('emailLabel')}>
         {(id) => (
-          <Field id={id} type="email" autoComplete="email" value={form.email} onChange={set('email')} required />
+          <Field
+            id={id}
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={form.email}
+            onChange={set('email')}
+            required
+          />
         )}
       </Labeled>
       <Labeled label={t('usernameLabel')} help={t('usernameHelp')}>
         {(id) => (
           <Field
             id={id}
+            name="username"
             value={form.username}
             onChange={set('username', sanitizeUsername)}
             autoComplete="username"
+            autoCapitalize="none"
             spellCheck={false}
             required
           />
         )}
       </Labeled>
       <Labeled label={t('nameLabel')}>
-        {(id) => <Field id={id} value={form.displayName} onChange={set('displayName')} required />}
+        {(id) => (
+          <Field id={id} name="name" autoComplete="name" value={form.displayName} onChange={set('displayName')} required />
+        )}
       </Labeled>
       <Labeled label={t('passwordLabel')}>
         {(id) => (
           <PasswordRow
             id={id}
+            name="new-password"
             type={pwType}
             value={form.password}
             onChange={set('password')}
@@ -117,6 +133,7 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
         {(id) => (
           <PasswordRow
             id={id}
+            name="confirm-password"
             type={pwType}
             value={form.confirm}
             onChange={set('confirm')}
@@ -166,6 +183,7 @@ function Labeled({
 /** Input de contraseña con botón ver/ocultar. */
 function PasswordRow({
   id,
+  name,
   type,
   value,
   onChange,
@@ -174,6 +192,7 @@ function PasswordRow({
   onToggle,
 }: {
   id: string;
+  name: string;
   type: 'text' | 'password';
   value: string;
   onChange: (e: { currentTarget: { value: string } }) => void;
@@ -183,7 +202,7 @@ function PasswordRow({
 }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <Field id={id} type={type} value={value} onChange={onChange} autoComplete={autoComplete} required />
+      <Field id={id} name={name} type={type} value={value} onChange={onChange} autoComplete={autoComplete} required />
       <button
         type="button"
         onClick={onToggle}

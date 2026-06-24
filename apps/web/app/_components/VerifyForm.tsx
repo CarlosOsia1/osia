@@ -7,7 +7,10 @@ import { Button, CodeInput } from '@osia/ui';
 import { OSIA_SESSION_KEY, OsiaApiError } from '@osia/identity';
 import { identity } from '../../lib/identity';
 
-/** Verificación de email con code-input de 6 celdas (S1.5-H1). Auto-login al confirmar. */
+// Largo del OTP que envía Supabase (Auth → Email OTP length). El proyecto está en 8.
+const OTP_LENGTH = 8;
+
+/** Verificación de email con code-input (S1.5-H1). Auto-login al confirmar. */
 export function VerifyForm({ email }: { email: string }) {
   const t = useTranslations('verify');
   const queryClient = useQueryClient();
@@ -45,6 +48,7 @@ export function VerifyForm({ email }: { email: string }) {
     <div style={{ display: 'grid', gap: 'var(--space-5)', textAlign: 'center' }}>
       <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>{t('sent', { email })}</p>
       <CodeInput
+        length={OTP_LENGTH}
         value={code}
         ariaLabel={t('codeLabel')}
         invalid={Boolean(errorMsg)}
@@ -61,7 +65,7 @@ export function VerifyForm({ email }: { email: string }) {
           variant="primary"
           size="lg"
           loading={verify.isPending}
-          disabled={code.length < 6}
+          disabled={code.length < OTP_LENGTH}
           onClick={() => verify.mutate(code)}
         >
           {t('submit')}

@@ -45,10 +45,19 @@ export function CodeInput({
   }
 
   function onKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>): void {
-    if (e.key === 'Backspace' && !value[index] && index > 0) {
+    if (e.key === 'Backspace') {
       e.preventDefault();
-      commit(value.slice(0, index - 1));
-      refs.current[index - 1]?.focus();
+      if (value[index]) {
+        // Hay dígito en esta celda: bórralo (quédate en la celda).
+        commit(value.slice(0, index) + value.slice(index + 1));
+      } else if (index > 0) {
+        // Celda vacía: retrocede y borra el dígito anterior.
+        commit(value.slice(0, index - 1) + value.slice(index));
+        refs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'Delete') {
+      e.preventDefault();
+      commit(value.slice(0, index) + value.slice(index + 1));
     } else if (e.key === 'ArrowLeft' && index > 0) {
       refs.current[index - 1]?.focus();
     } else if (e.key === 'ArrowRight' && index < length - 1) {
