@@ -13,11 +13,15 @@ import type { Request, Response } from 'express';
 import {
   ErrorCode,
   loginSchema,
+  resendVerificationSchema,
   signupSchema,
+  verifyEmailSchema,
   type LoginInput,
+  type ResendVerificationInput,
   type SessionDto,
   type SignupInput,
   type SignupResultDto,
+  type VerifyEmailInput,
 } from '@osia/shared';
 import { AppException } from '../../common/app-exception';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
@@ -27,6 +31,8 @@ import { SignupUseCase } from '../application/use-cases/signup.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
 import { RefreshSessionUseCase } from '../application/use-cases/refresh-session.use-case';
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
+import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
+import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
 
 /** Nombre de la cookie de refresh (HttpOnly) que sostiene el SSO entre apps. */
 const RT_COOKIE = 'osia.rt';
@@ -44,6 +50,8 @@ export class AuthController {
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshUseCase: RefreshSessionUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly verifyEmailUseCase: VerifyEmailUseCase,
+    private readonly resendVerificationUseCase: ResendVerificationUseCase,
     @Inject(APP_ENV) private readonly env: Env,
   ) {}
 
@@ -64,6 +72,26 @@ export class AuthController {
     const { session, refreshToken } = await this.loginUseCase.execute(body);
     this.setRefreshCookie(res, refreshToken);
     return { session };
+  }
+
+  /** Verifica el email con el OTP de 6 dígitos; al confirmar, inicia sesión (set-cookie). */
+  @Post('verify-email')
+  @HttpCode(200)
+  async verifyEmail(
+    @Body(new ZodValidationPipe(verifyEmailSchema)) body: VerifyEmailInput,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ session: SessionDto }> {
+    const { session, refreshToken } = await this.verifyEmailUseCase.execute(body.email, body.token);
+    this.setRefreshCookie(res, refreshToken);
+    return { session };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(204)
+  async resendVerification(
+    @Body(new ZodValidationPipe(resendVerificationSchema)) body: ResendVerificationInput,
+  ): Promise<void> {
+    await this.resendVerificationUseCase.execute(body.email);
   }
 
   /** Devuelve el pasaporte + access token a partir de la cookie de refresh (rota la cookie). */

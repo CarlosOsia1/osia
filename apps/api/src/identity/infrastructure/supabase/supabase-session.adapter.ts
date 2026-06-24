@@ -5,7 +5,12 @@ import type {
   AuthSession,
   AuthSessionPort,
 } from '../../application/ports/out/auth-session.port';
-import { EmailNotVerifiedError, InvalidCredentialsError, SessionExpiredError } from '../../application/errors';
+import {
+  EmailNotVerifiedError,
+  InvalidCredentialsError,
+  InvalidOtpError,
+  SessionExpiredError,
+} from '../../application/errors';
 
 /** Adapter de sesiones con el cliente anon de Supabase (flujos de usuario, no admin). */
 @Injectable()
@@ -25,6 +30,18 @@ export class SupabaseSessionAdapter implements AuthSessionPort {
   async refresh(refreshToken: string): Promise<AuthSession> {
     const { data, error } = await this.anon.auth.refreshSession({ refresh_token: refreshToken });
     if (error || !data.session) throw new SessionExpiredError();
+    return toAuthSession(data.session);
+  }
+
+  async sendVerification(email: string): Promise<void> {
+    // Reenvía la confirmación de signup (el template manda el OTP de 6 dígitos {{ .Token }}).
+    const { error } = await this.anon.auth.resend({ type: 'signup', email });
+    if (error) throw error;
+  }
+
+  async verifyEmail(email: string, token: string): Promise<AuthSession> {
+    const { data, error } = await this.anon.auth.verifyOtp({ email, token, type: 'signup' });
+    if (error || !data.session) throw new InvalidOtpError();
     return toAuthSession(data.session);
   }
 

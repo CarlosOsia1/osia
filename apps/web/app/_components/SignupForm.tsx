@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
 import { Button, Field } from '@osia/ui';
@@ -11,6 +12,7 @@ import { identity } from '../../lib/identity';
 /** Formulario de registro por invitación (S1.4-H4). El gate real es server-side; acá UX. */
 export function SignupForm({ initialCode }: { initialCode: string }) {
   const t = useTranslations('signup');
+  const router = useRouter();
   const [form, setForm] = useState({
     code: initialCode,
     email: '',
@@ -20,6 +22,8 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
   });
   const mutation = useMutation({
     mutationFn: (input: SignupInput) => identity.signup(input),
+    // Tras registrarse, al paso de verificación de email (S1.5).
+    onSuccess: () => router.push(`/verify?email=${encodeURIComponent(form.email)}`),
   });
 
   const set = (key: keyof typeof form) => (e: { currentTarget: { value: string } }) =>

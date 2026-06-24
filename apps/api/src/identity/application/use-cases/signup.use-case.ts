@@ -7,6 +7,7 @@ import {
 } from '../ports/out/invitation.repository';
 import { ACCOUNT_REPOSITORY, type AccountRepository } from '../ports/out/account.repository';
 import { SUPABASE_AUTH_PORT, type SupabaseAuthPort } from '../ports/out/supabase-auth.port';
+import { AUTH_SESSION_PORT, type AuthSessionPort } from '../ports/out/auth-session.port';
 import { HandleTakenError, InvitationConflictError } from '../errors';
 
 /**
@@ -21,6 +22,7 @@ export class SignupUseCase {
     @Inject(INVITATION_REPOSITORY) private readonly invitations: InvitationRepository,
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
     @Inject(SUPABASE_AUTH_PORT) private readonly auth: SupabaseAuthPort,
+    @Inject(AUTH_SESSION_PORT) private readonly sessions: AuthSessionPort,
   ) {}
 
   async execute(input: SignupInput): Promise<SignupResultDto> {
@@ -54,6 +56,8 @@ export class SignupUseCase {
         code: input.code,
         inviterAccountId: inv.inviterAccountId,
       });
+      // Envía el código de verificación (best-effort: no fallar el signup si el email demora).
+      await this.sessions.sendVerification(input.email).catch(() => undefined);
       return { account, profile, session: null };
     } catch (e) {
       await this.auth.deleteUser(user.id).catch(() => undefined); // saga: revertir el usuario huérfano

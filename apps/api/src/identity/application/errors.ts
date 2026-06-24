@@ -42,3 +42,11 @@ export class SessionExpiredError extends Error {
     this.name = 'SessionExpiredError';
   }
 }
+
+/** El código de verificación (OTP) es inválido o expiró. */
+export class InvalidOtpError extends Error {
+  constructor() {
+    super('código inválido o expirado');
+    this.name = 'InvalidOtpError';
+  }
+}

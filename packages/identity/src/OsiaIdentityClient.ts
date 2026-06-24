@@ -3,6 +3,7 @@ import type {
   SessionDto,
   SignupInput,
   SignupResultDto,
+  VerifyEmailInput,
   WaitlistEntryDto,
   WaitlistInput,
   WorldTicketDto,
@@ -67,6 +68,24 @@ export class OsiaIdentityClient {
     });
     this.rememberAccess(session.accessToken, session.expiresIn);
     return session;
+  }
+
+  /** Verifica el email con el OTP; al confirmar inicia sesión (cookie + access token). */
+  async verifyEmail(input: VerifyEmailInput): Promise<SessionDto> {
+    const { session } = await this.request<{ session: SessionDto }>('/v1/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+    this.rememberAccess(session.accessToken, session.expiresIn);
+    return session;
+  }
+
+  /** Reenvía el código de verificación al email. */
+  async resendVerification(email: string): Promise<void> {
+    await this.request<void>('/v1/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
   }
 
   /** Lee la sesión (pasaporte + access token) desde la cookie de refresh; rota la cookie. */

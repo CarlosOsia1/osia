@@ -98,5 +98,18 @@
     "errHandle": "That handle is already taken.",
     "errValidation": "Check the form fields.",
     "errGeneric": "Something went wrong. Try again."
+  },
+  "verify": {
+    "kicker": "Last step",
+    "title": "Verify your email",
+    "sent": "Enter the 6-digit code we sent to {email}.",
+    "codeLabel": "Verification code",
+    "submit": "Verify",
+    "resend": "Resend code",
+    "resent": "Code resent",
+    "success": "Email verified! You're part of OSIA now.",
+    "enter": "Enter",
+    "errInvalid": "Invalid or expired code.",
+    "errGeneric": "Something went wrong. Try again."
   }
 }

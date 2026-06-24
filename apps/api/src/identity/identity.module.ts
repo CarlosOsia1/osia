@@ -7,6 +7,8 @@ import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case';
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
+import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
+import { ResendVerificationUseCase } from './application/use-cases/resend-verification.use-case';
 import { IssueWorldTicketUseCase } from './application/use-cases/issue-world-ticket.use-case';
 import { WAITLIST_REPOSITORY } from './application/ports/out/waitlist.repository';
 import { INVITATION_REPOSITORY } from './application/ports/out/invitation.repository';
@@ -31,6 +33,8 @@ import { AuthGuard } from '../common/auth.guard';
     LoginUseCase,
     RefreshSessionUseCase,
     LogoutUseCase,
+    VerifyEmailUseCase,
+    ResendVerificationUseCase,
     IssueWorldTicketUseCase,
     AuthGuard,
     { provide: WAITLIST_REPOSITORY, useClass: PgWaitlistRepository },

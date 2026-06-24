@@ -98,5 +98,18 @@
     "errHandle": "Ese handle ya está tomado.",
     "errValidation": "Revisá los datos del formulario.",
     "errGeneric": "Algo salió mal. Probá de nuevo."
+  },
+  "verify": {
+    "kicker": "Último paso",
+    "title": "Verificá tu email",
+    "sent": "Ingresá el código de 6 dígitos que enviamos a {email}.",
+    "codeLabel": "Código de verificación",
+    "submit": "Verificar",
+    "resend": "Reenviar código",
+    "resent": "Código reenviado",
+    "success": "¡Email verificado! Ya sos parte de OSIA.",
+    "enter": "Entrar",
+    "errInvalid": "Código inválido o expirado.",
+    "errGeneric": "Algo salió mal. Probá de nuevo."
   }
 }

@@ -35,11 +35,16 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
-/** `POST /v1/auth/verify-email` — el `token` puede ser el código de 6 celdas o un token de link. */
+/** `POST /v1/auth/verify-email` — email + código OTP de 6 dígitos (code-input de 6 celdas). */
 export const verifyEmailSchema = z.object({
+  email,
   token: z.string().trim().min(1),
 });
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+/** `POST /v1/auth/resend-verification` — reenvía el código a un email. */
+export const resendVerificationSchema = z.object({ email });
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 
 /** Canje de invitación (placeholder de S1.3/S1.4): solo el código. */
 export const redeemInvitationSchema = z.object({
