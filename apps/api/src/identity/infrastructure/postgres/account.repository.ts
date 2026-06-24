@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import type { AccountDto, ProfileDto } from '@osia/shared';
+import type { AccountDto, Passport, ProfileDto } from '@osia/shared';
 import { PG_POOL } from './postgres.tokens';
 import type {
   AccountRepository,
@@ -9,11 +9,14 @@ import type {
 import { HandleTakenError, InvitationConflictError } from '../../application/errors';
 import {
   ACCOUNT_COLS,
+  PASSPORT_COLS,
   PROFILE_COLS,
   isUniqueViolation,
   toAccountDto,
+  toPassport,
   toProfileDto,
   type AccountRow,
+  type PassportRow,
   type ProfileRow,
 } from './mappers';
 
@@ -27,6 +30,18 @@ export class PgAccountRepository implements AccountRepository {
       [handle],
     );
     return (res.rowCount ?? 0) > 0;
+  }
+
+  async getPassport(accountId: string): Promise<Passport | null> {
+    const res = await this.pool.query<PassportRow>(
+      `SELECT ${PASSPORT_COLS}
+       FROM identity.accounts a
+       JOIN identity.profiles p ON p.account_id = a.id
+       WHERE a.id = $1 AND a.deleted_at IS NULL`,
+      [accountId],
+    );
+    const row = res.rows[0];
+    return row ? toPassport(accountId, row) : null;
   }
 
   async completeSignup(

@@ -15,6 +15,12 @@ const envSchema = z.object({
   SUPABASE_DB_URL: z.string().min(1),
   // Allowlist CORS (coma-separado); nunca '*' (docs/09 §CORS).
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
+  // Cookie de refresh del SSO. En prod: Domain=.osia.com + Secure. En dev local: host-only.
+  COOKIE_DOMAIN: z.string().optional(),
+  COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema> & {

@@ -18,3 +18,27 @@ export class InvitationConflictError extends Error {
     this.name = 'InvitationConflictError';
   }
 }
+
+/** Credenciales inválidas en login. */
+export class InvalidCredentialsError extends Error {
+  constructor() {
+    super('credenciales inválidas');
+    this.name = 'InvalidCredentialsError';
+  }
+}
+
+/** Email aún sin verificar (no puede iniciar sesión / operar). */
+export class EmailNotVerifiedError extends Error {
+  constructor() {
+    super('email no verificado');
+    this.name = 'EmailNotVerifiedError';
+  }
+}
+
+/** La sesión (refresh token) expiró o fue revocada. */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('sesión expirada');
+    this.name = 'SessionExpiredError';
+  }
+}

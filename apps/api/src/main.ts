@@ -1,6 +1,7 @@
 import './load-env'; // PRIMER import: carga .env antes que nada lea process.env
 import 'reflect-metadata';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
@@ -15,6 +16,7 @@ async function bootstrap(): Promise<void> {
 
   // §8 Seguridad: helmet (nosniff/frame DENY/HSTS/…) + Permissions-Policy (la API no usa mic/cam/geo).
   app.use(helmet({ frameguard: { action: 'deny' } })); // §8: frame DENY (no SAMEORIGIN)
+  app.use(cookieParser()); // parsea la cookie de refresh del SSO (req.cookies)
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Permissions-Policy', 'microphone=(), camera=(), geolocation=()');
     next();

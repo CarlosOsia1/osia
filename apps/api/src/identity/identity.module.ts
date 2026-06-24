@@ -3,6 +3,9 @@ import { AuthController } from './web/auth.controller';
 import { WaitlistController } from './web/waitlist.controller';
 import { JoinWaitlistUseCase } from './application/use-cases/join-waitlist.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
+import { LoginUseCase } from './application/use-cases/login.use-case';
+import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case';
+import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { WAITLIST_REPOSITORY } from './application/ports/out/waitlist.repository';
 import { INVITATION_REPOSITORY } from './application/ports/out/invitation.repository';
 import { ACCOUNT_REPOSITORY } from './application/ports/out/account.repository';
@@ -20,6 +23,9 @@ import { PgAccountRepository } from './infrastructure/postgres/account.repositor
   providers: [
     JoinWaitlistUseCase,
     SignupUseCase,
+    LoginUseCase,
+    RefreshSessionUseCase,
+    LogoutUseCase,
     { provide: WAITLIST_REPOSITORY, useClass: PgWaitlistRepository },
     { provide: INVITATION_REPOSITORY, useClass: PgInvitationRepository },
     { provide: ACCOUNT_REPOSITORY, useClass: PgAccountRepository },

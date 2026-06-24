@@ -28,6 +28,13 @@ export const signupSchema = z.object({
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 
+/** `POST /v1/auth/login` — email + password (flujo con contraseña). */
+export const loginSchema = z.object({
+  email,
+  password: z.string().min(1),
+});
+export type LoginInput = z.infer<typeof loginSchema>;
+
 /** `POST /v1/auth/verify-email` — el `token` puede ser el código de 6 celdas o un token de link. */
 export const verifyEmailSchema = z.object({
   token: z.string().trim().min(1),
