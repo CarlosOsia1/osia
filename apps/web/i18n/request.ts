@@ -1,14 +1,12 @@
 import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
-import { getMessages, defaultLocale, isLocale } from '@osia/i18n';
+import { LOCALE_COOKIE, requestConfigFor } from '@osia/i18n';
 
 /**
- * Resolución de locale por cookie `osia.locale` (mismo patrón que world-client, para que el
- * idioma viaje consistente entre apps del ecosistema): default es-CO; segundo idioma en.
- * El routing por URL (SEO de landing) se evaluará en S1.4 si hace falta.
+ * Resolución de locale por cookie `osia.locale` (mismo patrón en todas las apps del ecosistema).
+ * La resolución vive una sola vez en @osia/i18n (requestConfigFor); acá solo el read de la cookie.
  */
 export default getRequestConfig(async () => {
-  const cookieLocale = (await cookies()).get('osia.locale')?.value;
-  const locale = isLocale(cookieLocale) ? cookieLocale : defaultLocale;
-  return { locale, messages: getMessages(locale) };
+  const value = (await cookies()).get(LOCALE_COOKIE)?.value;
+  return requestConfigFor(value);
 });

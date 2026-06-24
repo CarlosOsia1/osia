@@ -10,9 +10,7 @@
  * El día/noche es determinista por tiempo (no se difunde); el clima sí es server-driven.
  */
 
-import { biomeById, mulberry32, type WeatherKind } from '@osia/atmosphere';
-
-export type DirectorWeather = { kind: WeatherKind; intensity: number };
+import { biomeById, mulberry32, CLEAR, type WeatherKind, type WeatherState } from '@osia/atmosphere';
 
 // Duraciones (ms). Cortas para Fase 0 (se ve cambiar el clima sin esperar demasiado).
 const CLEAR_MIN = 30_000;
@@ -22,7 +20,7 @@ const ACTIVE_MAX = 70_000;
 
 export class WeatherDirector {
   readonly biome: string;
-  weather: DirectorWeather = { kind: 'despejado', intensity: 0 };
+  weather: WeatherState = { ...CLEAR };
 
   private readonly allowed: WeatherKind[];
   private readonly nowMs: () => number;
@@ -52,7 +50,7 @@ export class WeatherDirector {
 
     if (this.active) {
       // Fin del clima → despejar.
-      this.weather = { kind: 'despejado', intensity: 0 };
+      this.weather = { ...CLEAR };
       this.active = false;
       this.phaseUntil = t + this.rand(CLEAR_MIN, CLEAR_MAX);
       return true;

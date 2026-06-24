@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { Button } from '@osia/ui';
-import { locales } from '@osia/i18n';
+import { locales, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@osia/i18n';
 
 /**
  * LanguageSwitcher — cambia el idioma escribiendo la cookie `osia.locale`.
@@ -18,7 +18,7 @@ export default function LanguageSwitcher() {
   const router = useRouter();
   const set = (l: string) => {
     if (l === locale) return;
-    document.cookie = `osia.locale=${l};path=/;max-age=31536000;samesite=lax`;
+    document.cookie = `${LOCALE_COOKIE}=${l};path=/;max-age=${LOCALE_COOKIE_MAX_AGE};samesite=lax`;
     router.refresh();
   };
   return (

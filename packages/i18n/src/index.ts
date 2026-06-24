@@ -13,6 +13,10 @@ export const locales = ['es', 'en'] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = 'es';
 
+/** Cookie que persiste el idioma — contrato compartido del ecosistema (debe coincidir entre apps). */
+export const LOCALE_COOKIE = 'osia.locale';
+export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 año
+
 /** Forma de los mensajes (el español es la referencia de claves; en debe tener paridad). */
 export type Messages = typeof es;
 
@@ -25,4 +29,17 @@ export function isLocale(value: string | undefined | null): value is Locale {
 /** Mensajes de un locale (cae a `defaultLocale` si no es válido). */
 export function getMessages(locale: string | undefined | null): Messages {
   return isLocale(locale) ? MESSAGES[locale] : MESSAGES[defaultLocale];
+}
+
+/**
+ * Config de next-intl derivada del valor de la cookie de idioma: `{ locale, messages }`. Misma
+ * resolución para todas las apps (no duplicar el getRequestConfig). El read de la cookie (Next)
+ * queda en cada app por ser específico del runtime.
+ */
+export function requestConfigFor(cookieValue: string | undefined | null): {
+  locale: Locale;
+  messages: Messages;
+} {
+  const locale: Locale = isLocale(cookieValue) ? cookieValue : defaultLocale;
+  return { locale, messages: MESSAGES[locale] };
 }

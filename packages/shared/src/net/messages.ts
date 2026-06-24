@@ -4,17 +4,15 @@
  */
 
 import { C2S, S2C } from './opcodes';
-import type { WeatherKind } from '@osia/atmosphere';
+import type { WeatherState } from '@osia/atmosphere';
 import type { EntityId } from '../domain/ids';
 import type { EntityState, DeltaEntity } from './entities';
 import type { VoiceSignalKind } from './voiceState';
 
 export type { EntityState, DeltaEntity };
 
-/** Clima que viaja por la red. `kind` es el WeatherKind de dominio (re-exportado por @osia/shared). */
-export type WireWeather = { kind: WeatherKind; intensity: number };
-/** Estado de atmósfera autoritativo del mundo: bioma + clima. */
-export type AtmosphereState = { biome: string; weather: WireWeather };
+/** Estado de atmósfera autoritativo del mundo: bioma + clima (WeatherState es el tipo canónico). */
+export type AtmosphereState = { biome: string; weather: WeatherState };
 
 // ---- Cliente → Servidor ----
 export type HelloMsg = { op: typeof C2S.HELLO; ticket: string; protocol: number; resumeToken?: string };
@@ -42,7 +40,7 @@ export type WelcomeMsg = {
   resumeToken: string; // para re-adoptar esta entidad si hay una reconexión (grace window)
 };
 /** El server dicta el clima (autoritativo); todos los clientes lo sincronizan. */
-export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WireWeather };
+export type AtmosphereUpdateMsg = { op: typeof S2C.ATMOSPHERE_UPDATE; biome: string; weather: WeatherState };
 export type DeltaMsg = { op: typeof S2C.DELTA; tick: number; ackSeq: number; entities: DeltaEntity[] };
 export type EntityJoinMsg = { op: typeof S2C.ENTITY_JOIN; entity: EntityState };
 export type EntityLeaveMsg = { op: typeof S2C.ENTITY_LEAVE; id: EntityId };

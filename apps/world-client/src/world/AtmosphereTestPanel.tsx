@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Panel } from '@osia/ui';
-import { BIOMES, type WeatherKind } from '@osia/atmosphere';
+import { BIOMES, WEATHER_KINDS, type WeatherKind } from '@osia/atmosphere';
 import {
   world,
   setOverrideBiome,
@@ -20,8 +20,6 @@ import { setTimeScale, setPaused, resetClock } from './worldClockRuntime';
  *
  * UI por @osia/ui (Button/Panel + tokens); texto vía i18n (@osia/i18n). Toggle: tecla "b".
  */
-
-const WEATHER_KINDS: WeatherKind[] = ['despejado', 'lluvia', 'nieve', 'tormenta-arena', 'niebla'];
 
 const SPEEDS = [
   { v: 1, label: '×1' },

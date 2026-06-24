@@ -43,6 +43,7 @@ export type {
   AtmosphereKeyframe,
   AtmosphereEventPolicy,
   WeatherKind,
+  WeatherState,
   RGB,
   Vec3,
 } from '@osia/atmosphere';
