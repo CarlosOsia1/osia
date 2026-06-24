@@ -14,9 +14,19 @@ const nextConfig = {
   // Permite getUserMedia (voz S0.6) sólo a este origen. (meta http-equiv NO sirve
   // para Permissions-Policy; tiene que ser header.) Si algún día se embebe en iframe,
   // el host debe poner allow="microphone".
+  // §8 Security headers. microphone=(self) habilita getUserMedia (voz S0.6) SOLO a este origen;
+  // el resto es la base de marca (CSP estricta + HSTS se endurecen en el borde/Cloudflare en S1.9).
   async headers() {
     return [
-      { source: '/:path*', headers: [{ key: 'Permissions-Policy', value: 'microphone=(self)' }] },
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: 'Permissions-Policy', value: 'microphone=(self), camera=(), geolocation=()' },
+        ],
+      },
     ];
   },
 };

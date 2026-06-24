@@ -14,7 +14,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "echo \"@osia/ui: sin tests aún\" && exit 0"
+    "test": "tsx src/contrast.test.ts"
   },
   "peerDependencies": {
     "react": ">=19",

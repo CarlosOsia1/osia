@@ -33,6 +33,15 @@ test('ErrorCode: códigos canónicos presentes y guard correcto', () => {
   assert.ok(!isErrorCode(42));
 });
 
+// Contract gate (S1.9-H3): cada entrada del enum es canónica (key === value). El sobre de error de
+// apps/api (http-exception.filter) solo emite valores de ErrorCode (type-safe en compilación); este
+// test es la red de seguridad en runtime contra un typo/drift que rompería el contrato con clientes.
+test('ErrorCode: cada entrada es canónica (key === value, sin drift)', () => {
+  for (const [key, value] of Object.entries(ErrorCode)) {
+    assert.equal(value, key, `ErrorCode.${key} debe valer '${key}', vale '${value}'`);
+  }
+});
+
 // --- Catálogo de experiencias ---
 test('experiences: El Mundo es la única puerta viva de Fase 1', () => {
   assert.equal(EXPERIENCES.length, 1);
