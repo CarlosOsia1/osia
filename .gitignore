@@ -31,3 +31,6 @@ pnpm-debug.log*
 
 # Deploy
 .vercel/
+
+# Fuentes: copias generadas desde packages/ui/fonts por scripts/sync-fonts.mjs (no versionar)
+apps/*/public/fonts/

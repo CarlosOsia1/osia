@@ -8,6 +8,8 @@
     "node": ">=20 <23"
   },
   "scripts": {
+    "postinstall": "node scripts/sync-fonts.mjs",
+    "sync:fonts": "node scripts/sync-fonts.mjs",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
