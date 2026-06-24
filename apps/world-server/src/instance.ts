@@ -26,6 +26,7 @@ export type EntityRuntime = {
   token: string; // resume token: re-adoptar la entidad en una reconexión (grace window)
   disconnected: boolean; // true mientras espera reconexión (no la borramos de inmediato)
   voiceFlags: number; // último estado de voz (mic/hablando/sordo) → sync al que entra
+  presenceSessionId: string | null; // fila de world.presence_sessions (S1.8-H2b); null si anónimo/sin DB
 };
 
 const AOI_ENTER_SQ = AOI_ENTER_M * AOI_ENTER_M;
@@ -60,6 +61,7 @@ export class Instance {
       token,
       disconnected: false,
       voiceFlags: 0,
+      presenceSessionId: null,
     };
     this.entities.set(id, rt);
     return rt;

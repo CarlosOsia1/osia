@@ -16,6 +16,8 @@ export const config = {
   isProd: process.env.NODE_ENV === 'production',
   // URL pública del WS que se devuelve al cliente. En prod: wss://ws.tu-dominio/world
   publicWsUrl: process.env.WORLD_PUBLIC_WS_URL ?? `ws://localhost:${port}/world`,
+  // Presencia durable (S1.8-H2b): si está ausente, el world-server corre SIN DB (NullPresenceStore).
+  databaseUrl: process.env.DATABASE_URL,
 } as const;
 
 // Seguridad (§8): en PRODUCCIÓN el secret no puede ser el default NI uno débil. Un HS256

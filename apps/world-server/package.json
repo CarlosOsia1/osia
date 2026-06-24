@@ -16,10 +16,12 @@
     "@osia/atmosphere": "workspace:*",
     "@osia/shared": "workspace:*",
     "jose": "^5.9.6",
+    "pg": "^8.13.1",
     "pino": "^9.5.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/pg": "^8.11.10",
     "@types/ws": "^8.5.13"
   }
 }

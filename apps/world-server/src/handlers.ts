@@ -164,10 +164,12 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
   // pasaporte en F1); el anónimo F0 cae al acento por defecto.
   let handle: string;
   let accentColor: string;
+  let accountId: string | undefined;
   try {
     const verified = await verifyTicket(msg.ticket);
     handle = verified.handle;
     accentColor = verified.accentColor ?? DEFAULT_ACCENT_COLOR;
+    accountId = verified.accountId;
   } catch {
     send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_TICKET, message: 'ticket inválido' });
     return void conn.ws.close();
@@ -184,6 +186,14 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
   world.peers.set(id, conn);
   const token = randomUUID();
   const rt = hub.add(id, handle, accentColor, spawnPoint(hub.entities.size), token);
+
+  // Checkpoint de presencia (S1.8-H2b): OFF del hot path — el histórico no bloquea el WELCOME, y un
+  // fallo de DB no tumba la sesión. Solo residentes con cuenta (el anónimo F0 no persiste presencia).
+  if (accountId) {
+    void world.presence.open(accountId, token).then((sid) => {
+      rt.presenceSessionId = sid;
+    });
+  }
 
   send(conn.ws, {
     op: S2C.WELCOME,
@@ -267,6 +277,7 @@ function dropEntity(world: World, id: EntityId): void {
   world.graceTimers.delete(id);
   const rt = world.hub.entities.get(id);
   if (!rt || !rt.disconnected) return; // ya re-adoptada por un resume → no borrar
+  if (rt.presenceSessionId) void world.presence.close(rt.presenceSessionId);
   world.hub.remove(id);
   broadcastAll(world.conns, { op: S2C.ENTITY_LEAVE, id });
   log.info({ id, players: world.hub.entities.size }, 'leave');
@@ -282,7 +293,9 @@ function onBye(world: World, conn: Conn): void {
     if (timer) clearTimeout(timer);
     world.graceTimers.delete(id);
     world.peers.delete(id);
-    if (world.hub.entities.has(id)) {
+    const rt = world.hub.entities.get(id);
+    if (rt) {
+      if (rt.presenceSessionId) void world.presence.close(rt.presenceSessionId);
       world.hub.remove(id);
       broadcastAll(world.conns, { op: S2C.ENTITY_LEAVE, id });
       log.info({ id, players: world.hub.entities.size }, 'leave (bye)');

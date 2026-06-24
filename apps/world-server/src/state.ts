@@ -10,6 +10,7 @@ import { config } from './config';
 import { Instance } from './instance';
 import { WeatherDirector } from './weather';
 import { TickMetrics } from './metrics';
+import { createPresenceStore, type PresenceStore } from './presence';
 import type { TokenBucket } from './rateLimit';
 
 export type Conn = {
@@ -28,6 +29,7 @@ export type World = {
   conns: Set<Conn>;
   peers: Map<EntityId, Conn>; // entityId → conn (ruteo O(1) del signaling de voz)
   graceTimers: Map<EntityId, ReturnType<typeof setTimeout>>; // borrado diferido tras una caída (resume)
+  presence: PresenceStore; // checkpoint durable de presencia (Pg o Null según DATABASE_URL)
   /** Acuña el siguiente EntityId (autoridad: el cliente nunca impone su id). */
   mintId: () => EntityId;
 };
@@ -41,6 +43,7 @@ export function createWorld(): World {
     conns: new Set<Conn>(),
     peers: new Map(),
     graceTimers: new Map(),
+    presence: createPresenceStore(config.databaseUrl),
     mintId: () => asEntityId(next++),
   };
 }
