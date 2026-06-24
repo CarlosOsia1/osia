@@ -103,8 +103,9 @@ test('schemas: signup valida y normaliza; rechaza handle/email inválidos', () =
 });
 
 test('schemas: verifyEmail y waitlist', () => {
-  assert.ok(verifyEmailSchema.safeParse({ token: 'abc123' }).success);
-  assert.ok(!verifyEmailSchema.safeParse({ token: '' }).success);
+  assert.ok(verifyEmailSchema.safeParse({ email: 'a@b.co', token: '123456' }).success);
+  assert.ok(!verifyEmailSchema.safeParse({ email: 'a@b.co', token: '' }).success);
+  assert.ok(!verifyEmailSchema.safeParse({ token: '123456' }).success); // email requerido
   assert.ok(waitlistSchema.safeParse({ email: 'a@b.co', source: 'landing' }).success);
   assert.ok(waitlistSchema.safeParse({ email: 'a@b.co' }).success); // source opcional
   assert.ok(!waitlistSchema.safeParse({ email: 'nope' }).success);
