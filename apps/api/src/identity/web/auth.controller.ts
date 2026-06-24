@@ -127,7 +127,15 @@ export class AuthController {
   @HttpCode(204)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     const rt = this.readRefreshCookie(req);
-    if (rt) await this.logoutUseCase.execute(rt);
+    // La cookie se limpia SIEMPRE, aunque la revocación falle (token ya inválido/expirado): si no,
+    // una sesión muerta dejaría la cookie viva y el cliente quedaría en un estado fantasma.
+    if (rt) {
+      try {
+        await this.logoutUseCase.execute(rt);
+      } catch {
+        /* token ya inválido en el proveedor: igual limpiamos la cookie local */
+      }
+    }
     this.clearRefreshCookie(res);
   }
 
