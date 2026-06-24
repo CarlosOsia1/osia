@@ -158,5 +158,21 @@
     "needLogin": "Log in to see your passport.",
     "toLogin": "Go to login",
     "errSave": "Couldn't save. Try again."
+  },
+  "vestibule": {
+    "loading": "Opening the Vestibule…",
+    "popularity": "Recognition",
+    "present": "Present",
+    "editPassport": "Edit passport",
+    "logout": "Log out",
+    "enter": "Enter",
+    "crossing": "Crossing the threshold…",
+    "doorsLabel": "Experiences"
+  },
+  "door": {
+    "world": {
+      "name": "El Mundo",
+      "tagline": "A quiet world, on foot, with voice."
+    }
   }
 }

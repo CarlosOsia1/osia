@@ -24,3 +24,16 @@ export { CodeInput, type CodeInputProps } from './CodeInput';
 export { FormError } from './FormError';
 export { Switch, type SwitchProps } from './Switch';
 export { Dot } from './Dot';
+
+// --- Vestíbulo (S1.7): pasaporte, puertas, cruce de umbral ---
+export {
+  PassportCard,
+  type PassportCardProps,
+  ExperienceThreshold,
+  type ExperienceThresholdProps,
+  ThresholdTransition,
+  type ThresholdTransitionProps,
+  AppSwitcher,
+  type AppSwitcherProps,
+  type AppSwitcherExperience,
+} from './vestibule';

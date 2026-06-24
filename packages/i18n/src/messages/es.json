@@ -158,5 +158,21 @@
     "needLogin": "Inicia sesión para ver tu pasaporte.",
     "toLogin": "Ir a entrar",
     "errSave": "No se pudo guardar. Prueba de nuevo."
+  },
+  "vestibule": {
+    "loading": "Abriendo el Vestíbulo…",
+    "popularity": "Reconocimiento",
+    "present": "Presente",
+    "editPassport": "Editar pasaporte",
+    "logout": "Cerrar sesión",
+    "enter": "Entrar",
+    "crossing": "Cruzando el umbral…",
+    "doorsLabel": "Experiencias"
+  },
+  "door": {
+    "world": {
+      "name": "El Mundo",
+      "tagline": "Un mundo tranquilo, a pie, con voz."
+    }
   }
 }

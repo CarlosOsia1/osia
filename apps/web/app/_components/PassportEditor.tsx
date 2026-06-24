@@ -224,6 +224,7 @@ export function PassportEditor() {
             </label>
             <input
               id="osia-volume"
+              className="osia-range"
               type="range"
               min={0}
               max={1}
