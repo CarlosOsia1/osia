@@ -29,7 +29,7 @@ export function VerifyForm({ email }: { email: string }) {
           {t('success')}
         </p>
         <div>
-          <a className="osia-btn osia-btn--primary osia-btn--lg" href="/">
+          <a className="osia-btn osia-btn--primary osia-btn--lg" href="/passport">
             {t('enter')}
           </a>
         </div>

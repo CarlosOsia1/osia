@@ -118,5 +118,31 @@
     "enter": "Enter",
     "errInvalid": "Invalid or expired code.",
     "errGeneric": "Something went wrong. Try again."
+  },
+  "login": {
+    "kicker": "Welcome back",
+    "title": "Enter OSIA",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "show": "Show",
+    "hide": "Hide",
+    "submit": "Enter",
+    "errCredentials": "Wrong email or password.",
+    "errUnverified": "Verify your email before entering.",
+    "errGeneric": "Something went wrong. Try again."
+  },
+  "passport": {
+    "kicker": "Vestibule",
+    "title": "Your passport",
+    "displayName": "Name",
+    "bio": "About you",
+    "accent": "Accent color",
+    "save": "Save",
+    "saved": "Saved",
+    "logout": "Log out",
+    "loading": "Loading…",
+    "needLogin": "Log in to see your passport.",
+    "toLogin": "Go to login",
+    "errSave": "Couldn't save. Try again."
   }
 }

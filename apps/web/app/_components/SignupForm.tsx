@@ -4,7 +4,7 @@ import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { Button, Field, FormError } from '@osia/ui';
+import { Button, Field, FormError, PasswordField } from '@osia/ui';
 import { OsiaApiError } from '@osia/identity';
 import { HANDLE_PATTERN, type SignupInput } from '@osia/shared';
 import { identity } from '../../lib/identity';
@@ -35,7 +35,6 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
     password: '',
     confirm: '',
   });
-  const [showPw, setShowPw] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -73,7 +72,6 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
   }
 
   const error = clientError ?? (mutation.isError ? errorLabel(mutation.error, t) : null);
-  const pwType = showPw ? 'text' : 'password';
 
   return (
     <form onSubmit={onSubmit} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
@@ -117,29 +115,29 @@ export function SignupForm({ initialCode }: { initialCode: string }) {
       </Labeled>
       <Labeled label={t('passwordLabel')}>
         {(id) => (
-          <PasswordRow
+          <PasswordField
             id={id}
             name="new-password"
-            type={pwType}
             value={form.password}
             onChange={set('password')}
             autoComplete="new-password"
-            toggleLabel={showPw ? t('hide') : t('show')}
-            onToggle={() => setShowPw((s) => !s)}
+            showLabel={t('show')}
+            hideLabel={t('hide')}
+            required
           />
         )}
       </Labeled>
       <Labeled label={t('confirmLabel')}>
         {(id) => (
-          <PasswordRow
+          <PasswordField
             id={id}
             name="confirm-password"
-            type={pwType}
             value={form.confirm}
             onChange={set('confirm')}
             autoComplete="new-password"
-            toggleLabel={showPw ? t('hide') : t('show')}
-            onToggle={() => setShowPw((s) => !s)}
+            showLabel={t('show')}
+            hideLabel={t('hide')}
+            required
           />
         )}
       </Labeled>
@@ -172,41 +170,6 @@ function Labeled({
       {help && (
         <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-subtle)' }}>{help}</span>
       )}
-    </div>
-  );
-}
-
-/** Input de contraseña con botón ver/ocultar. */
-function PasswordRow({
-  id,
-  name,
-  type,
-  value,
-  onChange,
-  autoComplete,
-  toggleLabel,
-  onToggle,
-}: {
-  id: string;
-  name: string;
-  type: 'text' | 'password';
-  value: string;
-  onChange: (e: { currentTarget: { value: string } }) => void;
-  autoComplete: string;
-  toggleLabel: string;
-  onToggle: () => void;
-}) {
-  return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <Field id={id} name={name} type={type} value={value} onChange={onChange} autoComplete={autoComplete} required />
-      <button
-        type="button"
-        onClick={onToggle}
-        className="osia-btn osia-btn--ghost osia-btn--sm"
-        style={{ position: 'absolute', right: 'var(--space-1)' }}
-      >
-        {toggleLabel}
-      </button>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export { Card, type CardProps } from './Card';
 export { Modal, type ModalProps } from './Modal';
 export { Panel, type PanelProps } from './Panel';
 export { Field, type FieldProps } from './Field';
+export { PasswordField, type PasswordFieldProps } from './PasswordField';
 export { CodeInput, type CodeInputProps } from './CodeInput';
 export { FormError } from './FormError';
 export { Dot } from './Dot';

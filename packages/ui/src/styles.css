@@ -389,6 +389,17 @@
   border-color: var(--color-danger);
 }
 
+/* ---- PasswordField: input con botón ver/ocultar ---- */
+.osia-password {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.osia-password__toggle {
+  position: absolute;
+  right: var(--space-1);
+}
+
 /* ---- FormError: mensaje de error de formulario ---- */
 .osia-form-error {
   margin: 0;

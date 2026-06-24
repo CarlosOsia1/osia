@@ -118,5 +118,31 @@
     "enter": "Entrar",
     "errInvalid": "Código inválido o expirado.",
     "errGeneric": "Algo salió mal. Prueba de nuevo."
+  },
+  "login": {
+    "kicker": "Bienvenido de vuelta",
+    "title": "Entra a OSIA",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "submit": "Entrar",
+    "errCredentials": "Correo o contraseña incorrectos.",
+    "errUnverified": "Verifica tu email antes de entrar.",
+    "errGeneric": "Algo salió mal. Prueba de nuevo."
+  },
+  "passport": {
+    "kicker": "Vestíbulo",
+    "title": "Tu pasaporte",
+    "displayName": "Nombre",
+    "bio": "Sobre ti",
+    "accent": "Color de acento",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "logout": "Cerrar sesión",
+    "loading": "Cargando…",
+    "needLogin": "Inicia sesión para ver tu pasaporte.",
+    "toLogin": "Ir a entrar",
+    "errSave": "No se pudo guardar. Prueba de nuevo."
   }
 }
