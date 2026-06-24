@@ -117,12 +117,18 @@ importers:
       '@osia/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@osia/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
       '@osia/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@osia/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@tanstack/react-query':
+        specifier: ^5.62.0
+        version: 5.101.1(react@19.2.7)
       next:
         specifier: ^15.2.4
         version: 15.5.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
