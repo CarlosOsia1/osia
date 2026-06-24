@@ -11,6 +11,8 @@ const envSchema = z.object({
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_JWT_SECRET: z.string().min(1),
+  // Conexión directa Postgres (session pooler) para los repos de identity/world (no PostgREST).
+  SUPABASE_DB_URL: z.string().min(1),
   // Allowlist CORS (coma-separado); nunca '*' (docs/09 §CORS).
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
 });

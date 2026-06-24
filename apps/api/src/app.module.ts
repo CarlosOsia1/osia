@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ConfigModule } from './config/config.module';
+import { PostgresModule } from './identity/infrastructure/postgres/postgres.module';
 import { SupabaseModule } from './identity/infrastructure/supabase/supabase.module';
 import { HealthController } from './health/health.controller';
 import { IdentityModule } from './identity/identity.module';
@@ -28,6 +29,7 @@ import { ApiExceptionFilter } from './common/http-exception.filter';
           : {}),
       },
     }),
+    PostgresModule,
     SupabaseModule,
     IdentityModule,
   ],
