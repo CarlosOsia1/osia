@@ -38,6 +38,8 @@ export class Instance {
   /** viewerId → ids de entidades actualmente visibles para ese viewer (AOI con histéresis). */
   private readonly visible = new Map<EntityId, Set<EntityId>>();
   private readonly scratch = { x: 0, z: 0 }; // reutilizado en step() (cero asignaciones/tick)
+  /** Buffer reutilizado por visibleDeltaFor (§7: cero asignaciones/tick con roster estable). */
+  private readonly deltaScratch: DeltaEntity[] = [];
 
   constructor(id: string) {
     this.id = id;
@@ -124,12 +126,25 @@ export class Instance {
    */
   visibleDeltaFor(viewerId: EntityId): DeltaEntity[] {
     const set = this.visible.get(viewerId);
-    const out: DeltaEntity[] = [];
+    // Reutiliza el buffer + los objetos DeltaEntity (cero asignaciones/tick con roster estable, §7).
+    // El consumidor (loop: encode) lee el array SINCRÓNICAMENTE antes de la próxima llamada.
+    const out = this.deltaScratch;
+    let n = 0;
     for (const e of this.entities.values()) {
       if (e.state.id === viewerId || !set || set.has(e.state.id)) {
-        out.push({ id: e.state.id, x: e.state.x, z: e.state.z, yaw: e.state.yaw });
+        const slot = out[n];
+        if (slot === undefined) {
+          out[n] = { id: e.state.id, x: e.state.x, z: e.state.z, yaw: e.state.yaw };
+        } else {
+          slot.id = e.state.id;
+          slot.x = e.state.x;
+          slot.z = e.state.z;
+          slot.yaw = e.state.yaw;
+        }
+        n++;
       }
     }
+    out.length = n; // recorta al conteo real (mantiene la capacidad para el siguiente tick)
     return out;
   }
 }
