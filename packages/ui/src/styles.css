@@ -134,6 +134,9 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
 
+  /* ---------- z-index (capas) ---------- */
+  --z-hud: 20; /* overlays del HUD sobre el Canvas */
+
   /* ---------- Tamaños ---------- */
   --size-dot: 8px;
   /* Mínimo táctil accesible (WCAG / docs/02 §9): se aplica en pointer:coarse. */
@@ -556,6 +559,18 @@
 .osia-hud-text {
   font-family: var(--font-ui);
   color: var(--color-text);
+}
+
+/* ---- HudPanel: contenedor de overlay del HUD (boilerplate común, §2.4) ---- */
+.osia-hud {
+  position: absolute;
+  z-index: var(--z-hud);
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--font-ui);
+}
+.osia-hud--interactive {
+  pointer-events: auto;
 }
 
 /* ============================ Vestíbulo (S1.7) ============================ */

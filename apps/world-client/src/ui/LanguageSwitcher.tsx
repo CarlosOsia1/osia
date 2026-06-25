@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { Button } from '@osia/ui';
+import { Button, HudPanel } from '@osia/ui';
 import { locales, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@osia/i18n';
 
 /**
@@ -22,7 +22,7 @@ export default function LanguageSwitcher() {
     router.refresh();
   };
   return (
-    <div style={{ position: 'absolute', top: 22, right: 28, display: 'flex', gap: 4, zIndex: 20 }}>
+    <HudPanel interactive style={{ top: 22, right: 28, display: 'flex', gap: 4 }}>
       {locales.map((l) => (
         <Button
           key={l}
@@ -34,6 +34,6 @@ export default function LanguageSwitcher() {
           {l.toUpperCase()}
         </Button>
       ))}
-    </div>
+    </HudPanel>
   );
 }

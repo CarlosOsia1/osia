@@ -18,6 +18,7 @@ export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from '.
 export { Card, type CardProps } from './Card';
 export { Modal, type ModalProps } from './Modal';
 export { Panel, type PanelProps } from './Panel';
+export { HudPanel, type HudPanelProps } from './HudPanel';
 export { Field, type FieldProps } from './Field';
 export { PasswordField, type PasswordFieldProps } from './PasswordField';
 export { CodeInput, type CodeInputProps } from './CodeInput';

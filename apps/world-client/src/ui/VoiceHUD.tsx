@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Dot, Panel } from '@osia/ui';
+import { Button, Dot, HudPanel, Panel } from '@osia/ui';
 import { useNetState } from '../net/useNet';
 import { isChatTyping } from '../net/store';
 import { meshVoice } from '../voice/MeshVoice';
@@ -93,17 +93,14 @@ export default function VoiceHUD() {
   const speakers = remotes.filter((r) => hasVoiceFlag(voice[r.id] ?? 0, VOICE_FLAG.SPEAKING));
 
   return (
-    <div
+    <HudPanel
       style={{
-        position: 'absolute',
         bottom: 22,
         right: 28,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
         gap: 6,
-        pointerEvents: 'none',
-        zIndex: 20,
       }}
       aria-label={t('aria')}
     >
@@ -200,6 +197,6 @@ export default function VoiceHUD() {
           </Button>
         </div>
       )}
-    </div>
+    </HudPanel>
   );
 }

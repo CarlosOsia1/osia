@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Field } from '@osia/ui';
+import { Field, HudPanel } from '@osia/ui';
 import { getNetClient, useNetState } from '../net/useNet';
 import { setChatTyping, setChatNotice } from '../net/store';
 
@@ -90,16 +90,8 @@ export default function ChatPanel() {
   const visible = open ? chatLog : chatLog.filter((l) => now - l.at < FADE_MS).slice(-RECENT_MAX);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 58,
-        left: 28,
-        width: 380,
-        maxWidth: '62vw',
-        pointerEvents: 'none',
-        zIndex: 20,
-      }}
+    <HudPanel
+      style={{ bottom: 58, left: 28, width: 380, maxWidth: '62vw' }}
       aria-label={t('ariaPanel')}
     >
       <div
@@ -176,6 +168,6 @@ export default function ChatPanel() {
           aria-label={t('ariaInput')}
         />
       )}
-    </div>
+    </HudPanel>
   );
 }

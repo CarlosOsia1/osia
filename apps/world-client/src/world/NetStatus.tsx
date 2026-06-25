@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Dot } from '@osia/ui';
+import { Dot, HudPanel } from '@osia/ui';
 import { useNetState } from '../net/useNet';
 
 /**
@@ -38,9 +38,8 @@ export default function NetStatus() {
   }
 
   return (
-    <div
+    <HudPanel
       style={{
-        position: 'absolute',
         top: 52,
         left: 28,
         display: 'flex',
@@ -50,12 +49,10 @@ export default function NetStatus() {
         font: 'var(--text-sm)/var(--leading-none) var(--font-ui)',
         letterSpacing: 'var(--tracking-wider)',
         textTransform: 'lowercase',
-        pointerEvents: 'none',
-        userSelect: 'none',
       }}
     >
       <Dot color={dot} glow />
       {label}
-    </div>
+    </HudPanel>
   );
 }
