@@ -11,8 +11,9 @@ const nextConfig = {
   transpilePackages: ['@osia/ui', '@osia/shared', '@osia/i18n', '@osia/identity'],
   // El lint corre por separado (Turborepo + ESLint flat), no durante `next build`.
   eslint: { ignoreDuringBuilds: true },
-  // §8 Security headers base. El Vestíbulo no usa micrófono/cámara/geo → se deniegan.
-  // CSP estricta + HSTS se endurecen en el borde (Cloudflare) en S1.9.
+  // §8 Security headers base. El Vestíbulo no usa micrófono/cámara/geo → se deniegan. HSTS como
+  // defensa en profundidad (el navegador lo ignora sobre http/localhost). CSP estricta se endurece
+  // en el borde (Cloudflare) en S1.9.
   async headers() {
     return [
       {
@@ -22,6 +23,7 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
           { key: 'Permissions-Policy', value: 'microphone=(), camera=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
         ],
       },
     ];

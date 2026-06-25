@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Inject,
+  Logger,
   Post,
   Req,
   Res,
@@ -47,6 +48,8 @@ const RT_MAX_AGE_MS = SESSION_REFRESH_MAX_AGE_MS;
  */
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly signupUseCase: SignupUseCase,
     private readonly loginUseCase: LoginUseCase,
@@ -132,8 +135,10 @@ export class AuthController {
     if (rt) {
       try {
         await this.logoutUseCase.execute(rt);
-      } catch {
-        /* token ya inválido en el proveedor: igual limpiamos la cookie local */
+      } catch (err) {
+        // token ya inválido en el proveedor: igual limpiamos la cookie local, pero lo dejamos en el
+        // log (warn) para que ops vea si la revocación falla por otra causa (red/timeout).
+        this.logger.warn(`logout: revocación falló (${err instanceof Error ? err.message : 'desconocido'})`);
       }
     }
     this.clearRefreshCookie(res);

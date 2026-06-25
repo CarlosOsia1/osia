@@ -22,6 +22,8 @@ import {
   PROTOCOL_VERSION,
   DEFAULT_WORLD_ID,
   DEFAULT_ACCENT_COLOR,
+  RESUME_TOKEN_STORAGE_KEY,
+  HANDLE_STORAGE_KEY,
   MAX_VOICE_PAYLOAD_BYTES,
   asEntityId,
   type S2CMessage,
@@ -64,9 +66,10 @@ function randomHandle(): string {
 }
 
 // resumeToken + handle se guardan en sessionStorage (POR PESTAÑA) para que un RELOAD re-adopte
-// la misma entidad dentro de la ventana de gracia, en vez de crear un viajero nuevo.
-const SS_TOKEN = 'osia.resumeToken';
-const SS_HANDLE = 'osia.handle';
+// la misma entidad dentro de la ventana de gracia, en vez de crear un viajero nuevo. Las claves
+// viven en @osia/shared (contrato, no literales sueltos).
+const SS_TOKEN = RESUME_TOKEN_STORAGE_KEY;
+const SS_HANDLE = HANDLE_STORAGE_KEY;
 function ssGet(k: string): string | null {
   try {
     return typeof window !== 'undefined' ? window.sessionStorage.getItem(k) : null;

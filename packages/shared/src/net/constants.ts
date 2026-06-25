@@ -43,6 +43,14 @@ export const MAX_VOICE_PAYLOAD_BYTES = 16384;
 export const DEFAULT_WORLD_ID = 'osia';
 
 /**
+ * Claves de sessionStorage (POR PESTAÑA) que el cliente del mundo usa para re-adoptar su entidad
+ * tras un reload (resume token) y conservar su handle anónimo. Centralizadas para que cualquier
+ * módulo (debug, tests) use las mismas, no literales sueltos.
+ */
+export const RESUME_TOKEN_STORAGE_KEY = 'osia.resumeToken';
+export const HANDLE_STORAGE_KEY = 'osia.handle';
+
+/**
  * World ticket (JWT HS256 efímero, docs/05 §2.1). Contrato CRUZADO: lo FIRMA apps/api y lo
  * VERIFICA world-server, así que estos valores DEBEN vivir una sola vez (si se desincronizan,
  * los tickets se rechazan en silencio).

@@ -172,7 +172,7 @@
   gap: var(--space-2);
   font-family: var(--font-ui);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
@@ -231,11 +231,11 @@
   color: var(--color-danger);
 }
 .osia-btn--sm {
-  font-size: 10px;
+  font-size: var(--text-xs);
   padding: var(--space-1) var(--space-2);
 }
 .osia-btn--lg {
-  font-size: 13px;
+  font-size: var(--text-md);
   padding: var(--space-3) var(--space-5);
 }
 .osia-btn--active {
@@ -531,7 +531,7 @@
   backdrop-filter: blur(4px);
   font-family: var(--font-ui);
   font-weight: 500;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text);
   white-space: nowrap;
   user-select: none;
@@ -547,7 +547,7 @@
 /* ---- Tipografía utilitaria ---- */
 .osia-overline {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: var(--tracking-overline);
   text-transform: uppercase;
@@ -655,7 +655,7 @@
   gap: 2px;
 }
 .osia-passport-card__stats dt {
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: var(--tracking-overline);
   color: var(--color-text-subtle);
@@ -741,7 +741,7 @@
   padding: var(--space-2) var(--space-4);
   border: 1px solid rgba(203, 184, 154, 0.4);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: var(--tracking-overline);
   color: var(--color-accent);
