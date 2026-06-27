@@ -137,6 +137,10 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
       world.graceTimers.delete(prev.state.id);
       prev.disconnected = false;
       prev.inputs.length = 0;
+      // CLAVE: tras un reload el cliente reinicia su `seq` en 0; el server debe olvidar el lastSeq
+      // viejo (alto), si no rechazaría TODOS los inputs nuevos (seq <= lastSeq) y la entidad quedaría
+      // trabada (no se movería). Resetear → los inputs frescos se aceptan desde seq 1.
+      prev.lastSeq = 0;
       // Spawn-safety en RESUME: si la posición guardada quedó obstruida (dentro de un árbol/
       // monolito/barrera), reubicar a un punto despejado — nunca reaparecer trabado.
       if (!isSpawnClear(prev.state.x, prev.state.z)) {

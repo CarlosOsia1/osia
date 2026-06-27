@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
-import { instancedBufferAttribute, uniform } from 'three/tsl';
+import { texture, instanceIndex, vec2, uniform } from 'three/tsl';
 import { clamp01 } from '@osia/atmosphere';
 import { forestTrees } from '@osia/shared';
 import { OSIA_COLORS } from '@osia/ui';
@@ -42,11 +42,10 @@ const WIND = {
  * porque en WebGPU el instanceColor clásico no se multiplica); el tronco es uniforme.
  */
 function Forest({ trees }: { trees: Tree[] }) {
-  const { meshes, seasonU } = useMemo(() => {
-    // Color de cada copa = uniform de la ESTACIÓN × tinte por instancia (atributo instanciado).
-    // En WebGPU el instanceColor "clásico" no se multiplica en MeshStandardMaterial, así que lo
-    // hacemos explícito con un node material (TSL): variación real por árbol, determinista.
-    // El uniform es vec3 lineal (la conversión sRGB→lineal la hace un Color scratch por frame).
+  const { meshes, seasonU, tintTex } = useMemo(() => {
+    // Color de cada copa = tinte POR ÁRBOL × uniform de la ESTACIÓN. El tinte por árbol va en una
+    // DataTexture (1 fila × N px) que el shader muestrea por `instanceIndex` → variación por
+    // instancia GARANTIZADA (los atributos instanciados clásicos no funcionaban en WebGPU aquí).
     const seasonU = uniform(new THREE.Vector3(1, 1, 1));
     const parts = [
       { geo: new THREE.CylinderGeometry(0.12, 0.16, 1, 6).translate(0, 0.5, 0), tinted: false, roughness: 0.9, color: 0x2a211a },
@@ -60,20 +59,27 @@ function Forest({ trees }: { trees: Tree[] }) {
     const p = new THREE.Vector3();
     const s = new THREE.Vector3();
 
-    // Tinte por árbol (vec3) como atributo INSTANCIADO de la copa (multiplica al color estacional).
-    const tintArray = new Float32Array(trees.length * 3);
+    // Tinte por árbol en una textura de datos (RGBA float, sin conversión de espacio), 1 px por árbol.
+    const W = trees.length;
+    const tintData = new Float32Array(W * 4);
     trees.forEach((t, i) => {
-      tintArray[i * 3] = t.tint.r;
-      tintArray[i * 3 + 1] = t.tint.g;
-      tintArray[i * 3 + 2] = t.tint.b;
+      tintData[i * 4] = t.tint.r;
+      tintData[i * 4 + 1] = t.tint.g;
+      tintData[i * 4 + 2] = t.tint.b;
+      tintData[i * 4 + 3] = 1;
     });
+    const tintTex = new THREE.DataTexture(tintData, W, 1, THREE.RGBAFormat, THREE.FloatType);
+    tintTex.magFilter = THREE.NearestFilter; // un píxel exacto por árbol (sin interpolar entre vecinos)
+    tintTex.minFilter = THREE.NearestFilter;
+    tintTex.needsUpdate = true;
 
     const built = parts.map((part) => {
       let mat: THREE.Material;
       if (part.tinted) {
         const nodeMat = new MeshStandardNodeMaterial({ flatShading: true, roughness: part.roughness });
-        // tinte por INSTANCIA (indexado por instanceIndex) × color de la estación
-        nodeMat.colorNode = instancedBufferAttribute<'vec3'>(tintArray, 'vec3').mul(seasonU);
+        // muestrea el píxel i (centro) de la textura de tintes y lo multiplica por la estación
+        const u = instanceIndex.toFloat().add(0.5).div(W);
+        nodeMat.colorNode = texture(tintTex, vec2(u, 0.5)).rgb.mul(seasonU);
         mat = nodeMat;
       } else {
         mat = new THREE.MeshStandardMaterial({ color: part.color, flatShading: true, roughness: part.roughness });
@@ -88,7 +94,7 @@ function Forest({ trees }: { trees: Tree[] }) {
       inst.instanceMatrix.needsUpdate = true;
       return inst;
     });
-    return { meshes: built, seasonU };
+    return { meshes: built, seasonU, tintTex };
   }, [trees]);
 
   // Viento: cada árbol se MECE (lean desde la base) con su propia fase → bosque vivo.
@@ -129,8 +135,9 @@ function Forest({ trees }: { trees: Tree[] }) {
         (inst.material as THREE.Material).dispose();
         inst.dispose();
       });
+      tintTex.dispose();
     },
-    [meshes],
+    [meshes, tintTex],
   );
 
   return (
