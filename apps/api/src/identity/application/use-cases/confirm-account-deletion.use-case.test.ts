@@ -7,20 +7,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { ConfirmAccountDeletionUseCase } from './confirm-account-deletion.use-case';
-import { DeleteAccountUseCase } from './delete-account.use-case';
+import { AccountErasureService } from '../account-erasure.service';
 import { AppException } from '../../../common/app-exception';
 import type { DeletionTokenRepository } from '../ports/out/deletion-token.repository';
 
 type ErasedSink = { accountId?: string; method?: string };
 
-/** DeleteAccountUseCase falso: captura la llamada a eraseConfirmed (no borra de verdad). */
-const fakeDeleter = (sink: ErasedSink): DeleteAccountUseCase =>
+/** Eraser falso: captura la llamada a erase (no borra de verdad). */
+const fakeEraser = (sink: ErasedSink): AccountErasureService =>
   ({
-    eraseConfirmed: async (accountId: string, method: 'password' | 'email-link') => {
+    erase: async (accountId: string, method: 'password' | 'email-link') => {
       sink.accountId = accountId;
       sink.method = method;
     },
-  }) as unknown as DeleteAccountUseCase;
+  }) as unknown as AccountErasureService;
 
 test('token válido: consume por HASH y borra con método email-link', async () => {
   const sink: ErasedSink = {};
@@ -33,7 +33,7 @@ test('token válido: consume por HASH y borra con método email-link', async () 
         return 'id-1';
       },
     } as DeletionTokenRepository,
-    fakeDeleter(sink),
+    fakeEraser(sink),
   );
 
   await uc.execute('plain-token');
@@ -50,7 +50,7 @@ test('token inválido/expirado/usado: lanza AppException y NO borra', async () =
   const sink: ErasedSink = {};
   const uc = new ConfirmAccountDeletionUseCase(
     { create: async () => undefined, consume: async () => null } as DeletionTokenRepository,
-    fakeDeleter(sink),
+    fakeEraser(sink),
   );
   await assert.rejects(() => uc.execute('bad'), (e) => e instanceof AppException);
   assert.deepEqual(sink, {});

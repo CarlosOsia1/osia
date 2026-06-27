@@ -4,8 +4,17 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ambientMix, AMBIENT_LAYERS } from './ambientMix';
-import { WEATHER_KINDS } from '@osia/atmosphere';
+import { ambientMix, AMBIENT_LAYERS, BIOME_SOUND_LIFE } from './ambientMix';
+import { WEATHER_KINDS, BIOMES } from '@osia/atmosphere';
+
+test('todo bioma del catálogo BIOMES tiene vida sonora definida (sin drift)', () => {
+  for (const b of BIOMES) {
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(BIOME_SOUND_LIFE, b.id),
+      `falta BIOME_SOUND_LIFE para el bioma '${b.id}' (drift con BIOMES)`,
+    );
+  }
+});
 
 test('todas las ganancias quedan en [0,1]', () => {
   for (const night of [0, 0.5, 1])

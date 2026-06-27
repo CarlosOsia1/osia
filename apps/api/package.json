@@ -9,13 +9,14 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts && tsx src/identity/application/use-cases/request-account-deletion.use-case.test.ts && tsx src/identity/application/use-cases/confirm-account-deletion.use-case.test.ts && tsx src/identity/application/retention.service.test.ts"
+    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/account-erasure.service.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts && tsx src/identity/application/use-cases/request-account-deletion.use-case.test.ts && tsx src/identity/application/use-cases/confirm-account-deletion.use-case.test.ts && tsx src/identity/application/retention.service.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/schedule": "^6.1.3",
+    "@nestjs/throttler": "^6.5.0",
     "@osia/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
     "cookie-parser": "^1.4.7",

@@ -6,7 +6,7 @@ import {
   DELETION_TOKEN_REPOSITORY,
   type DeletionTokenRepository,
 } from '../ports/out/deletion-token.repository';
-import { DeleteAccountUseCase } from './delete-account.use-case';
+import { AccountErasureService } from '../account-erasure.service';
 
 /**
  * Confirma el borrado de cuenta por el TOKEN del link de email (S2-C2). El token ES la prueba de
@@ -17,7 +17,7 @@ import { DeleteAccountUseCase } from './delete-account.use-case';
 export class ConfirmAccountDeletionUseCase {
   constructor(
     @Inject(DELETION_TOKEN_REPOSITORY) private readonly tokens: DeletionTokenRepository,
-    private readonly deleteAccount: DeleteAccountUseCase,
+    private readonly erasure: AccountErasureService,
   ) {}
 
   async execute(token: string): Promise<void> {
@@ -26,6 +26,6 @@ export class ConfirmAccountDeletionUseCase {
     if (!accountId) {
       throw new AppException(ErrorCode.BAD_REQUEST, 400, 'Enlace de borrado inválido o expirado.');
     }
-    await this.deleteAccount.eraseConfirmed(accountId, 'email-link');
+    await this.erasure.erase(accountId, 'email-link');
   }
 }

@@ -22,7 +22,9 @@ import { IssueWorldTicketUseCase } from './application/use-cases/issue-world-tic
 import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
 import { RequestAccountDeletionUseCase } from './application/use-cases/request-account-deletion.use-case';
 import { ConfirmAccountDeletionUseCase } from './application/use-cases/confirm-account-deletion.use-case';
+import { AccountErasureService } from './application/account-erasure.service';
 import { RetentionService } from './application/retention.service';
+import { RetentionCron } from './infrastructure/schedule/retention.cron';
 import { WAITLIST_REPOSITORY } from './application/ports/out/waitlist.repository';
 import { INVITATION_REPOSITORY } from './application/ports/out/invitation.repository';
 import { ACCOUNT_REPOSITORY } from './application/ports/out/account.repository';
@@ -69,7 +71,9 @@ import { AuthGuard } from '../common/auth.guard';
     DeleteAccountUseCase,
     RequestAccountDeletionUseCase,
     ConfirmAccountDeletionUseCase,
+    AccountErasureService,
     RetentionService,
+    RetentionCron,
     AuthGuard,
     { provide: WAITLIST_REPOSITORY, useClass: PgWaitlistRepository },
     { provide: INVITATION_REPOSITORY, useClass: PgInvitationRepository },

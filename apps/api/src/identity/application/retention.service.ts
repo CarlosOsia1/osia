@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { AUDIT_LOG_REPOSITORY, type AuditLogRepository } from './ports/out/audit-log.repository';
 import { RETENTION_REPOSITORY, type RetentionRepository } from './ports/out/retention.repository';
 
@@ -26,13 +25,8 @@ export class RetentionService {
     @Inject(AUDIT_LOG_REPOSITORY) private readonly audit: AuditLogRepository,
   ) {}
 
-  /** Cron diario (3am). La lógica vive en `runOnce()` para poder testearla sin esperar al reloj. */
-  @Cron(CronExpression.EVERY_DAY_AT_3AM)
-  async run(): Promise<void> {
-    await this.runOnce();
-  }
-
-  /** Ejecuta una pasada de purga y, si borró algo, la registra en la bitácora. Devuelve los conteos. */
+  /** Ejecuta una pasada de purga y, si borró algo, la registra en la bitácora. Devuelve los conteos.
+   *  El disparo periódico lo hace el adaptador de infraestructura RetentionCron (driving adapter). */
   async runOnce(): Promise<PurgeCounts> {
     const counts: PurgeCounts = {
       emailVerifications: await this.retention.purgeExpiredEmailVerifications(RETENTION_DAYS.emailVerifications),

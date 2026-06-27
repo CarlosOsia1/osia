@@ -11,7 +11,9 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SUPABASE_JWT_SECRET: z.string().min(1),
+  // Reservado: hoy el AuthGuard valida por JWKS asimétrico (no por el secreto HS). Opcional para no
+  // exigir un secreto que el código no consume (menor superficie de secretos).
+  SUPABASE_JWT_SECRET: z.string().min(1).optional(),
   // Conexión directa Postgres (session pooler) para los repos de identity/world (no PostgREST).
   SUPABASE_DB_URL: z.string().min(1),
   // Allowlist CORS (coma-separado); nunca '*' (docs/09 §CORS).
