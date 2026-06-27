@@ -37,3 +37,9 @@ CREATE TABLE identity.account_deletion_tokens (
 );
 CREATE UNIQUE INDEX uq_account_deletion_tokens_hash ON identity.account_deletion_tokens (token_hash);
 CREATE INDEX        idx_account_deletion_tokens_acc  ON identity.account_deletion_tokens (account_id);
+
+-- RLS deny-all (como identity.email_verifications): el esquema `identity` SÍ se expone vía PostgREST,
+-- así que una tabla de tokens sensibles NO puede quedar legible por el rol anon/authenticated. No se
+-- crea ninguna policy ni GRANT → nadie llega por la API pública; el `api` la usa por conexión directa
+-- (service_role/owner) que salta RLS.
+ALTER TABLE identity.account_deletion_tokens ENABLE ROW LEVEL SECURITY;
