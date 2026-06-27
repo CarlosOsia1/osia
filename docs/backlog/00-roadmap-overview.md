@@ -18,7 +18,7 @@ Backlogs por fase (detalle ejecutable):
 |---|---|
 | 0 — El Sentimiento | [./fase-0-el-sentimiento.md](./fase-0-el-sentimiento.md) |
 | 1 — Identidad + Vestíbulo | [./fase-1-identidad.md](./fase-1-identidad.md) |
-| 2 — Mundo Vivo *(IA diferida)* | **Activo:** [./fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md) · **Diferido (IA/eventos):** [./fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md) |
+| 2 — Atmósfera Viva *(✅ CERRADA 2026-06-27 · IA en Habitantes ❌ DESCARTADA)* | **Activo:** [./fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md) · **Descartado (IA/eventos efímeros):** [./fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md) |
 | 3 — Tejido Social | [./fase-3-tejido-social.md](./fase-3-tejido-social.md) |
 | 4 — Juego y Estatus | [./fase-4-juego-estatus.md](./fase-4-juego-estatus.md) |
 | 5+ — Hacia Gigante | [./fase-5-hacia-gigante.md](./fase-5-hacia-gigante.md) |
@@ -35,7 +35,7 @@ Docs fundacionales: [visión](../00-vision-alcance.md) · [pilares](../01-pilare
 |---|---|---|---|---|
 | **0** | El Sentimiento | Atmósfera Viva (1), Presencia (2), Escasez (6) | ¿Da ganas de quedarse? | 2 de 3 amigos dicen "me quedo acá" (`F0-DoD-10`). |
 | **1** | Identidad + Vestíbulo | (habilita pasaporte para 4/5/6) | ¿Vuelven con su identidad? | Pasaporte SSO + Vestíbulo delgado + entrada a El Mundo como uno mismo. |
-| **2** | Mundo Vivo | Habitantes IA (3), Atmósfera completa (1) | ¿El mundo respira con 2 personas? | Hablan con la IA por gusto; el mundo se siente "vivo"; costo IA bajo presupuesto. |
+| **2** | Atmósfera Viva | Atmósfera completa (1) | ¿El mundo respira con 2 personas? | El cielo/clima/estaciones se sienten vivos; sonido y legibilidad cerrados. *(IA en Habitantes ❌ DESCARTADA, 2026-06-27.)* |
 | **3** | Tejido Social | Tejido Social (4) | ¿El estatus se vuelve visible? | Feed + seguidores + presencia + notificaciones, como app independiente. |
 | **4** | Juego y Estatus | Estatus y Juego (5) | ¿Compiten y vuelven por el ranking? | Minijuego con ranking global + cosméticos; estatus viaja en el pasaporte. |
 | **5+** | Hacia Gigante | Escasez (6) intensificada + sostenibilidad | ¿Se sostiene y crece sin romperse? | Plots, economía que paga servidores, apertura controlada, self-host. |
@@ -68,7 +68,7 @@ gantt
 |---|---|---|---|
 | 0 | 8 (`S0.1`–`S0.8`) | ~12.5 semanas | Demo pública: caminar + voz + atmósfera viva. |
 | 1 | 9 (`S1.1`–`S1.9`) | ~12-15 semanas | Producto con cuentas, pasaporte y Vestíbulo. |
-| 2 | 9 (`S2.1`–`S2.9`) | ~13-17 semanas | El Mundo que respira (IA + clima + eventos). |
+| 2 | 9 (`S2.1`–`S2.9`) → rediseñado a 9 HU sin IA | ~3 semanas (rediseño) | El Mundo que respira (clima + estaciones + sonido). *(IA ❌ descartada.)* |
 | 3 | 6 (`S3.1`–`S3.6`) | ~9-10 semanas | La Red Social (`apps/social`). |
 | 4 | 9 (`S4.1`–`S4.9`) | ~14-17 semanas | Los Juegos (`apps/games`) con ranking + cosméticos. |
 | 5+ | 11 (`S5.1`–`S5.11`) | ~18-22 semanas | Plots, economía, apertura, self-host. |
@@ -108,7 +108,12 @@ Tabla maestra: id · nombre · fase. El id es estable y se referencia desde comm
 | `OSIA-S1.8` | Handoff a El Mundo: world ticket + identidad en `world-client` (nameplate/avatar) | 1 |
 | `OSIA-S1.9` | Hardening, Observabilidad y CI/CD de cierre de fase | 1 |
 
-### Fase 2 — Mundo Vivo
+### Fase 2 — Atmósfera Viva  ·  *(IA en Habitantes ❌ DESCARTADA, 2026-06-27)*
+
+> ⚠️ **Estos 9 sprints originales NO se ejecutaron tal cual.** La IA (`S2.4`–`S2.8`: Habitantes,
+> diálogo, voz, memoria, guardarrailes de costo) está **descartada**. La Fase 2 real se ejecutó como
+> un rediseño de 9 historias **sin IA** — ver [./fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md).
+> Esta tabla queda como registro del plan original.
 
 | Sprint | Nombre | Fase |
 |---|---|---|
@@ -173,7 +178,7 @@ Cada fase tiene un **Definition of Done de fase** (detallado en su backlog) y un
 |---|---|---|---|
 | **0 → 1** | Demo pública: 2 personas en la misma instancia se ven, se mueven suave (predicción/reconciliación), se oyen por voz P2P, comparten el mismo atardecer y un evento efímero; 60 fps; sin fuga de VRAM. | **2 de 3 amigos dicen, sin que se les pida, "me quiero quedar acá".** Si falla tras iterar el mood (ADR-000.1), **puerta no-go**: se detiene y se reevalúa el concepto. | `F0-DoD-1..10` |
 | **1 → 2** | Cuentas persistentes con email verificado; pasaporte SSO (cookie `.osia.com` + access JWT) que viaja entre apps; perfil + avatar editables y persistentes; Vestíbulo delgado (pasaporte + 1 puerta); entrada a El Mundo "como uno mismo" vía world ticket. | El residente **vuelve mañana y su pasaporte lo recuerda**; cruza el umbral hacia El Mundo como suyo. | `F1-DoD-1..12` |
-| **2 → 3** | Atmósfera completa autoritativa (clima/estaciones/eventos); 3-4 Habitantes con persona+memoria (pgvector) que hablan por voz; conciencia del mundo real; guardarrailes de costo activos (tiering, cache, presupuesto, kill-switch). | Dos amigos: les llueve, un Habitante comenta la tormenta con su voz, y uno dice **"esto está vivo"**. Costo IA/sesión bajo presupuesto. | `F2-DoD-1..10` |
+| **2 → 3** | Atmósfera completa autoritativa (clima/estaciones determinista); HUD que respira el cielo; paisaje sonoro por bioma/hora/clima; legibilidad de escena; borrado de cuenta + retención + audit. *(IA en Habitantes ❌ DESCARTADA — sin Habitantes ni voz IA.)* | Dos amigos: les llueve con una racha real, el ambiente cruza a lluvia y el HUD se tiñe con el crepúsculo, y dicen **"esto está vivo"** — por la atmósfera, no por IA. | DoD de [fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md) |
 | **3 → 4** | La Red Social como app independiente (`apps/social`): feed (fan-out-on-write), seguidores/reputación, presencia social, notificaciones; segunda puerta en el Vestíbulo; el feed se alimenta también de mundo+IA. | El estatus **se vuelve visible y deseado**; una notificación trae de vuelta al jugador. | DoD de Fase 3 |
 | **4 → 5+** | Los Juegos como app independiente (`apps/games`): minijuego con ranking global (Redis ZSET + RankingSnapshot), logros, cosméticos; el estatus/cosmético **viaja en el pasaporte** a El Mundo y La Red Social; anti-cheat server-authoritative. | **Compiten y vuelven por el ranking**; el prestigio se luce en todo el ecosistema. | DoD de Fase 4 |
 | **5+ → escala** | Plots persistentes + economía cosmética que **paga los servidores**; apertura controlada (k-factor, anti-abuso); voz SFU para grupos grandes; migración a self-host con rollback probado; observabilidad y DR. | El **boca a boca y la economía se sostienen**; la infra aguanta sin romper el runway. | DoD de Fase 5 |
@@ -183,8 +188,8 @@ Cada fase tiene un **Definition of Done de fase** (detallado en su backlog) y un
 ```mermaid
 flowchart LR
     F0["Fase 0\nEl Sentimiento"] -->|"'me quedo acá'\n(no-go si falla)"| F1["Fase 1\nIdentidad + Vestíbulo"]
-    F1 -->|"vuelve con su\npasaporte"| F2["Fase 2\nMundo Vivo"]
-    F2 -->|"'esto está vivo'\ncosto IA OK"| F3["Fase 3\nTejido Social"]
+    F1 -->|"vuelve con su\npasaporte"| F2["Fase 2\nAtmósfera Viva\n(IA descartada)"]
+    F2 -->|"'esto está vivo'\n(por la atmósfera)"| F3["Fase 3\nTejido Social"]
     F3 -->|"estatus visible"| F4["Fase 4\nJuego y Estatus"]
     F4 -->|"vuelven por\nel ranking"| F5["Fase 5+\nHacia Gigante"]
     F0 -.->|puerta no-go| STOP(["Iterar mood\nADR-000.1 /\nreevaluar concepto"])

@@ -13,7 +13,7 @@
 
 ## Estado actual del proyecto (vivo — actualizar al cerrar cada sprint)
 
-> **Última actualización:** 2026-06-26. Mantener este bloque al día: al cerrar un sprint o pasar un
+> **Última actualización:** 2026-06-27. Mantener este bloque al día: al cerrar un sprint o pasar un
 > gate, actualizarlo aquí **y** en [`docs/backlog/00-roadmap-overview.md`](./docs/backlog/00-roadmap-overview.md).
 
 **Fases cerradas**
@@ -24,22 +24,29 @@
   pasaporte SSO, perfil/avatar/settings, Vestíbulo delgado, handoff autenticado a El Mundo
   (nameplate/avatar), hardening con gates locales en CI. La limpieza **pre-Fase 2** de deuda (§2.4
   UI → `@osia/ui`, DRY, OTP/HSTS/logout) quedó hecha.
+- **Fase 2 — «Atmósfera Viva» (SIN IA): ✅ CERRADA (2026-06-27).** Las 9 historias y sus pendientes
+  acotados, cerrados (typecheck/lint/test verdes): atmósfera autoritativa (clima/estaciones), HUD que
+  respira el cielo, paisaje sonoro propio (loops por bioma/clima + animales por bioma/hora), variación
+  de color de árboles (OKLCH) y legibilidad de escena, contrato versionado, checkpoint de clima,
+  `/metrics`, y **borrado de cuenta completo** (por contraseña y por link de email, con cron de
+  retención + `system.audit_logs`). Detalle por historia: [`docs/backlog/fase-2-atmosfera-viva.md`](./docs/backlog/fase-2-atmosfera-viva.md) §0.
+  Pendiente solo de **configuración** (no de código): variables `SMTP_*` para que el email salga de
+  verdad, y aplicar la migración `20260627000001_account_retention.sql`.
 
 **Fase activa**
-- **Fase 2 — «Atmósfera Viva» (SIN IA): ⏳ en implementación.** Backlog único y vigente con el
-  estado por historia: [`docs/backlog/fase-2-atmosfera-viva.md`](./docs/backlog/fase-2-atmosfera-viva.md) §0.
-  Las 9 historias están implementadas (typecheck/lint/test verdes). Pendientes acotados: afinado
-  visual fino de S2-A3 (ojo de Carlos), test de no-fuga WebAudio en navegador, y de S2-C2 la variante
-  link-email + cron de retención (necesitan proveedor de email / `@nestjs/schedule` + `audit_logs`).
-- **Decisiones de Fase 2 (Carlos, 2026-06-26), vinculantes:** clima ESCASO (≤ 2 eventos por día de
-  juego, 2–5 min c/u); estación derivada del reloj (no viaja por red); borrado de cuenta por
-  confirmación de contraseña; y la regla §2.1 «ni el texto es nativo» (componente `Text` de `@osia/ui`).
+- **Fase 3 — Tejido Social: ▶️ por arrancar.** Backlog: [`docs/backlog/fase-3-tejido-social.md`](./docs/backlog/fase-3-tejido-social.md).
+  Feed, seguidores/reputación, presencia social y notificaciones como app independiente (`apps/social`).
+  **No depende de IA** (la IA en Habitantes quedó descartada).
+- **Decisiones de Fase 2 (Carlos), vinculantes:** clima ESCASO (≤ 2 eventos por día de juego, 2–5 min
+  c/u); estación derivada del reloj (no viaja por red); borrado de cuenta por contraseña **y por link
+  de email**; **IA en Habitantes descartada al 100%**; regla §2.1 «ni el texto es nativo» (`Text`).
 
 **Decisiones VINCULANTES del rediseño de Fase 2 (Carlos, 2026-06-25) — no revertir sin su visto bueno**
-- ❌ **IA diferida, NO cancelada.** Sin Habitantes/NPC, sin diálogo, sin voz IA, sin memoria, sin
-  guardarrailes de costo. Su diseño íntegro se conserva en
-  [`docs/backlog/fase-2-mundo-vivo.md`](./docs/backlog/fase-2-mundo-vivo.md) y se retoma cuando haya
-  presupuesto de IA.
+- ❌ **IA en Habitantes: DESCARTADA AL 100% (Carlos, 2026-06-27).** Ya NO es "diferida": queda
+  **fuera del plan de OSIA**. Sin Habitantes/NPC, sin diálogo, sin voz IA, sin memoria, sin
+  guardarrailes de costo. El diseño histórico queda **archivado y marcado DESCARTADO** en
+  [`docs/backlog/fase-2-mundo-vivo.md`](./docs/backlog/fase-2-mundo-vivo.md) (solo registro; no se
+  desarrolla nada de ahí). Reabrirlo requiere una decisión explícita de Carlos.
 - ❌ **Eventos efímeros diferidos.** Sin meteoros, aurora ni FOMO. El opcode `ATMOSPHERE_EVENT`
   queda desactivado pero listo.
 - ❌ **Bloom retirado — no reintroducir.** El halo aditivo de `SunMoon` lo reemplaza.

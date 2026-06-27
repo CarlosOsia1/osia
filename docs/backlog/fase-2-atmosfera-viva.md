@@ -1,32 +1,41 @@
 # Backlog — Sprint 2 (rediseñado): Atmósfera Viva, Sensorial y Cimientos
 
 > **Este documento reemplaza a [fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md) como el Sprint 2 ACTIVO.**
-> Decisión de Carlos (2026-06): la **IA** (Habitantes, diálogo, voz, memoria, guardarrailes de costo)
-> y los **eventos efímeros** (meteoros, aurora, FOMO) quedan **DIFERIDOS, no cancelados** — su diseño
-> sigue íntegro en [fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md) y se retomará cuando haya presupuesto
-> de IA. | Estado: Borrador v2 (replanteado contra el código real) | Parte del paquete de diseño OSIA.
+> Decisión de Carlos: la **IA en Habitantes** (Habitantes, diálogo, voz, memoria, guardarrailes de
+> costo) y los **eventos efímeros** (meteoros, aurora, FOMO) quedan **❌ DESCARTADOS AL 100%
+> (2026-06-27)** — ya no "diferidos": fuera del plan de OSIA. El diseño histórico queda archivado y
+> marcado DESCARTADO en [fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md). | Estado: Borrador v2
+> (replanteado contra el código real) | Parte del paquete de diseño OSIA.
 
 ---
 
-## 0. Estado de implementación (2026-06-26)
+## 0. Estado de implementación (2026-06-27) — ✅ FASE 2 CERRADA
 
-Implementadas las 9 historias (typecheck/lint/test verdes). Pendientes acotados y marcados abajo.
+Las 9 historias están implementadas y los pendientes acotados quedaron cerrados (typecheck/lint/test
+verdes). **La IA en Habitantes se DESCARTÓ al 100%** (ya no es parte del plan; ver banner arriba), así
+que el alcance de Fase 2 es exactamente «Atmósfera Viva sin IA». **Gate de fase superado → se abre Fase 3.**
 
 | # | Historia | Estado |
 |---|---|---|
-| **S2-A1** | El HUD respira el cielo | ✅ Hecho. Además se migró el HUD a un componente `Text` (`@osia/ui`) con scrim para legibilidad día/noche, y se atenuó el PerfHUD al estilo del panel de test. |
-| **S2-A2** | Paisaje sonoro | ✅ Hecho (motor WebAudio sintetizado + ducking + toggle + i18n). **Punto de extensión** para audio propio en `apps/world-client/src/sound/ambientAssets.ts`. Falta: test de no-fuga en navegador (no hay entorno WebAudio en CI); migrar el texto de VoiceHUD/ChatPanel a `Text`. |
-| **S2-A3** | Pulido visual | ✅ Parte técnica (smoothstep en partículas + linter de paleta de `weatherConfig` + docs). El **afinado fino sigue pendiente del ojo de Carlos** (recorrido bioma×hora×clima). |
+| **S2-A1** | El HUD respira el cielo | ✅ Hecho. HUD migrado a `Text` (`@osia/ui`) con scrim para legibilidad día/noche; PerfHUD atenuado. |
+| **S2-A2** | Paisaje sonoro | ✅ Hecho (motor WebAudio + ducking + toggle + i18n) **con audio propio** (loops por bioma/clima + llamados de animales por bioma/hora). **Cerrado:** test de no-fuga WebAudio (mock de `AudioContext`, sin navegador) ✅; texto de VoiceHUD/ChatPanel ya en `Text` ✅. |
+| **S2-A3** | Pulido visual | ✅ Hecho: smoothstep en partículas, linter de paleta, variación de color de árboles (OKLCH), y legibilidad de escena (skylight hemisférico, sombras suaves, adaptación nocturna). El afinado fino del ojo de Carlos es continuo (no bloqueante). |
 | **S2-B1** | Estaciones como datos | ✅ Hecho. La estación se deriva del reloj (no viaja por el cable). Control de estación en el panel de test (tecla **b**). |
 | **S2-B2** | Ciclo de clima | ✅ Hecho, con **cadencia escasa**: máx. 2 eventos por día de juego, cada uno de 2–5 min (decisión de Carlos, 2026-06-26). |
 | **S2-B3** | Contrato versionado | ✅ Hecho (`ATMOSPHERE_CONTRACT_VERSION` + Zod en el codec). |
 | **S2-B4** | Checkpoint del clima | ✅ Hecho (serialize/restore + migración + carga al arrancar). Valor bajo con un solo hub. |
-| **S2-C1** | `/metrics` | ✅ Hecho (world-server). |
-| **S2-C2** | Borrado de cuenta | ✅ Hecho con **confirmación por contraseña** (`DELETE /v1/accounts/me`), cascada transaccional, idempotente, revoca sesiones. **Diferido:** variante link-email de 24 h (necesita proveedor de email) y cron de retención (`@nestjs/schedule` + tabla `audit_logs`). |
+| **S2-C1** | `/metrics` | ✅ Hecho (world-server). El linter de house-palette corre en CI (`.github/workflows/ci.yml` → `pnpm test`). |
+| **S2-C2** | Borrado de cuenta | ✅ Hecho **completo**: borrado por **contraseña** (`DELETE /v1/accounts/me`) y por **link de email** (24 h, token de un solo uso; transporte SMTP con fallback a log en dev); cascada transaccional, idempotente, revoca sesiones; **cron de retención** (`@nestjs/schedule`) que purga tokens vencidos + bitácora vieja; **`system.audit_logs`** registra borrados y purgas. |
 
 > Decisiones tomadas en esta fase y registradas en [`CLAUDE.md`](../../CLAUDE.md): estación derivada
-> del reloj (no por red); clima escaso (≤2 eventos/día, 2–5 min); borrado de cuenta por contraseña;
-> regla nueva §2.1 «ni el texto es nativo» → componente `Text`.
+> del reloj (no por red); clima escaso (≤2 eventos/día, 2–5 min); borrado de cuenta por contraseña
+> **y por link de email**; **IA en Habitantes descartada al 100%**; regla §2.1 «ni el texto es nativo»
+> → componente `Text`.
+>
+> **Pendiente de configuración (no de código):** para que el email de borrado SALGA de verdad, definir
+> las variables `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`EMAIL_FROM` en `apps/api`. Sin ellas,
+> el flujo funciona y el link se registra en el log (dev). La migración `20260627000001_account_retention.sql`
+> debe aplicarse a la base.
 
 ---
 
@@ -57,7 +66,7 @@ Sprint 2 queda en **tres tracks**:
 | Resolución **pura** por hora + modulación de clima | `packages/atmosphere/src/resolve.ts`, `weather.ts` |
 | **3 biomas** + ciclos de 11 keyframes (día/noche 20 min) | `packages/atmosphere/src/biomes.ts`, `presets.ts` |
 | Render: height-fog TSL, SkyDome, SunMoon (**halo, no bloom**), Starfield, Precipitation, RainStreaks | `apps/world-client/src/world/*` |
-| **Linter de house-palette** (existe; falta cablearlo a CI) | `packages/atmosphere/src/presetLint.test.ts` |
+| **Linter de house-palette** (existe y corre en CI vía `pnpm test`) | `packages/atmosphere/src/presetLint.test.ts` |
 | Logging **Pino** (con redacción), **TickMetrics**, endpoint `/health` | `apps/world-server/src/{logger,metrics,http}.ts` |
 | `health.controller` (liveness + readiness a Supabase) | `apps/api/src/health/health.controller.ts` |
 | **Soft-delete** (`deleted_at`) + índices parciales + **RLS** + FK `ON DELETE CASCADE` | `supabase/migrations/20260623000002_identity_core.sql`, `..._rls.sql` |

@@ -8,7 +8,7 @@
     "start": "next start -p 3000",
     "lint": "eslint app src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx src/sound/ambientMix.test.ts && tsx src/world/weatherConfigLint.test.ts"
+    "test": "tsx src/sound/ambientMix.test.ts && tsx src/sound/AmbientEngine.test.ts && tsx src/world/weatherConfigLint.test.ts"
   },
   "dependencies": {
     "@osia/atmosphere": "workspace:*",
