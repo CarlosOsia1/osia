@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -14,6 +15,7 @@ import { ApiExceptionFilter } from './common/http-exception.filter';
 @Module({
   imports: [
     ConfigModule,
+    ScheduleModule.forRoot(), // cron de retención (RetentionService)
     LoggerModule.forRoot({
       pinoHttp: {
         // requestId correlacionado con el sobre ApiError (docs/11/§8): toma X-Request-Id o crea uno.

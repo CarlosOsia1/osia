@@ -4,6 +4,7 @@ import { AppException } from '../../../common/app-exception';
 import { ACCOUNT_REPOSITORY, type AccountRepository } from '../ports/out/account.repository';
 import { AUTH_SESSION_PORT, type AuthSessionPort } from '../ports/out/auth-session.port';
 import { SUPABASE_AUTH_PORT, type SupabaseAuthPort } from '../ports/out/supabase-auth.port';
+import { AUDIT_LOG_REPOSITORY, type AuditLogRepository } from '../ports/out/audit-log.repository';
 import { EmailNotVerifiedError, InvalidCredentialsError } from '../errors';
 
 /**
@@ -23,6 +24,7 @@ export class DeleteAccountUseCase {
     @Inject(ACCOUNT_REPOSITORY) private readonly accounts: AccountRepository,
     @Inject(AUTH_SESSION_PORT) private readonly sessions: AuthSessionPort,
     @Inject(SUPABASE_AUTH_PORT) private readonly auth: SupabaseAuthPort,
+    @Inject(AUDIT_LOG_REPOSITORY) private readonly audit: AuditLogRepository,
   ) {}
 
   async execute(accountId: string, password: string): Promise<void> {
@@ -40,8 +42,16 @@ export class DeleteAccountUseCase {
       if (!(e instanceof EmailNotVerifiedError)) throw e;
     }
 
-    // 2) Borrado local atómico (cascada). 3) Borrado en Auth (revoca todas las sesiones).
-    await this.accounts.deleteAccount(accountId);
+    // Confirmada la identidad por contraseña → borra de verdad (lo reutiliza el borrado por link).
+    await this.eraseConfirmed(accountId, 'password');
+  }
+
+  /**
+   * Borrado YA CONFIRMADO (por contraseña o por link de email): elimina local en cascada, revoca en
+   * Auth (best-effort) y audita. NO confirma identidad — quien llama ya la validó. Idempotente.
+   */
+  async eraseConfirmed(accountId: string, method: 'password' | 'email-link'): Promise<void> {
+    const deleted = await this.accounts.deleteAccount(accountId);
     try {
       await this.auth.deleteUser(accountId);
     } catch (err) {
@@ -51,6 +61,26 @@ export class DeleteAccountUseCase {
         }) — el borrado local procedió`,
       );
     }
-    this.logger.log(`account.deleted ${accountId}`); // evento de dominio (bus de eventos en fase futura)
+    if (deleted) await this.writeAudit(accountId, method);
+    this.logger.log(`account.deleted ${accountId} (${method})`);
+  }
+
+  /** Bitácora de auditoría del borrado (best-effort: una auditoría perdida no debe romper el borrado). */
+  private async writeAudit(accountId: string, method: 'password' | 'email-link'): Promise<void> {
+    try {
+      await this.audit.record({
+        entityType: 'account',
+        entityId: accountId,
+        action: 'account.deleted',
+        actorId: accountId,
+        metadata: { method },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `borrado de cuenta: no se pudo registrar la auditoría (${
+          err instanceof Error ? err.message : 'desconocido'
+        })`,
+      );
+    }
   }
 }

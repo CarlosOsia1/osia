@@ -26,6 +26,15 @@ const envSchema = z.object({
   WORLD_TICKET_SECRET: z.string().min(1).default(DEV_WORLD_TICKET_SECRET),
   // URL pública del WS que se devuelve al cliente al emitir el ticket.
   WORLD_WS_URL: z.string().min(1).default('ws://localhost:2567/world'),
+  // URL base del frontend para armar links de email (p. ej. el de borrado de cuenta).
+  APP_BASE_URL: z.string().min(1).default('http://localhost:3000'),
+  // Email SMTP (opcional): si NO está configurado, el adaptador cae a "loguear el link" (dev).
+  // Cuando lo configures (proveedor con presupuesto), los emails salen de verdad.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().min(1).default('OSIA <no-reply@osia.com>'),
 });
 
 export type Env = z.infer<typeof envSchema> & {

@@ -20,13 +20,24 @@ import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-cas
 import { ResendVerificationUseCase } from './application/use-cases/resend-verification.use-case';
 import { IssueWorldTicketUseCase } from './application/use-cases/issue-world-ticket.use-case';
 import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
+import { RequestAccountDeletionUseCase } from './application/use-cases/request-account-deletion.use-case';
+import { ConfirmAccountDeletionUseCase } from './application/use-cases/confirm-account-deletion.use-case';
+import { RetentionService } from './application/retention.service';
 import { WAITLIST_REPOSITORY } from './application/ports/out/waitlist.repository';
 import { INVITATION_REPOSITORY } from './application/ports/out/invitation.repository';
 import { ACCOUNT_REPOSITORY } from './application/ports/out/account.repository';
+import { AUDIT_LOG_REPOSITORY } from './application/ports/out/audit-log.repository';
+import { RETENTION_REPOSITORY } from './application/ports/out/retention.repository';
+import { DELETION_TOKEN_REPOSITORY } from './application/ports/out/deletion-token.repository';
+import { EMAIL_PORT } from './application/ports/out/email.port';
 import { WORLD_TICKET_PORT } from './application/ports/out/world-ticket.port';
 import { PgWaitlistRepository } from './infrastructure/postgres/waitlist.repository';
 import { PgInvitationRepository } from './infrastructure/postgres/invitation.repository';
 import { PgAccountRepository } from './infrastructure/postgres/account.repository';
+import { PgAuditLogRepository } from './infrastructure/postgres/audit-log.repository';
+import { PgRetentionRepository } from './infrastructure/postgres/retention.repository';
+import { PgDeletionTokenRepository } from './infrastructure/postgres/deletion-token.repository';
+import { SmtpEmailAdapter } from './infrastructure/email/smtp-email.adapter';
 import { JoseWorldTicketAdapter } from './infrastructure/jose/world-ticket.adapter';
 import { AuthGuard } from '../common/auth.guard';
 
@@ -56,10 +67,17 @@ import { AuthGuard } from '../common/auth.guard';
     ResendVerificationUseCase,
     IssueWorldTicketUseCase,
     DeleteAccountUseCase,
+    RequestAccountDeletionUseCase,
+    ConfirmAccountDeletionUseCase,
+    RetentionService,
     AuthGuard,
     { provide: WAITLIST_REPOSITORY, useClass: PgWaitlistRepository },
     { provide: INVITATION_REPOSITORY, useClass: PgInvitationRepository },
     { provide: ACCOUNT_REPOSITORY, useClass: PgAccountRepository },
+    { provide: AUDIT_LOG_REPOSITORY, useClass: PgAuditLogRepository },
+    { provide: RETENTION_REPOSITORY, useClass: PgRetentionRepository },
+    { provide: DELETION_TOKEN_REPOSITORY, useClass: PgDeletionTokenRepository },
+    { provide: EMAIL_PORT, useClass: SmtpEmailAdapter },
     { provide: WORLD_TICKET_PORT, useClass: JoseWorldTicketAdapter },
     { provide: PROFILE_REPOSITORY, useClass: PgProfileRepository },
     { provide: AVATAR_REPOSITORY, useClass: PgAvatarRepository },
