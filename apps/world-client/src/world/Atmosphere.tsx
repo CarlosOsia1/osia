@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { fog, positionView, positionWorld, uniform } from 'three/tsl';
 import { resolveAtmosphere, applyWeather, applySeason, resolveSeasonTints, biomeById } from '@osia/atmosphere';
+import { OSIA_COLORS } from '@osia/ui';
 import { atmo, world, tickWeatherDisplay } from './atmosphereRuntime';
 import { worldClock, tickWorldClock } from './worldClockRuntime';
 import { tickAtmoHud } from './atmoHudBus';
@@ -33,6 +34,29 @@ const FOG_SNOW = new THREE.Color(FOG.snow.color);
 // Relleno ambiente azul-lunar: de noche el ambientColor del preset es casi negro, así
 // que subir solo la intensidad no alcanza; lo lerpeamos hacia este tono para "ver".
 const MOONLIT = new THREE.Color('#34405c');
+// Rebote cálido del SUELO para el relleno hemisférico (cielo desde arriba / suelo desde abajo).
+// Derivado del token champán (atenuado) → sin hex suelto y dentro de la familia de marca.
+const HEMI_GROUND = new THREE.Color(OSIA_COLORS.champan).multiplyScalar(0.16);
+
+// — Legibilidad (Tier 1). Afinables con el ojo de Carlos in-app; ortogonales a la transición
+//   de clima (que no se toca). Todo es render-only (no viaja por red, no rompe determinismo). —
+//
+// DÍA · la sombra del sol NO bloquea el 100% de la luz directa (shadow.intensity < 1): detrás
+// de un objeto se sigue viendo, en vez de un agujero negro. El color del relleno lo da el
+// hemisférico (cielo azul desde arriba) en vez del ambiente plano.
+const SUN_SHADOW_INTENSITY = 0.52;
+// NOCHE · ADAPTACIÓN OCULAR. El ojo sube la ganancia de noche; subimos la exposición (no la
+// bajamos, como hacían los presets) según lo "noche" que sea. Es ganancia GLOBAL: necesita luz
+// real que escalar (de ahí los pisos de luna/ambiente/hemisférico) — un píxel negro sigue negro.
+const EXPO_NIGHT_LIFT = 0.1;
+// Pisos de luz lunar: noche CINEMATOGRÁFICA, no física → nada cae a negro puro (azul tenue).
+const MOON_NIGHT_FLOOR = 0.7;
+const AMBIENT_NIGHT_BASE = 0.05;
+const AMBIENT_NIGHT_GAIN = 0.25;
+const MOONLIT_MIX_NIGHT = 0.6; // cuánto tira el relleno (ambiente + cielo del hemisférico) al azul lunar
+// Relleno hemisférico: leve de día (rellena sombras sin lavar al sol), un poco más de noche.
+const HEMI_DAY = 0.3;
+const HEMI_NIGHT_GAIN = 0.12;
 
 export default function Atmosphere() {
   const scene = useThree((s) => s.scene);
@@ -40,6 +64,7 @@ export default function Atmosphere() {
   const sun = useRef<THREE.DirectionalLight>(null);
   const moon = useRef<THREE.DirectionalLight>(null);
   const ambient = useRef<THREE.AmbientLight>(null);
+  const hemi = useRef<THREE.HemisphereLight>(null);
   const bg = useRef(new THREE.Color()).current;
 
   // Uniforms del height fog (se crean una vez; se animan cada frame).
@@ -83,8 +108,8 @@ export default function Atmosphere() {
     // Piso de luz LUNAR: la noche nunca es oscuridad TOTAL — la luna ilumina un poco
     // (no mucho). Sube la luna direccional y el relleno ambiente según lo "noche" que sea.
     const nightAmt = THREE.MathUtils.clamp(p.starsIntensity, 0, 1); // 0 día → 1 noche
-    const moonI = Math.max(p.moonIntensity, 1.15 * nightAmt);
-    const ambI = Math.max(p.ambientIntensity, 0.4 + 0.2 * nightAmt);
+    const moonI = Math.max(p.moonIntensity, MOON_NIGHT_FLOOR * nightAmt);
+    const ambI = Math.max(p.ambientIntensity, AMBIENT_NIGHT_BASE + AMBIENT_NIGHT_GAIN * nightAmt);
 
     bg.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
     scene.background = bg;
@@ -134,18 +159,32 @@ export default function Atmosphere() {
     }
     if (ambient.current) {
       ambient.current.color.setRGB(p.ambientColor[0], p.ambientColor[1], p.ambientColor[2], THREE.SRGBColorSpace);
-      ambient.current.color.lerp(MOONLIT, nightAmt * 0.5); // de noche, relleno azul lunar (no negro)
+      ambient.current.color.lerp(MOONLIT, nightAmt * MOONLIT_MIX_NIGHT); // de noche, relleno azul lunar (no negro)
       ambient.current.intensity = ambI;
     }
-    gl.toneMappingExposure = p.exposure;
+    if (hemi.current) {
+      // Relleno DIRECCIONAL (skylight barato): caras hacia arriba reciben el azul del cielo,
+      // hacia abajo el rebote cálido del suelo. Levanta el INTERIOR de las sombras (de día) y
+      // da un piso azul de noche, en vez del relleno plano del ambiente. Cielo = horizonte del
+      // preset; de noche tira al azul lunar como el ambiente (sigue siendo noche, no "día azul").
+      hemi.current.color.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
+      hemi.current.color.lerp(MOONLIT, nightAmt * MOONLIT_MIX_NIGHT);
+      hemi.current.groundColor.copy(HEMI_GROUND);
+      hemi.current.intensity = HEMI_DAY + HEMI_NIGHT_GAIN * nightAmt;
+    }
+    // Exposición con ADAPTACIÓN OCULAR: de noche SUBE (no baja). Ganancia global que aclara la
+    // escena tenue manteniendo el tinte; verificado que llega al frame pese al PostProcessing.
+    gl.toneMappingExposure = p.exposure * (1 + EXPO_NIGHT_LIFT * nightAmt);
   });
 
   return (
     <>
       <ambientLight ref={ambient} />
+      <hemisphereLight ref={hemi} />
       <directionalLight
         ref={sun}
         castShadow
+        shadow-intensity={SUN_SHADOW_INTENSITY}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-bias={-0.0004}

@@ -46,22 +46,22 @@ export const SEASONS: Record<SeasonId, Season> = {
   primavera: {
     id: 'primavera',
     name: 'Primavera',
-    tints: { sky: hexToRGB('#81b7e4'), ground: hexToRGB('#2a432f'), foliage: hexToRGB('#729446') },
+    tints: { sky: hexToRGB('#81b7e4'), ground: hexToRGB('#2a6d36'), foliage: hexToRGB('#288a17') },
   },
   verano: {
     id: 'verano',
     name: 'Verano',
-    tints: { sky: hexToRGB('#e6dcc2'), ground: hexToRGB('#37432a'), foliage: hexToRGB('#356b2c') },
+    tints: { sky: hexToRGB('#e6dcc2'), ground: hexToRGB('#285731'), foliage: hexToRGB('#2c6b3a') },
   },
   otono: {
     id: 'otono',
     name: 'Otoño',
-    tints: { sky: hexToRGB('#d8b48c'), ground: hexToRGB('#3f3320'), foliage: hexToRGB('#b0682a') },
+    tints: { sky: hexToRGB('#d8b48c'), ground: hexToRGB('#3f3320'), foliage: hexToRGB('#b0912a') },
   },
   invierno: {
     id: 'invierno',
     name: 'Invierno',
-    tints: { sky: hexToRGB('#b6c4d8'), ground: hexToRGB('#2b343c'), foliage: hexToRGB('#33493a') },
+    tints: { sky: hexToRGB('#b6c4d8'), ground: hexToRGB('#2b343c'), foliage: hexToRGB('#334943') },
   },
 };
 
