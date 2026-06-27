@@ -14,8 +14,8 @@ export type Obstacle = { x: number; z: number; radius: number };
 /**
  * Bosquecillo: anillo de pinos, generado DETERMINISTA (PRNG sembrado mulberry32). FUENTE ÚNICA:
  * el cliente (Scene) renderiza desde aquí y el server evita estos árboles al spawnear → siempre
- * coinciden. `bright`/`warm` modulan el color (los usa el render); `scale` define el tamaño y el
- * footprint del obstáculo.
+ * coinciden. `dL`/`dC`/`dH` son el offset de COLOR por árbol (los usa el render); `scale` define el
+ * tamaño y el footprint del obstáculo.
  */
 export const FOREST_LAYOUT = {
   count: 14,
@@ -24,16 +24,21 @@ export const FOREST_LAYOUT = {
   ringRadiusStep: 1.8, // r = base + (i % 3) * step
   scaleMin: 0.75,
   scaleMax: 1.6,
-  // Variación de color por árbol (multiplica al color de la estación): rango AMPLIO para que se
-  // note — unos pinos claramente más oscuros que otros, y matiz cálido/frío variado → bosque natural.
-  tintBrightMin: 0.45, // brillo mínimo (árbol oscuro) .. tintBrightMax (árbol claro)
-  tintBrightMax: 1,
-  tintWarmth: 0.22, // amplitud de matiz cálido(+)/frío(−) por árbol
+  // Variación de color POR ÁRBOL, sobre el color de la estación, en OKLCH (perceptual) → natural,
+  // no "solo brillo": unos pinos más claros/oscuros, unos más amarillentos, otros verde profundo,
+  // otros apagados/oliva — sin salirse a rojo/azul. Determinista (sembrado) → todos ven lo mismo.
+  // Estas son las perillas para afinar a ojo cuánta "vida" tiene el bosque:
+  tintLight: 0.055, // ± luminosidad (OKLab L): rango entre el pino más oscuro y el más claro
+  tintChromaMin: 0.9, // factor de croma mínimo (apagado/oliva) ..
+  tintChromaMax: 1.58, //   .. máximo (verde más vivo)
+  tintHueDeg: 20.8, // ± giro de matiz en grados (pequeño: amarillo-verde ↔ verde profundo)
+  tintHueBiasDeg: -3, // sesgo del matiz hacia amarillo-verde (− = un punto más cálido/natural)
 } as const;
 
-export type ForestTree = { x: number; z: number; scale: number; bright: number; warm: number };
+/** Offset de color por árbol (perceptual, OKLCH): dL luminosidad, dC croma, dH matiz en grados. */
+export type ForestTree = { x: number; z: number; scale: number; dL: number; dC: number; dH: number };
 
-/** Cada pino (determinista, sembrado). El render arma el color desde bright/warm; el server usa x/z/scale. */
+/** Cada pino (determinista, sembrado). El render arma el color desde dL/dC/dH; el server usa x/z/scale. */
 export function forestTrees(): ForestTree[] {
   const F = FOREST_LAYOUT;
   const rng = mulberry32(F.seed);
@@ -42,9 +47,10 @@ export function forestTrees(): ForestTree[] {
     const a = (i / F.count) * Math.PI * 2;
     const r = F.ringRadiusBase + (i % 3) * F.ringRadiusStep;
     const scale = F.scaleMin + rng() * (F.scaleMax - F.scaleMin);
-    const bright = F.tintBrightMin + rng() * (F.tintBrightMax - F.tintBrightMin);
-    const warm = (rng() - 0.5) * F.tintWarmth;
-    out.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, scale, bright, warm });
+    const dL = (rng() - 0.5) * 2 * F.tintLight;
+    const dC = F.tintChromaMin + rng() * (F.tintChromaMax - F.tintChromaMin);
+    const dH = (rng() - 0.5) * 2 * F.tintHueDeg + F.tintHueBiasDeg;
+    out.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, scale, dL, dC, dH });
   }
   return out;
 }

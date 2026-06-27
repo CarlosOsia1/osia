@@ -72,3 +72,25 @@ export function hexToRGB(hex: string): RGB {
     parseInt(h.slice(4, 6), 16) / 255,
   ];
 }
+
+const DEG_TO_RAD = Math.PI / 180;
+
+/**
+ * Variación PERCEPTUAL de un color de follaje, por árbol (naturalidad del bosque). Aclarar/oscurecer
+ * a secas se ve como "el mismo árbol con otro brillo"; aquí movemos el color en OKLCH para que la
+ * variación sea de COLOR real, no solo de luz: unos pinos más amarillentos, otros verde profundo,
+ * otros apagados/oliva — sin salirse a rojo/azul (el giro de matiz es pequeño). Funciona sobre el
+ * color de follaje de CUALQUIER estación (verde en verano, ocre en otoño…): el offset es el mismo,
+ * el resultado siempre "en familia". Pura y determinista (el offset por árbol viene sembrado en el
+ * layout) → dos jugadores ven el mismo árbol con el mismo color.
+ *
+ *  dL     desplazamiento de luminosidad (unidades OKLab L; + aclara, − oscurece)
+ *  dC     factor de croma/saturación (1 = igual; <1 apaga hacia oliva, >1 aviva)
+ *  dHdeg  giro de matiz en GRADOS (pequeño; + hacia verde-azulado, − hacia amarillo-verde)
+ */
+export function varyFoliage(base: RGB, dL: number, dC: number, dHdeg: number): RGB {
+  const [L, a, b] = rgbToOklab(base);
+  const chroma = Math.hypot(a, b) * dC;
+  const hue = Math.atan2(b, a) + dHdeg * DEG_TO_RAD;
+  return oklabToRGB(L + dL, Math.cos(hue) * chroma, Math.sin(hue) * chroma);
+}
