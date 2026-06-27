@@ -29,10 +29,16 @@ test('la vivacidad de la estación escala los pájaros (invierno < primavera)', 
   assert.ok(winter.birds < spring.birds, 'menos pájaros en invierno');
 });
 
-test('un clima activo acalla pájaros y grillos', () => {
-  const calm = ambientMix('bosque-celeste', 'despejado', 0, 0);
-  const stormy = ambientMix('bosque-celeste', 'niebla', 1, 0);
-  assert.ok(stormy.birds < calm.birds, 'el clima tapa los pájaros');
+test('NEVANDO no se escuchan pájaros (cualquier clima activo los calla)', () => {
+  const claro = ambientMix('bosque-celeste', 'despejado', 0, 0);
+  const nevando = ambientMix('bosque-celeste', 'nieve', 1, 0);
+  assert.ok(claro.birds > 0, 'de día y despejado SÍ hay pájaros');
+  assert.equal(nevando.birds, 0, 'nevando fuerte: sin pájaros');
+});
+
+test('realismo por bioma: el DESIERTO no tiene aves; la TUNDRA no tiene grillos', () => {
+  assert.equal(ambientMix('dunas-doradas', 'despejado', 0, 0).birds, 0, 'desierto sin aves de día');
+  assert.equal(ambientMix('tundra-nevada', 'despejado', 0, 1).crickets, 0, 'tundra sin grillos de noche');
 });
 
 test('la lluvia activa su capa proporcional a la intensidad y aparta el viento', () => {

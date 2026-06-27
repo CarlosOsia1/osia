@@ -3,7 +3,7 @@
  *
  * 👉 ÚNICO lugar para tunear las partículas y la niebla de cada clima. Lo leen
  * Precipitation (nieve), RainStreaks (lluvia/arena) y Atmosphere (height-fog).
- * Cambia un número, guarda, y el HMR recarga — no hace falta tocar la lógica.
+ * Cambia un número, guarda, y el HMR recarga — sin tocar la lógica.
  *
  * PARÁMETROS SENSIBLES (S2-A3 — afinar con cuidado; tocan el "se ve caro"):
  *  · `*.color` / `*.colorDay` / `*.colorNight` → DEBEN quedar dentro del gamut house-celestial.
@@ -30,7 +30,7 @@ export const SNOW = {
 
 /** 🌧️ LLUVIA — rayas verticales (LineSegments). */
 export const RAIN = {
-  count: 5000, // cantidad de gotas
+  count: 10000, // cantidad de gotas
   fall: 38, // velocidad de caída
   len: 0.9, // largo de la raya
   colorDay: '#b3c2da', // color de día
@@ -55,7 +55,7 @@ export const SAND = {
  *  · niebla/arena → alta; su color = horizonte del cielo (cero costura con el fondo).
  */
 export const FOG = {
-  rain: { strength: 0.04, height: 2, color: '#8b94a0' }, // gris, MUY baja
+  rain: { strength: 0.06, height: 6, color: '#8b94a0' }, // gris, baja (como la nieve pero menos)
   snow: { strength: 0.1, height: 12, color: '#e8ebf0' }, // blanca, baja
   niebla: { strengthDay: 0.4, strengthNight: 1.0, height: 16 }, // ← densidad: día 0.4 → medianoche 1.0 (degradado suave)
   sand: { strength: 1.0, height: 38 }, // ← STRENGTH de la tormenta de ARENA

@@ -22,13 +22,13 @@ import type { AmbientLayer } from './ambientMix';
 export type LayerAsset = string | null | Partial<Record<SeasonId, string>>;
 
 export const AMBIENT_ASSETS: Record<AmbientLayer, LayerAsset> = {
-  wind: null, // viento base (suena de día y de noche)
-  birds: null, // pájaros — capa de DÍA (admite variante por estación)
-  crickets: null, // grillos — capa de NOCHE
-  rain: null, // lluvia
-  snow: null, // nieve (casi un silencio/hush)
-  sand: null, // tormenta de arena (viento con grano)
-  fog: null, // niebla (drone bajo, opcional)
+  wind: '/audio/wind.ogg', // viento base (suena de día y de noche)
+  birds: '/audio/birds.ogg', // pájaros — capa de DÍA (admite variante por estación)
+  crickets: '/audio/crickets.ogg', // grillos — capa de NOCHE
+  rain: '/audio/rain.ogg', // lluvia
+  snow: '/audio/snow.ogg', // nieve (viento nevado, casi un hush)
+  sand: '/audio/sand.ogg', // tormenta de arena
+  fog: '/audio/fog.ogg', // niebla (drone bajo)
 };
 
 /** Resuelve la ruta de una capa para la estación vigente (o null = sintetizada). */

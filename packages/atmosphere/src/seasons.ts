@@ -37,7 +37,7 @@ export type Season = {
 export const SEASON_STRENGTH: Record<SeasonSurface, number> = {
   sky: 0.07,
   ground: 0.42,
-  foliage: 0.5,
+  foliage: 1, // la copa TOMA el color de la estación; la variación la pone cada árbol (instanceColor)
 };
 
 export type SeasonKeyframe = { t: number; season: Season };
@@ -46,22 +46,22 @@ export const SEASONS: Record<SeasonId, Season> = {
   primavera: {
     id: 'primavera',
     name: 'Primavera',
-    tints: { sky: hexToRGB('#81b7e4'), ground: hexToRGB('#2a432f'), foliage: hexToRGB('#3a5a36') },
+    tints: { sky: hexToRGB('#81b7e4'), ground: hexToRGB('#2a432f'), foliage: hexToRGB('#729446') },
   },
   verano: {
     id: 'verano',
     name: 'Verano',
-    tints: { sky: hexToRGB('#e6dcc2'), ground: hexToRGB('#37432a'), foliage: hexToRGB('#365230') },
+    tints: { sky: hexToRGB('#e6dcc2'), ground: hexToRGB('#37432a'), foliage: hexToRGB('#356b2c') },
   },
   otono: {
     id: 'otono',
     name: 'Otoño',
-    tints: { sky: hexToRGB('#d8b48c'), ground: hexToRGB('#3f3320'), foliage: hexToRGB('#6e4a26') },
+    tints: { sky: hexToRGB('#d8b48c'), ground: hexToRGB('#3f3320'), foliage: hexToRGB('#b0682a') },
   },
   invierno: {
     id: 'invierno',
     name: 'Invierno',
-    tints: { sky: hexToRGB('#b6c4d8'), ground: hexToRGB('#2b343c'), foliage: hexToRGB('#4a5760') },
+    tints: { sky: hexToRGB('#b6c4d8'), ground: hexToRGB('#2b343c'), foliage: hexToRGB('#33493a') },
   },
 };
 

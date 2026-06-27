@@ -15,8 +15,8 @@ una) vive en [`ambientMix.ts`](./ambientMix.ts); tú normalmente solo cambias lo
 | Capa | Cuándo suena | Qué archivo necesitas |
 |---|---|---|
 | `wind` | **Siempre** (un poco más de día) | Viento suave, base del bosque |
-| `birds` | **DÍA** (sobre todo en bosque) | Pájaros: trinos, canto de día |
-| `crickets` | **NOCHE** | Grillos / insectos nocturnos |
+| `birds` | **DÍA**, solo en biomas con aves (bosque sí, **desierto NO**) | Pájaros: trinos, canto de día |
+| `crickets` | **NOCHE**, solo donde hay insectos (bosque/desierto sí, **tundra NO** por el frío) | Grillos / insectos nocturnos |
 | `rain` | Clima: lluvia | Lluvia (sin truenos fuertes) |
 | `snow` | Clima: nieve | Viento nevado, casi un "hush" |
 | `sand` | Clima: tormenta de arena | Viento con grano/arena |
@@ -25,9 +25,14 @@ una) vive en [`ambientMix.ts`](./ambientMix.ts); tú normalmente solo cambias lo
 **Dimensiones que ya están resueltas por la mezcla** (no tienes que grabarlas tú):
 
 - **Día / noche** → de día cantan los **pájaros**, de noche los **grillos**. Automático según la hora.
-- **Clima** → al llover/nevar/etc. sube su capa y **se acallan** pájaros, grillos y viento.
+- **Clima** → al llover/**nevar**/arena/niebla sube su capa y **se callan** pájaros y grillos (nadie
+  canta bajo tormenta). Sí, la **nieve** también los calla.
+- **Bioma** → realismo: en el **desierto NO hay aves**; en la **tundra NO hay grillos** (frío). Se
+  ajusta en `BIOME_SOUND_LIFE` (en `ambientMix.ts`): agregar/tunear un bioma es una entrada.
 - **Estación** → la "vivacidad" escala los **pájaros**: primavera/verano vivos, **invierno apagado**.
   (Lo calcula el driver desde la estación; tú solo das UN sonido de pájaros y el motor lo modula.)
+- **Naturalidad** → pájaros y grillos **no suenan el 100% del tiempo**: van y vienen por ratos largos
+  (envolvente orgánica en el driver), para que no se sienta falso ni en bucle.
 
 > ¿Quieres sonidos **distintos por estación** (no solo más/menos volumen)? Es una extensión natural:
 > se haría agregando capas `birds-spring` / `birds-winter` y eligiendo en `ambientMix`. Por ahora
@@ -118,6 +123,26 @@ export const SFX_ASSETS = {
 
 > Los one-shots **NO se sintetizan** (necesitan archivo real): sin archivo, ese evento simplemente
 > no suena. Búscalos cortos y secos (un trueno, un "whoosh" de portal, un paso).
+
+## 4.ter Animales — lo que hace que el bioma se sienta VIVO
+
+Los loops de fondo dan ambiente; lo que da **vida** son **llamados de animales** que suenan cada
+tanto (un búho de noche, un halcón en el desierto). El sistema ya está: pon el archivo en
+`public/audio/` con el nombre exacto y referencia su ruta en `sfxAssets.ts`. CUÁNDO suena cada uno
+(bioma/hora/rareza) vive en `ambientCritters.ts` (tunéalo a gusto).
+
+| Archivo | Animal | Bioma · hora | Prioridad |
+|---|---|---|---|
+| `owl.ogg` | Búho (ululato) | Bosque · noche | ⭐ mínimo |
+| `hawk.ogg` | Halcón/águila (grito) | Desierto · día | ⭐ mínimo (llena el desierto vacío) |
+| `coyote.ogg` | Coyote (aullido) | Desierto · noche | ⭐ mínimo |
+| `wolf.ogg` | Lobo (aullido) | Tundra · noche | ⭐ mínimo (tundra muy vacía) |
+| `frog.ogg` | Rana/sapo | Bosque · noche | ✨ suma |
+| `crow.ogg` | Cuervo/grajo lejano | Bosque · día | ✨ suma |
+| `loon.ogg` | Ave acuática ártica | Tundra · día | ✨ suma |
+
+Búscalos **cortos (1–3 s), secos, un solo llamado** (no un loop). Términos: `owl hoot`, `hawk
+screech`, `coyote howl`, `wolf howl`, `frog croak`, `crow caw`, `loon call`. CC0/uso libre.
 
 ---
 

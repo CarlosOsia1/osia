@@ -20,6 +20,8 @@ import {
   MAX_QUEUED_INPUTS,
   MAX_INPUT_DT_S,
   DEFAULT_ACCENT_COLOR,
+  safeSpawn,
+  isSpawnClear,
   decode,
   type EntityId,
   type C2SMessage,
@@ -82,11 +84,6 @@ function clearHelloTimer(conn: Conn): void {
   }
 }
 
-function spawnPoint(i: number): { x: number; z: number } {
-  const a = i * 1.2;
-  return { x: Math.cos(a) * 2, z: 6 + Math.sin(a) * 2 };
-}
-
 async function onMessage(world: World, conn: Conn, raw: Uint8Array): Promise<void> {
   const msg = decode<C2SMessage>(raw);
   if (!msg)
@@ -140,6 +137,14 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
       world.graceTimers.delete(prev.state.id);
       prev.disconnected = false;
       prev.inputs.length = 0;
+      // Spawn-safety en RESUME: si la posición guardada quedó obstruida (dentro de un árbol/
+      // monolito/barrera), reubicar a un punto despejado — nunca reaparecer trabado.
+      if (!isSpawnClear(prev.state.x, prev.state.z)) {
+        const sp = safeSpawn(Number(prev.state.id));
+        prev.state.x = sp.x;
+        prev.state.z = sp.z;
+        prev.state.yaw = 0;
+      }
       conn.entityId = prev.state.id;
       clearHelloTimer(conn); // autenticado por resume
       world.peers.set(prev.state.id, conn); // re-ruteo de voz a la nueva conexión
@@ -185,7 +190,7 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
   clearHelloTimer(conn); // autenticado por ticket válido
   world.peers.set(id, conn);
   const token = randomUUID();
-  const rt = hub.add(id, handle, accentColor, spawnPoint(hub.entities.size), token);
+  const rt = hub.add(id, handle, accentColor, safeSpawn(hub.entities.size), token);
 
   // Checkpoint de presencia (S1.8-H2b): OFF del hot path — el histórico no bloquea el WELCOME, y un
   // fallo de DB no tumba la sesión. Solo residentes con cuenta (el anónimo F0 no persiste presencia).

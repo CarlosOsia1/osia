@@ -36,6 +36,9 @@ export * from './net/codec';
 export * from './net/voiceState';
 export * from './net/schemas/atmosphere';
 
+// --- Layout del mundo (obstáculos: render + spawn-safety) ---
+export * from './world/layout';
+
 // --- Utilidades de texto ---
 export * from './text/sanitizeChat';
 

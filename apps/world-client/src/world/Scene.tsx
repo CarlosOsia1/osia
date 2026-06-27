@@ -3,9 +3,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { instancedBufferAttribute, uniform } from 'three/tsl';
+import { clamp01 } from '@osia/atmosphere';
+import { forestTrees } from '@osia/shared';
 import { OSIA_COLORS } from '@osia/ui';
 import { prefersReducedMotion } from './motionPrefs';
-import { tintBySeason } from './seasonScene';
+import { tintBySeason, currentSeasonTints } from './seasonScene';
 
 /**
  * Scene — contenido de la primera escena de OSIA (S0.2).
@@ -27,16 +31,6 @@ const WIND = {
   phaseStep: 1.3, // desfase de fase por árbol → bosque "vivo", no sincronizado
 };
 
-/** Bosquecillo: anillo de pinos alrededor del claro. */
-const FOREST = {
-  count: 14,
-  ringRadiusBase: 7,
-  ringRadiusStep: 1.8, // r = base + (i % 3) * step
-  scaleBase: 0.8,
-  scaleStep: 0.25, // scale = base + (i % 4) * step
-  tintCycle: 5, // tinte = lerp(taupe→deep, (i % cycle) / cycle)
-};
-
 /**
  * Forest — los pinos como InstancedMesh (S0.2 · instancing).
  *
@@ -44,10 +38,16 @@ const FOREST = {
  * agrupamos por geometría en 4 InstancedMesh (4 draw calls). El offset vertical de
  * cada parte se hornea en su geometría (.translate), así una sola transformación
  * por-árbol (posición + escala) sirve a todas sus partes. El tinte de la copa va
- * por-instancia (instanceColor); el tronco es uniforme.
+ * por-instancia (atributo instanciado × uniform de estación, vía node material TSL,
+ * porque en WebGPU el instanceColor clásico no se multiplica); el tronco es uniforme.
  */
 function Forest({ trees }: { trees: Tree[] }) {
-  const { meshes, foliageMats } = useMemo(() => {
+  const { meshes, seasonU } = useMemo(() => {
+    // Color de cada copa = uniform de la ESTACIÓN × tinte por instancia (atributo instanciado).
+    // En WebGPU el instanceColor "clásico" no se multiplica en MeshStandardMaterial, así que lo
+    // hacemos explícito con un node material (TSL): variación real por árbol, determinista.
+    // El uniform es vec3 lineal (la conversión sRGB→lineal la hace un Color scratch por frame).
+    const seasonU = uniform(new THREE.Vector3(1, 1, 1));
     const parts = [
       { geo: new THREE.CylinderGeometry(0.12, 0.16, 1, 6).translate(0, 0.5, 0), tinted: false, roughness: 0.9, color: 0x2a211a },
       { geo: new THREE.ConeGeometry(0.9, 1.1, 7).translate(0, 1.1, 0), tinted: true, roughness: 0.85 },
@@ -60,42 +60,47 @@ function Forest({ trees }: { trees: Tree[] }) {
     const p = new THREE.Vector3();
     const s = new THREE.Vector3();
 
+    // Tinte por árbol (vec3) como atributo INSTANCIADO de la copa (multiplica al color estacional).
+    const tintArray = new Float32Array(trees.length * 3);
+    trees.forEach((t, i) => {
+      tintArray[i * 3] = t.tint.r;
+      tintArray[i * 3 + 1] = t.tint.g;
+      tintArray[i * 3 + 2] = t.tint.b;
+    });
+
     const built = parts.map((part) => {
-      const mat = new THREE.MeshStandardMaterial({
-        color: part.tinted ? 0xffffff : part.color, // tinted: blanco base × instanceColor
-        flatShading: true,
-        roughness: part.roughness,
-      });
+      let mat: THREE.Material;
+      if (part.tinted) {
+        const nodeMat = new MeshStandardNodeMaterial({ flatShading: true, roughness: part.roughness });
+        // tinte por INSTANCIA (indexado por instanceIndex) × color de la estación
+        nodeMat.colorNode = instancedBufferAttribute<'vec3'>(tintArray, 'vec3').mul(seasonU);
+        mat = nodeMat;
+      } else {
+        mat = new THREE.MeshStandardMaterial({ color: part.color, flatShading: true, roughness: part.roughness });
+      }
       const inst = new THREE.InstancedMesh(part.geo, mat, trees.length);
       inst.castShadow = true;
       trees.forEach((t, i) => {
         p.set(t.position[0], t.position[1], t.position[2]);
         s.setScalar(t.scale);
         inst.setMatrixAt(i, m.compose(p, q, s));
-        if (part.tinted) inst.setColorAt(i, t.tint);
       });
       inst.instanceMatrix.needsUpdate = true;
-      if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
       return inst;
     });
-    // Materiales de la COPA (foliage): la estación los tiñe. El tronco (no tinted) no.
-    const foliageMats = built
-      .map((inst, i) => (parts[i]!.tinted ? (inst.material as THREE.MeshStandardMaterial) : null))
-      .filter((mat): mat is THREE.MeshStandardMaterial => mat !== null);
-    return { meshes: built, foliageMats };
+    return { meshes: built, seasonU };
   }, [trees]);
-
-  // Base de la copa = blanco (el instanceColor lleva la variación por árbol); la estación la
-  // empuja hacia su color de foliage. Pre-alocado (no se asigna por frame).
-  const foliageBase = useMemo(() => new THREE.Color(0xffffff), []);
 
   // Viento: cada árbol se MECE (lean desde la base) con su propia fase → bosque vivo.
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const seasonScratch = useMemo(() => new THREE.Color(), []); // sRGB→lineal sin asignar por frame
   const tRef = useRef(0);
   useFrame((_, delta) => {
-    // Tinte estacional de la vegetación: SIEMPRE (es color, no movimiento; no se congela con
-    // reduced-motion). Una llamada por material de copa → futura vegetación reusa lo mismo.
-    for (const mat of foliageMats) tintBySeason(mat, foliageBase, 'foliage');
+    // Estación → uniform del color de la copa. SIEMPRE (es color, no movimiento: no se congela con
+    // reduced-motion). Cache por frame compartido con el resto de la escena (currentSeasonTints).
+    const f = currentSeasonTints().foliage;
+    seasonScratch.setRGB(f[0], f[1], f[2], THREE.SRGBColorSpace);
+    seasonU.value.set(seasonScratch.r, seasonScratch.g, seasonScratch.b);
 
     if (prefersReducedMotion()) return; // §9: sin loop de viento; los pinos quedan quietos
     tRef.current += delta;
@@ -156,20 +161,18 @@ function Ground() {
 
 export function Scene() {
   // Bosquecillo determinista (sin Math.random): anillo de pinos alrededor del claro.
-  const trees = useMemo(() => {
-    const base = new THREE.Color(OSIA_COLORS.taupe);
-    const deep = new THREE.Color('#2f3a30');
-    return Array.from({ length: FOREST.count }, (_, i) => {
-      const a = (i / FOREST.count) * Math.PI * 2;
-      const r = FOREST.ringRadiusBase + (i % 3) * FOREST.ringRadiusStep;
-      const tint = base.clone().lerp(deep, (i % FOREST.tintCycle) / FOREST.tintCycle);
-      return {
-        position: [Math.cos(a) * r, 0, Math.sin(a) * r] as [number, number, number],
-        scale: FOREST.scaleBase + (i % 4) * FOREST.scaleStep,
-        tint,
-      };
-    });
-  }, []);
+  const trees = useMemo<Tree[]>(
+    // Bosque desde la FUENTE ÚNICA compartida (@osia/shared/layout): misma posición/escala que el
+    // server usa para spawnear despejado. El render solo arma el color (brillo + matiz cálido/frío
+    // por árbol, que multiplica al color de la estación) → bosque natural, igual para todos.
+    () =>
+      forestTrees().map((t) => ({
+        position: [t.x, 0, t.z] as [number, number, number],
+        scale: t.scale,
+        tint: new THREE.Color(clamp01(t.bright + t.warm), clamp01(t.bright), clamp01(t.bright - t.warm)),
+      })),
+    [],
+  );
 
   return (
     <>
