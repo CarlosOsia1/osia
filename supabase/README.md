@@ -23,19 +23,31 @@ formato **nativo del CLI** `YYYYMMDDHHMMSS_<desc>.sql` (mismo espíritu fecha + 
 secuencia codificada en la parte de hora: `…000001`, `…000002`, …). Forward-only, nunca editar una
 migración ya aplicada.
 
-## Aplicar
+## Aplicar (MÉTODO DEL REPO — vinculante)
 
-Requiere el [Supabase CLI](https://supabase.com/docs/guides/cli) (no instalado en el repo aún).
+El Supabase CLI ya es **devDependency** (`pnpm exec supabase`). Las migraciones se aplican al
+**proyecto cloud** apuntando DIRECTO a la base por su connection string — **sin `supabase link`**,
+sin Docker. (Así es como se aplicaron todas; no hay un hook que las corra solo.)
 
-```bash
-# Cloud (proyecto de Carlos):
-supabase link --project-ref <PROJECT_REF>
-supabase db push
+1. La conexión directa vive en `supabase/.env.local` (gitignored, compartido con apps/api), con el
+   password **percent-encoded** (`$`=`%24`, etc.):
+   ```
+   SUPABASE_DB_URL="postgresql://postgres:<password>@db.<REF>.supabase.co:5432/postgres"
+   ```
+2. **Dry-run** (no toca nada — muestra qué se aplicaría):
+   ```bash
+   DBURL=$(grep -E '^SUPABASE_DB_URL=' supabase/.env.local | sed -E 's/^SUPABASE_DB_URL=//; s/^"//; s/"$//')
+   pnpm exec supabase db push --db-url "$DBURL" --dry-run
+   ```
+3. **Aplicar**:
+   ```bash
+   pnpm exec supabase db push --db-url "$DBURL" --yes
+   ```
 
-# Local (necesita Docker corriendo):
-supabase start
-supabase db reset   # aplica todas las migraciones desde cero
-```
+`db push` aplica SOLO las migraciones pendientes y las registra en
+`supabase_migrations.schema_migrations`. Forward-only (nunca editar una ya aplicada). El warning
+«failed to cache migrations catalog … docker» es **inofensivo** (es un caché local de pg-delta que
+necesita Docker; el push sí se aplica). Alternativa con Docker local: `supabase start` + `supabase db reset`.
 
 `vector` (pgvector) lo trae Supabase de fábrica. Se habilita ya (lo usa la memoria IA de Fase 2)
 para no migrar extensiones después.

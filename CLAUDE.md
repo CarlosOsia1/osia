@@ -467,6 +467,13 @@ infra/  docker-compose, Caddyfile        docs/  paquete de diseño (fuente de ve
 > Comandos: `pnpm i`, `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm test`,
 > `pnpm dev:infra` (Redis+Postgres). Ver [`README.md`](./README.md).
 
+**Migraciones Supabase (cómo se aplican — NO es automático):** el CLI ya es devDependency. Se aplican
+al cloud por connection string directo (sin `link`, sin Docker), leyendo `SUPABASE_DB_URL` de
+`supabase/.env.local` (gitignored): `pnpm exec supabase db push --db-url "$DBURL" --dry-run` y luego
+`--yes`. Detalle y comando completo en [`supabase/README.md`](./supabase/README.md) §Aplicar. Los
+secretos de dev (DB URL, `RESEND_API_KEY`/`SMTP_*`, Supabase keys) viven en `supabase/.env.local`, que
+`apps/api` también lee (ver `apps/api/src/load-env.ts`). Forward-only; nunca editar una migración aplicada.
+
 ---
 
 _Mantén este archivo vivo: si una regla cambia o se añade una práctica, actualízalo aquí (en
