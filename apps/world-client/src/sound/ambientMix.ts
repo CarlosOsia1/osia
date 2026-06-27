@@ -54,10 +54,10 @@ export function ambientMix(
   const sand = weatherKind === 'tormenta-arena' ? 0.85 * wi : 0;
   const fog = weatherKind === 'niebla' ? 0.6 * wi : 0; // drone de niebla, audible
 
-  // Viento: MUCHO más bajo de noche (de día es la base, de noche apenas se insinúa). Se aparta en
+  // Viento: MISMO nivel de día y de noche (suave; de día sonaba muy duro). Se aparta en
   // lluvia/arena/NIEBLA para que esa capa domine (si no, solo se oiría el viento bajo niebla).
   const windDuck = rain > 0 || sand > 0 || fog > 0 ? 0.5 : 1;
-  const wind = (0.12 + 0.26 * day) * windDuck;
+  const wind = 0.12 * windDuck;
 
   // Con clima activo (lluvia, NIEVE, arena o niebla) callan las aves/insectos: nadie canta bajo tormenta.
   const calm = Math.max(0, 1 - 1.4 * stormy);

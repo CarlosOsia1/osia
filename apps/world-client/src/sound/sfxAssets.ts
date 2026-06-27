@@ -33,11 +33,14 @@ export const SFX_ASSETS: Record<SfxName, string | null> = {
   portal: null,
   footstep: null,
   ui: null,
-  owl: null,
-  frog: null,
-  crow: null,
-  hawk: null,
+  owl: '/audio/owl.ogg',
+  frog: '/audio/frog.ogg',
+  crow: '/audio/crow.ogg',
+  hawk: '/audio/hawk.ogg',
+  // Depredadores (aullidos): DIFERIDOS a propósito — su llamado de cerca se siente "acechante", y la
+  // intención del mundo es vida de animales pequeños o LEJANOS, no que algo persiga al jugador. Si
+  // algún día se agregan, ambientCritters los tiene con presencia baja (lejos). Hoy: en silencio.
   coyote: null,
   wolf: null,
-  loon: null,
+  loon: '/audio/loon.ogg',
 };

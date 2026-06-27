@@ -108,7 +108,7 @@ class AmbientDriver {
       for (const c of CRITTERS) {
         if (c.biome !== 'any' && c.biome !== world.biomeId) continue;
         if ((c.when === 'day' && !isDay) || (c.when === 'night' && isDay)) continue;
-        if (Math.random() < c.chance) void this.engine.playSfx(c.name);
+        if (Math.random() < c.chance) void this.engine.playSfx(c.name, c.gain); // presencia = lejanía
       }
     }
   }

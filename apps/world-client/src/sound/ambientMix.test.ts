@@ -15,12 +15,12 @@ test('todas las ganancias quedan en [0,1]', () => {
     }
 });
 
-test('de día cantan los pájaros; de noche, los grillos; el viento baja un poco de noche', () => {
+test('de día cantan los pájaros; de noche, los grillos; el viento es igual de día y de noche', () => {
   const day = ambientMix('bosque-celeste', 'despejado', 0, 0);
   const night = ambientMix('bosque-celeste', 'despejado', 0, 1);
   assert.ok(day.birds > night.birds, 'pájaros de día');
   assert.ok(night.crickets > day.crickets, 'grillos de noche');
-  assert.ok(day.wind > night.wind, 'viento un poco más de día');
+  assert.equal(day.wind, night.wind, 'viento al mismo volumen de día y de noche');
 });
 
 test('la vivacidad de la estación escala los pájaros (invierno < primavera)', () => {

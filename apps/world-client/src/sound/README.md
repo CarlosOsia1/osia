@@ -127,22 +127,26 @@ export const SFX_ASSETS = {
 ## 4.ter Animales — lo que hace que el bioma se sienta VIVO
 
 Los loops de fondo dan ambiente; lo que da **vida** son **llamados de animales** que suenan cada
-tanto (un búho de noche, un halcón en el desierto). El sistema ya está: pon el archivo en
-`public/audio/` con el nombre exacto y referencia su ruta en `sfxAssets.ts`. CUÁNDO suena cada uno
-(bioma/hora/rareza) vive en `ambientCritters.ts` (tunéalo a gusto).
+tanto. **Principio (Carlos):** animales **pequeños o LEJANOS**, nunca algo que suene "encima" del
+jugador (acechante). Cada animal tiene una **presencia** (`gain` en `ambientCritters.ts`): bajo =
+lejano. CUÁNDO suena cada uno (bioma/hora/rareza/presencia) vive en `ambientCritters.ts` (a gusto).
 
-| Archivo | Animal | Bioma · hora | Prioridad |
+| Archivo | Animal | Bioma · hora | Estado |
 |---|---|---|---|
-| `owl.ogg` | Búho (ululato) | Bosque · noche | ⭐ mínimo |
-| `hawk.ogg` | Halcón/águila (grito) | Desierto · día | ⭐ mínimo (llena el desierto vacío) |
-| `coyote.ogg` | Coyote (aullido) | Desierto · noche | ⭐ mínimo |
-| `wolf.ogg` | Lobo (aullido) | Tundra · noche | ⭐ mínimo (tundra muy vacía) |
-| `frog.ogg` | Rana/sapo | Bosque · noche | ✨ suma |
-| `crow.ogg` | Cuervo/grajo lejano | Bosque · día | ✨ suma |
-| `loon.ogg` | Ave acuática ártica | Tundra · día | ✨ suma |
+| `owl.ogg` | Búho (ululato) | Bosque · noche **y** Desierto · noche (lejano) | ✅ puesto |
+| `hawk.ogg` | Ave rapaz (grito, lejana) | Desierto · día | ✅ puesto (llena el desierto) |
+| `frog.ogg` | Rana/sapo | Bosque · noche | ✅ puesto |
+| `crow.ogg` | Cuervo/grajo lejano | Bosque · día | ✅ puesto |
+| `loon.ogg` | Ave acuática ártica | Tundra · día | ✅ puesto |
+| `coyote.ogg` | Coyote (aullido) | Desierto · noche | ⏸️ diferido (aullido cercano = acecho) |
+| `wolf.ogg` | Lobo (aullido) | Tundra · noche | ⏸️ diferido (aullido cercano = acecho) |
+
+El **desierto de noche** lo llena un **búho lejano** (no el coyote). Los depredadores quedan
+diferidos a propósito; si algún día se agregan, ya están con presencia baja (suenan lejos).
 
 Búscalos **cortos (1–3 s), secos, un solo llamado** (no un loop). Términos: `owl hoot`, `hawk
-screech`, `coyote howl`, `wolf howl`, `frog croak`, `crow caw`, `loon call`. CC0/uso libre.
+screech`, `frog croak`, `crow caw`, `loon call`. CC0/uso libre. Se convierten a ogg mono igual que
+los loops, pero **sin** rebanada de centro (es un llamado único): solo recorte de silencio + normalización.
 
 ---
 
