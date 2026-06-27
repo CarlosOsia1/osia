@@ -13,10 +13,10 @@
  * se implementa cuando se MIDA que la banda real supera el presupuesto, no antes.
  */
 
-import { isWeatherKind } from '@osia/atmosphere';
 import { C2S, S2C } from './opcodes';
 import { asEntityId } from '../domain/ids';
 import { isVoiceSignalKind } from './voiceState';
+import { safeWeatherFromWire } from './schemas/atmosphere';
 import type { NetMessage, C2SMessage, S2CMessage } from './messages';
 
 const te = new TextEncoder();
@@ -296,7 +296,7 @@ export function decode<T extends NetMessage = NetMessage>(
           protocol,
           tickHz,
           entities,
-          atmosphere: { biome, weather: { kind: isWeatherKind(kind) ? kind : 'despejado', intensity } },
+          atmosphere: { biome, weather: safeWeatherFromWire(kind, intensity) },
           serverTime,
           resumeToken,
         } as T;
@@ -331,7 +331,8 @@ export function decode<T extends NetMessage = NetMessage>(
       case S2C.ATMOSPHERE_UPDATE: {
         const biome = rd.str();
         const k = rd.str();
-        return { op, biome, weather: { kind: isWeatherKind(k) ? k : 'despejado', intensity: rd.f64() } } as T;
+        const intensity = rd.f64();
+        return { op, biome, weather: safeWeatherFromWire(k, intensity) } as T;
       }
       case S2C.VOICE_SIGNAL: {
         const srcId = asEntityId(rd.u32());

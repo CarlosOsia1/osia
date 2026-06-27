@@ -5,9 +5,49 @@
 > alta** y propón la resolución antes de actuar.
 >
 > OSIA = ecosistema de lujo por invitación ("El arte de lo esencial"). App insignia: **El Mundo**
-> (MMO low-poly atmosférico, a pie, con voz P2P). Estado: **cerrando Fase 0 (S0.1–S0.8)**,
-> a punto de empezar **Sprint 1**. El paquete de diseño completo vive en [`docs/`](./docs/README.md)
-> y es la **fuente de verdad**: este archivo no lo reemplaza, lo operativiza.
+> (MMO low-poly atmosférico, a pie, con voz P2P). Estado: **Fases 0 y 1 cerradas; arrancando
+> Fase 2 — «Atmósfera Viva» (sin IA)** (detalle vivo abajo). El paquete de diseño completo vive en
+> [`docs/`](./docs/README.md) y es la **fuente de verdad**: este archivo no lo reemplaza, lo operativiza.
+
+---
+
+## Estado actual del proyecto (vivo — actualizar al cerrar cada sprint)
+
+> **Última actualización:** 2026-06-26. Mantener este bloque al día: al cerrar un sprint o pasar un
+> gate, actualizarlo aquí **y** en [`docs/backlog/00-roadmap-overview.md`](./docs/backlog/00-roadmap-overview.md).
+
+**Fases cerradas**
+- **Fase 0 — El Sentimiento (S0.1–S0.8): ✅ cerrada.** El Mundo camina, voz P2P, presencia
+  sincronizada, motor de atmósfera v1, y endurecimiento (design system, i18n EN+ES, AOI/métricas,
+  determinismo).
+- **Fase 1 — Identidad + Vestíbulo (S1.1–S1.9): ✅ cerrada.** Cuentas + email verificado (OTP),
+  pasaporte SSO, perfil/avatar/settings, Vestíbulo delgado, handoff autenticado a El Mundo
+  (nameplate/avatar), hardening con gates locales en CI. La limpieza **pre-Fase 2** de deuda (§2.4
+  UI → `@osia/ui`, DRY, OTP/HSTS/logout) quedó hecha.
+
+**Fase activa**
+- **Fase 2 — «Atmósfera Viva» (SIN IA): ⏳ en implementación.** Backlog único y vigente con el
+  estado por historia: [`docs/backlog/fase-2-atmosfera-viva.md`](./docs/backlog/fase-2-atmosfera-viva.md) §0.
+  Las 9 historias están implementadas (typecheck/lint/test verdes). Pendientes acotados: afinado
+  visual fino de S2-A3 (ojo de Carlos), test de no-fuga WebAudio en navegador, y de S2-C2 la variante
+  link-email + cron de retención (necesitan proveedor de email / `@nestjs/schedule` + `audit_logs`).
+- **Decisiones de Fase 2 (Carlos, 2026-06-26), vinculantes:** clima ESCASO (≤ 2 eventos por día de
+  juego, 2–5 min c/u); estación derivada del reloj (no viaja por red); borrado de cuenta por
+  confirmación de contraseña; y la regla §2.1 «ni el texto es nativo» (componente `Text` de `@osia/ui`).
+
+**Decisiones VINCULANTES del rediseño de Fase 2 (Carlos, 2026-06-25) — no revertir sin su visto bueno**
+- ❌ **IA diferida, NO cancelada.** Sin Habitantes/NPC, sin diálogo, sin voz IA, sin memoria, sin
+  guardarrailes de costo. Su diseño íntegro se conserva en
+  [`docs/backlog/fase-2-mundo-vivo.md`](./docs/backlog/fase-2-mundo-vivo.md) y se retoma cuando haya
+  presupuesto de IA.
+- ❌ **Eventos efímeros diferidos.** Sin meteoros, aurora ni FOMO. El opcode `ATMOSPHERE_EVENT`
+  queda desactivado pero listo.
+- ❌ **Bloom retirado — no reintroducir.** El halo aditivo de `SunMoon` lo reemplaza.
+- ✅ **La atmósfera actual YA GUSTA: cambios mínimos.** La **transición de clima existente NO se
+  toca** (Carlos: «esa que está, está perfecta»). Sí se permite **mejorar el ciclo de clima**
+  (rachas/rampas/pausas, sembrado y determinista) y añadir **estaciones como datos** — siempre dentro
+  del gamut house-celestial y sin romper la transición. El pulido visual (cielo/niebla/partículas)
+  solo afina lo que Carlos marque tras verlo; nada que ya guste se rediseña.
 
 ---
 
@@ -94,6 +134,13 @@ UNA vez y se reutiliza en toda la app.** Hoy esto NO se cumple (ver §2.4) y hay
 - **Nada de UI nativa duplicada.** No se declara un `<button>` "a mano" dos veces. Existe **`Button`**
   en `@osia/ui` y se usa en todos lados. Igual con `Panel`, `Modal`, `Input`, `Badge`, `Avatar`,
   `Toast`, `Tooltip`, `Nameplate`, `VoiceHalo`, etc. (inventario completo en [`docs/02`](./docs/02-marca-design-system.md) §7 y §10).
+- **Ni el TEXTO es nativo (regla de Carlos).** Ningún texto visible se renderiza con un elemento
+  nativo estilizado a mano (`<div>`/`<span>`/`<h1>` con `style`/`className` de tipografía). Todo
+  texto pasa por el componente **`Text`** de `@osia/ui`, que decide la **fuente por ROL** (variante
+  `display` = Italiana de marca §2.5; el resto = Jost), el tracking y `tabular-nums`. La app solo
+  elige `variant`/`tone` (y `scrim` para texto sobre la escena 3D); un cambio tipográfico se hace
+  **una sola vez**, dentro de `Text`. Las validaciones de "si es título va Italiana, si no Jost"
+  viven en el componente, no en cada pantalla.
 - **Tokens, no valores sueltos.** Colores, espaciado, radios, tipografía, motion, sombras vienen de
   los **tokens de diseño** (`@osia/ui` capa primitivo→semántico→componente, [`docs/02`](./docs/02-marca-design-system.md) §2.1). Nada de
   `#CBB89A` o `16px` hardcodeado en un componente: se usa `var(--color-accent)` / `--space-4`.
@@ -127,14 +174,16 @@ packages/ui/src/
 - Cada componente: variantes + estados (default/hover/focus/active/disabled/loading) + tokens que
   consume, como especifica [`docs/02`](./docs/02-marca-design-system.md) §7.
 
-### 2.4 Deuda actual a corregir (estado real hoy)
-- `packages/ui` es un **stub** (solo 4 colores en un objeto TS). **No** hay tokens CSS, ni
-  componentes, ni theme provider.
-- Los componentes de UI viven sueltos dentro de `apps/world-client/src/ui` y `src/world`
-  (ChatPanel, VoiceHUD, Nameplate-equivalentes, PerfHUD…). **Esto es exactamente el anti-patrón a
-  eliminar.** Plan: extraer tokens + primitivas a `@osia/ui`, reescribir esos componentes como
-  consumidores de `@osia/ui`. Hacerlo **antes/al inicio de Sprint 1** (es cimiento; rehacerlo
-  después es caro).
+### 2.4 Deuda de UI — ✅ RESUELTA (Fase 0–1)
+
+> **Histórico:** en Fase 0, `packages/ui` era un stub (4 colores) y los componentes vivían sueltos en
+> `apps/world-client`. **Ya corregido:** `@osia/ui` tiene tokens CSS (capa primitivo→semántico→
+> componente), `ThemeProvider`, primitivas (`Button`/`Card`/`Modal`/`Input`/`PasswordField`/
+> `FormError`…) y los paneles del HUD (`HudPanel` + los 4 paneles migrados, commit `94cc5cc`).
+
+La regla de §2.1 sigue **vinculante para todo componente nuevo**: se declara **una vez** en `@osia/ui`
+y se reutiliza; nada de UI nativa duplicada, nada de valores crudos (siempre tokens). Lo que aún viva
+suelto en una app y deba ser reutilizable, se extrae a `@osia/ui` (no se duplica).
 
 ### 2.5 Tipografía de marca (VINCULANTE — solo 2 fuentes, para siempre)
 
@@ -163,9 +212,11 @@ permanente.
 
 ## 3. Internacionalización (i18n) — EN + ES desde ya
 
-Hoy **no existe i18n** (no hay `next-intl`/`react-i18next`, no hay carpeta de locales, todos los
-textos están hardcodeados, mayormente en español). Carlos pidió crear toda la configuración para
-**inglés y español** y que **todos los textos** vivan en locales.
+**Montado y vigente** (Fase 0–1): existe `@osia/i18n` (catálogos `en`/`es` por namespace) + `next-intl`
+en las apps Next, con `LOCALE_COOKIE` y un resolver de locale único. La regla sigue **vinculante para
+todo texto nuevo**: cero strings de UI hardcodeados, toda clave existe en `en` **y** `es`, default
+`es-CO` neutro (sin voseo), fallback `en`. (Histórico: en Fase 0 no existía i18n y todo estaba en
+español hardcodeado; ya migrado.)
 
 ### 3.1 Decisión de librería
 - **`next-intl`** para las apps Next.js (App Router) — es el estándar actual para Next 13+ App
@@ -268,6 +319,16 @@ Ej.: `feat(world-server): tick fijo a 20 Hz`. Alcances: `web`, `world-client`, `
   cambios; el cliente corre `resolveAtmosphere` localmente cada frame.
 - **Linter de presets (CI)**: valida el gamut `house-celestial` (colores permitidos/prohibidos).
 - Presets nuevos = **datos**, no código.
+- **Estaciones (S2-B1) son TRANSVERSALES y deben quedar listas para crecer.** Un "año" = 384 días
+  de juego (4 estaciones × 96 días; con 30 min/día, ~2 días reales por estación). Cada estación
+  tiñe varias **superficies** (`SeasonSurface`: cielo, suelo, vegetación…) hacia su color de máxima
+  expresión en el **punto medio** de la estación, con transición continua entre medios (el ambiente
+  SIEMPRE cambia). **Regla para todo contenido nuevo del mundo** (más pasto, árboles, arbustos,
+  props con color natural): debe **coordinarse con la estación** — en `world-client` se tiñe con
+  `tintBySeason(material, base, surface)` (una línea en su `useFrame`); agregar una superficie nueva
+  = añadirla a `SeasonSurface` + `SEASON_STRENGTH` + las tints de cada `Season` (datos, no lógica).
+  El tinte del **cielo** se mantiene en el gamut house-celestial (lo valida el linter); el de la
+  **escena** (suelo/vegetación) tiene más libertad de color (objetos del mundo, no marca celeste).
 
 ---
 

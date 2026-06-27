@@ -15,6 +15,7 @@ export {
   type ReducedMotionPref,
 } from './ThemeProvider';
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button';
+export { Text, type TextProps, type TextVariant, type TextTone } from './Text';
 export { Card, type CardProps } from './Card';
 export { Modal, type ModalProps } from './Modal';
 export { Panel, type PanelProps } from './Panel';

@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "tsx src/common/zod-validation.pipe.test.ts"
+    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

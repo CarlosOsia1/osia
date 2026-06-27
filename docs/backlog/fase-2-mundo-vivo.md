@@ -1,5 +1,12 @@
 # Backlog de Sprints — Fase 2: Mundo Vivo
 
+> ⚠️ **DIFERIDO (2026-06).** La IA (Habitantes, diálogo, voz, memoria, guardarrailes de costo) y los
+> eventos efímeros (lluvia de meteoros, aurora, FOMO) de este backlog quedan **pospuestos, no
+> cancelados**. El **Sprint 2 activo** es el rediseño centrado en cerrar la atmósfera que ya existe:
+> ver [fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md). Este documento se conserva íntegro como
+> el diseño de la **fase de IA**, que se retomará cuando haya presupuesto de IA. No desarrollar desde
+> aquí sin confirmar con Carlos.
+
 > Propósito: Plan ejecutable, sprint a sprint, para que El Mundo de OSIA respire con 2 personas — Habitantes de IA con los que se habla (Whisper + Claude + TTS), motor de atmósfera completo (clima/estaciones/eventos efímeros autoritativos) y NPCs ambientales que reaccionan al clima. | Estado: Borrador v1 | Fecha: 2026-06-19 | Parte del paquete de diseño OSIA.
 
 Documentos relacionados: ver [../00-vision-alcance.md](../00-vision-alcance.md), [../01-pilares-experiencia.md](../01-pilares-experiencia.md), [../03-arquitectura-sistema.md](../03-arquitectura-sistema.md), [../04-modelo-datos-er.md](../04-modelo-datos-er.md), [../05-realtime-mundo-networking.md](../05-realtime-mundo-networking.md), [../06-motor-atmosfera.md](../06-motor-atmosfera.md), [../07-habitantes-ia.md](../07-habitantes-ia.md), [../08-estrategia-rendimiento.md](../08-estrategia-rendimiento.md), [../09-seguridad-infra-costos.md](../09-seguridad-infra-costos.md), [../10-contratos-api-eventos.md](../10-contratos-api-eventos.md), [../11-glosario-dominio.md](../11-glosario-dominio.md).

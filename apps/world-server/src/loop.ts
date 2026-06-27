@@ -82,7 +82,11 @@ export function startLoops(world: World): void {
         biome: world.director.biome,
         weather: world.director.weather,
       });
+      world.atmosphereBroadcasts++; // observabilidad (S2-C1)
       log.info({ weather: world.director.weather }, 'clima');
+      // Checkpoint del clima (S2-B4): persistir la nueva fase fire-and-forget, OFF del hot
+      // path. Un fallo de DB no debe tumbar la simulación (el store ya lo absorbe).
+      void world.weatherCheckpoint.save(world.director.serialize());
     }
   }, WEATHER_CHECK_MS);
 

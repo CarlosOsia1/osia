@@ -44,6 +44,31 @@ export class PgAccountRepository implements AccountRepository {
     return row ? toPassport(accountId, row) : null;
   }
 
+  async getEmail(accountId: string): Promise<string | null> {
+    const res = await this.pool.query<{ email: string }>(
+      `SELECT email FROM identity.accounts WHERE id = $1 AND deleted_at IS NULL`,
+      [accountId],
+    );
+    return res.rows[0]?.email ?? null;
+  }
+
+  async deleteAccount(accountId: string): Promise<boolean> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      // El DELETE de accounts CASCADEA (ON DELETE CASCADE): profiles, avatars, email_verifications
+      // y world.presence_sessions; las invitations quedan anonimizadas (ON DELETE SET NULL).
+      const res = await client.query(`DELETE FROM identity.accounts WHERE id = $1`, [accountId]);
+      await client.query('COMMIT');
+      return (res.rowCount ?? 0) > 0;
+    } catch (e) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
   async completeSignup(
     input: SignupCompletion,
   ): Promise<{ account: AccountDto; profile: ProfileDto }> {

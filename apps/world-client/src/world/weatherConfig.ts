@@ -4,6 +4,14 @@
  * 👉 ÚNICO lugar para tunear las partículas y la niebla de cada clima. Lo leen
  * Precipitation (nieve), RainStreaks (lluvia/arena) y Atmosphere (height-fog).
  * Cambia un número, guarda, y el HMR recarga — no hace falta tocar la lógica.
+ *
+ * PARÁMETROS SENSIBLES (S2-A3 — afinar con cuidado; tocan el "se ve caro"):
+ *  · `*.color` / `*.colorDay` / `*.colorNight` → DEBEN quedar dentro del gamut house-celestial.
+ *    Lo verifica `weatherConfigLint.test.ts` (CI). No metas verdes neón ni magentas.
+ *  · `count` (nieve 30k, arena 20k, lluvia 5k) → impacta draw calls/relleno; subirlo cuesta fps.
+ *  · `FOG.*.strength` y `FOG.niebla.strengthDay/Night` → la densidad de niebla es la palanca de
+ *    marca y de rendimiento a la vez; cambios chicos se notan mucho. La transición de intensidad
+ *    en el tiempo NO vive aquí (es `tickWeatherDisplay`, que no se toca): aquí solo el TECHO.
  */
 
 /** Semilado (m) de la caja de partículas que sigue a la cámara (evento "infinito"). */

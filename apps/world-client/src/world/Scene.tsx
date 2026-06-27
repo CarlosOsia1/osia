@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OSIA_COLORS } from '@osia/ui';
 import { prefersReducedMotion } from './motionPrefs';
+import { tintBySeason } from './seasonScene';
 
 /**
  * Scene — contenido de la primera escena de OSIA (S0.2).
@@ -46,7 +47,7 @@ const FOREST = {
  * por-instancia (instanceColor); el tronco es uniforme.
  */
 function Forest({ trees }: { trees: Tree[] }) {
-  const meshes = useMemo(() => {
+  const { meshes, foliageMats } = useMemo(() => {
     const parts = [
       { geo: new THREE.CylinderGeometry(0.12, 0.16, 1, 6).translate(0, 0.5, 0), tinted: false, roughness: 0.9, color: 0x2a211a },
       { geo: new THREE.ConeGeometry(0.9, 1.1, 7).translate(0, 1.1, 0), tinted: true, roughness: 0.85 },
@@ -59,7 +60,7 @@ function Forest({ trees }: { trees: Tree[] }) {
     const p = new THREE.Vector3();
     const s = new THREE.Vector3();
 
-    return parts.map((part) => {
+    const built = parts.map((part) => {
       const mat = new THREE.MeshStandardMaterial({
         color: part.tinted ? 0xffffff : part.color, // tinted: blanco base × instanceColor
         flatShading: true,
@@ -77,12 +78,25 @@ function Forest({ trees }: { trees: Tree[] }) {
       if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
       return inst;
     });
+    // Materiales de la COPA (foliage): la estación los tiñe. El tronco (no tinted) no.
+    const foliageMats = built
+      .map((inst, i) => (parts[i]!.tinted ? (inst.material as THREE.MeshStandardMaterial) : null))
+      .filter((mat): mat is THREE.MeshStandardMaterial => mat !== null);
+    return { meshes: built, foliageMats };
   }, [trees]);
+
+  // Base de la copa = blanco (el instanceColor lleva la variación por árbol); la estación la
+  // empuja hacia su color de foliage. Pre-alocado (no se asigna por frame).
+  const foliageBase = useMemo(() => new THREE.Color(0xffffff), []);
 
   // Viento: cada árbol se MECE (lean desde la base) con su propia fase → bosque vivo.
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tRef = useRef(0);
   useFrame((_, delta) => {
+    // Tinte estacional de la vegetación: SIEMPRE (es color, no movimiento; no se congela con
+    // reduced-motion). Una llamada por material de copa → futura vegetación reusa lo mismo.
+    for (const mat of foliageMats) tintBySeason(mat, foliageBase, 'foliage');
+
     if (prefersReducedMotion()) return; // §9: sin loop de viento; los pinos quedan quietos
     tRef.current += delta;
     const t = tRef.current;
@@ -123,6 +137,23 @@ function Forest({ trees }: { trees: Tree[] }) {
   );
 }
 
+/** Suelo low-poly — su color natural lo tiñe la ESTACIÓN (verde fresco → ocre → frío…). */
+function Ground() {
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const base = useMemo(() => new THREE.Color('#1d2a24'), []); // color natural, sin estación
+  useFrame(() => {
+    if (matRef.current) tintBySeason(matRef.current, base, 'ground');
+  });
+  // CON fog (como todo): en despejado no se nota (la niebla arranca lejos), pero en niebla/arena
+  // el suelo se funde igual que árboles y cielo, sin "costura" en el horizonte.
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <circleGeometry args={[26, 48]} />
+      <meshStandardMaterial ref={matRef} color="#1d2a24" flatShading roughness={1} />
+    </mesh>
+  );
+}
+
 export function Scene() {
   // Bosquecillo determinista (sin Math.random): anillo de pinos alrededor del claro.
   const trees = useMemo(() => {
@@ -144,13 +175,7 @@ export function Scene() {
     <>
       {/* Las luces (sol/luna/ambiente) las provee y anima <Atmosphere>. */}
 
-      {/* Suelo low-poly — CON fog (como todo): en despejado no se nota (la niebla
-          arranca a ~350 m), pero en niebla/arena el suelo se funde igual que árboles
-          y cielo, sin "costura" en el horizonte. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[26, 48]} />
-        <meshStandardMaterial color="#1d2a24" flatShading roughness={1} />
-      </mesh>
+      <Ground />
 
       {/* Un monolito celeste en el centro del claro (punto focal) */}
       <mesh position={[0, 1.5, 0]} castShadow>

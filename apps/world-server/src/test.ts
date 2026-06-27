@@ -7,3 +7,4 @@ import './rateLimit.test';
 import './instance.test';
 import './weather.test';
 import './metrics.test';
+import './http.test';

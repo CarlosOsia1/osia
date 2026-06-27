@@ -1,0 +1,49 @@
+import { createElement, type ElementType, type HTMLAttributes } from 'react';
+
+export type TextVariant = 'display' | 'title' | 'body' | 'label' | 'overline' | 'value';
+export type TextTone = 'default' | 'subtle' | 'muted' | 'accent';
+
+export type TextProps = HTMLAttributes<HTMLElement> & {
+  /** Elemento HTML a renderizar (default según la variante). */
+  as?: ElementType;
+  variant?: TextVariant;
+  tone?: TextTone;
+  /** Texto SOBRE la escena 3D: añade un halo oscuro (text-shadow) → legible de día y de noche. */
+  scrim?: boolean;
+};
+
+const DEFAULT_TAG: Record<TextVariant, ElementType> = {
+  display: 'h1',
+  title: 'h2',
+  body: 'span',
+  label: 'span',
+  overline: 'span',
+  value: 'span',
+};
+
+/**
+ * Text — la ÚNICA puerta tipográfica del design system (CLAUDE.md §2.5). Ningún texto visible se
+ * renderiza con un elemento nativo estilizado a mano: todo pasa por aquí, que elige la FUENTE por
+ * ROL (variant `display` = Italiana de marca; el resto = Jost), el tracking y `tabular-nums`. La
+ * app solo elige variante/tono; un cambio tipográfico se hace UNA vez, aquí.
+ */
+export function Text({
+  as,
+  variant = 'body',
+  tone = 'default',
+  scrim = false,
+  className,
+  ...rest
+}: TextProps) {
+  const tag: ElementType = as ?? DEFAULT_TAG[variant];
+  const cls = [
+    'osia-text',
+    `osia-text--${variant}`,
+    tone !== 'default' ? `osia-text--${tone}` : '',
+    scrim ? 'osia-text--scrim' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return createElement(tag, { className: cls, ...rest });
+}

@@ -50,6 +50,13 @@
     "live": "en vivo",
     "liveAction": "En vivo",
     "biome": "Bioma",
+    "season": "Estación",
+    "seasons": {
+      "primavera": "Primavera",
+      "verano": "Verano",
+      "otono": "Otoño",
+      "invierno": "Invierno"
+    },
     "weatherLabel": "Clima",
     "sourceOverride": "override",
     "sourceServer": "server",
@@ -66,6 +73,11 @@
   },
   "lang": {
     "label": "idioma"
+  },
+  "sound": {
+    "aria": "sonido ambiente",
+    "on": "sonido: activo",
+    "off": "sonido: silencio"
   },
   "web": {
     "kicker": "Vestíbulo",

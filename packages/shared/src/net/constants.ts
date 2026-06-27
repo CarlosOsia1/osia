@@ -5,6 +5,16 @@
 
 export const PROTOCOL_VERSION = 6; // +6: VOICE_SIGNAL/VOICE_STATE (voz P2P S0.6)
 
+/**
+ * Versión del CONTRATO de atmósfera (clima/bioma difundido por el server), INDEPENDIENTE de
+ * PROTOCOL_VERSION para poder iterar el clima sin re-versionar todo el protocolo (S2-B3).
+ * Changelog:
+ *   v1: { biome, weather: { kind, intensity } }. La ESTACIÓN (S2-B1) se deriva del reloj en
+ *       cliente y servidor (determinista, como timeOfDay) → NO viaja en el cable, así que no
+ *       la versiona. Si algún día un campo del clima viaja por red, súbela y deja la nota.
+ */
+export const ATMOSPHERE_CONTRACT_VERSION = 1;
+
 /** Simulación autoritativa: tick fijo. */
 export const TICK_HZ = 20;
 export const TICK_MS = 1000 / TICK_HZ; // 50 ms

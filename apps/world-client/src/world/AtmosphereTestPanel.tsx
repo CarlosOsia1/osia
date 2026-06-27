@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Panel } from '@osia/ui';
-import { BIOMES, WEATHER_KINDS, type WeatherKind } from '@osia/atmosphere';
+import { Button, Panel, Text } from '@osia/ui';
+import { BIOMES, WEATHER_KINDS, seasonAt, seasonPeak, type SeasonId, type WeatherKind } from '@osia/atmosphere';
 import {
   world,
   setOverrideBiome,
@@ -11,7 +11,10 @@ import {
   clearOverrides,
   isOverriding,
 } from './atmosphereRuntime';
-import { setTimeScale, setPaused, resetClock } from './worldClockRuntime';
+import { worldClock, setTimeScale, setPaused, setTimeOfYear, resetClock } from './worldClockRuntime';
+
+/** Orden de las estaciones; el panel salta al PUNTO MEDIO (máxima expresión) de cada una. */
+const SEASON_IDS: readonly SeasonId[] = ['primavera', 'verano', 'otono', 'invierno'];
 
 /**
  * AtmosphereTestPanel — controles de TEST (se quitan luego). El clima REAL lo dicta
@@ -28,8 +31,16 @@ const SPEEDS = [
   { v: 240, label: '×240' },
 ];
 
-const labelStyle = { color: 'var(--color-text-subtle)', marginBottom: 5 } as const;
 const rowStyle = { display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 11 } as const;
+
+/** Etiqueta de sección del panel (texto vía componente, §2.5). */
+function Label({ children }: { children: ReactNode }) {
+  return (
+    <Text variant="label" tone="subtle" style={{ display: 'block', marginBottom: 5 }}>
+      {children}
+    </Text>
+  );
+}
 
 export default function AtmosphereTestPanel() {
   const t = useTranslations('hud');
@@ -86,17 +97,9 @@ export default function AtmosphereTestPanel() {
         userSelect: 'none',
       }}
     >
-      <div
-        style={{
-          color: 'var(--color-text-subtle)',
-          textTransform: 'uppercase',
-          letterSpacing: 'var(--tracking-overline)',
-          fontSize: 'var(--text-2xs)',
-          marginBottom: 10,
-        }}
-      >
+      <Text variant="overline" tone="subtle" style={{ display: 'block', marginBottom: 10 }}>
         {t('atmoTitle')}
-      </div>
+      </Text>
 
       {/* Estado actual + volver al server */}
       <div
@@ -107,15 +110,15 @@ export default function AtmosphereTestPanel() {
           marginBottom: 11,
         }}
       >
-        <span style={{ color: 'var(--color-text-subtle)' }}>
+        <Text variant="body" tone="subtle">
           {overriding ? t('previewLocal') : t('live')} · {t(`weather.${world.weather.kind}`)} {shownPct}%
-        </span>
+        </Text>
         <Button size="sm" active={!overriding} onClick={goLive}>
           {t('liveAction')}
         </Button>
       </div>
 
-      <div style={labelStyle}>{t('biome')}</div>
+      <Label>{t('biome')}</Label>
       <div style={rowStyle}>
         {BIOMES.map((b) => (
           <Button key={b.id} size="sm" active={biomeSel === b.id} onClick={() => pickBiome(b.id)}>
@@ -124,9 +127,9 @@ export default function AtmosphereTestPanel() {
         ))}
       </div>
 
-      <div style={labelStyle}>
+      <Label>
         {t('weatherLabel')} ({overriding ? t('sourceOverride') : t('sourceServer')})
-      </div>
+      </Label>
       <div style={rowStyle}>
         {WEATHER_KINDS.map((k) => (
           <Button key={k} size="sm" active={weatherSel === k} onClick={() => pickWeather(k)}>
@@ -135,7 +138,24 @@ export default function AtmosphereTestPanel() {
         ))}
       </div>
 
-      <div style={labelStyle}>{t('timeScale')}</div>
+      <Label>{t('season')}</Label>
+      <div style={rowStyle}>
+        {SEASON_IDS.map((id) => (
+          <Button
+            key={id}
+            size="sm"
+            active={seasonAt(worldClock.toy).id === id}
+            onClick={() => {
+              setTimeOfYear(seasonPeak(id)); // salta a la máxima expresión de la estación
+              refresh();
+            }}
+          >
+            {t(`seasons.${id}`)}
+          </Button>
+        ))}
+      </div>
+
+      <Label>{t('timeScale')}</Label>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
         {SPEEDS.map((s) => (
           <Button key={s.v} size="sm" active={speed === s.v} onClick={() => pickSpeed(s.v)}>

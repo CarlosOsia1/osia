@@ -30,6 +30,7 @@ import type {
 import { applyMovement, type Vec2 } from './movement';
 import { GROUND_RADIUS } from './constants';
 import { normalizeChat, normalizeHandle } from '../text/sanitizeChat';
+import { WEATHER_KINDS, type WeatherKind } from '@osia/atmosphere';
 
 test('round-trip HELLO', () => {
   const msg: HelloMsg = { op: C2S.HELLO, ticket: 'a.b.c', protocol: 1 };
@@ -125,6 +126,45 @@ test('round-trip ATMOSPHERE_UPDATE / ERROR', () => {
 
   const err: ErrorMsg = { op: S2C.ERROR, code: WireErrorCode.BAD_TICKET, message: 'ticket inválido' };
   assert.deepEqual(decode(encode(err)), err);
+});
+
+test('round-trip ATMOSPHERE_UPDATE — matriz de kinds × intensidades (S2-B3)', () => {
+  for (const kind of WEATHER_KINDS) {
+    for (const intensity of [0, 0.5, 1] as const) {
+      const msg: AtmosphereUpdateMsg = {
+        op: S2C.ATMOSPHERE_UPDATE,
+        biome: 'bosque-celeste',
+        weather: { kind, intensity },
+      };
+      assert.deepEqual(decode(encode(msg)), msg, `round-trip ${kind}@${intensity}`);
+    }
+  }
+});
+
+test('decode ATMOSPHERE_UPDATE degrada seguro: kind desconocido → despejado (S2-B3)', () => {
+  // Un cliente/servidor viejo manda un kind que este no conoce: el codec no debe romper.
+  const raw = encode({
+    op: S2C.ATMOSPHERE_UPDATE,
+    biome: 'bosque-celeste',
+    weather: { kind: 'ventisca-cuantica' as WeatherKind, intensity: 0.5 },
+  });
+  const dec = decode<AtmosphereUpdateMsg>(raw)!;
+  assert.equal(dec.weather.kind, 'despejado');
+});
+
+test('decode ATMOSPHERE_UPDATE clampa intensity fuera de [0,1] y NaN (S2-B3)', () => {
+  for (const bad of [5, -1, Number.NaN]) {
+    const raw = encode({
+      op: S2C.ATMOSPHERE_UPDATE,
+      biome: 'bosque-celeste',
+      weather: { kind: 'lluvia', intensity: bad },
+    });
+    const dec = decode<AtmosphereUpdateMsg>(raw)!;
+    assert.ok(
+      dec.weather.intensity >= 0 && dec.weather.intensity <= 1 && Number.isFinite(dec.weather.intensity),
+      `intensity ${bad} → ${dec.weather.intensity} debe quedar en [0,1]`,
+    );
+  }
 });
 
 test('decode rechaza basura', () => {

@@ -18,12 +18,28 @@ import { createHttpServer } from './http';
 import { registerConnection } from './handlers';
 import { startLoops } from './loop';
 
-const world = createWorld();
-const httpServer = createHttpServer(world);
-// WS (ws; swappable a uWebSockets.js en prod) sobre el mismo server HTTP.
-const wss = new WebSocketServer({ server: httpServer, path: '/world', maxPayload: 64 * 1024 }); // holgura para SDP
-wss.on('connection', (ws, req) => registerConnection(world, ws, req));
+async function main(): Promise<void> {
+  const world = createWorld();
 
-startLoops(world);
+  // Reanudar el clima desde el último checkpoint (S2-B4): si lo hay, el cielo sigue donde
+  // estaba en vez de saltar a "despejado". Sin checkpoint (o sin DB) arranca normal.
+  const checkpoint = await world.weatherCheckpoint.load();
+  if (checkpoint) {
+    world.director.restore(checkpoint);
+    log.info({ weather: checkpoint.weather }, 'clima restaurado de checkpoint');
+  }
 
-httpServer.listen(config.port, () => log.info({ port: config.port }, 'world-server escuchando'));
+  const httpServer = createHttpServer(world);
+  // WS (ws; swappable a uWebSockets.js en prod) sobre el mismo server HTTP.
+  const wss = new WebSocketServer({ server: httpServer, path: '/world', maxPayload: 64 * 1024 }); // holgura para SDP
+  wss.on('connection', (ws, req) => registerConnection(world, ws, req));
+
+  startLoops(world);
+
+  httpServer.listen(config.port, () => log.info({ port: config.port }, 'world-server escuchando'));
+}
+
+main().catch((err) => {
+  log.error({ err: String(err) }, 'arranque del world-server falló');
+  process.exit(1);
+});

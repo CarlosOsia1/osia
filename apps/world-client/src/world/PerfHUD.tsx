@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Panel } from '@osia/ui';
+import { Panel, Text } from '@osia/ui';
 import { subscribePerf, getPerf, type PerfStats } from './perfStore';
 import { worldClock } from './worldClockRuntime';
 
@@ -25,7 +25,6 @@ function horaDelDia(tod: number): string {
 const C_OK = 'var(--color-accent)';
 const C_WARN = 'var(--color-warning)';
 const C_BAD = 'var(--color-danger)';
-const C_DIM = 'var(--color-text-subtle)';
 
 function fpsColor(fps: number): string {
   if (fps > 0 && fps < 50) return C_BAD;
@@ -42,8 +41,12 @@ function drawCallColor(dc: number): string {
 function Row({ label, value, color = C_OK }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-5)' }}>
-      <span style={{ color: C_DIM }}>{label}</span>
-      <span style={{ color, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <Text variant="label" tone="subtle">
+        {label}
+      </Text>
+      <Text variant="value" style={{ color }}>
+        {value}
+      </Text>
     </div>
   );
 }
@@ -75,25 +78,16 @@ export default function PerfHUD() {
         right: 'var(--space-5)',
         minWidth: 190,
         padding: '12px 14px',
-        border: '1px solid var(--color-border-accent)',
-        color: 'var(--color-accent)',
+        display: 'grid',
+        gap: 'var(--space-1)',
         font: 'var(--text-sm)/var(--leading-loose) var(--font-ui)',
-        letterSpacing: 'var(--tracking-wide)',
         pointerEvents: 'none',
         userSelect: 'none',
       }}
     >
-      <div
-        style={{
-          color: C_DIM,
-          textTransform: 'uppercase',
-          letterSpacing: 'var(--tracking-overline)',
-          fontSize: 'var(--text-2xs)',
-          marginBottom: 8,
-        }}
-      >
+      <Text variant="overline" tone="subtle" style={{ marginBottom: 6 }}>
         {t('perfTitle')} · {s.backend}
-      </div>
+      </Text>
       <Row label={t('time')} value={mounted ? horaDelDia(worldClock.tod) : '—:—'} />
       <Row label={t('fps')} value={s.fps.toFixed(0)} color={fpsColor(s.fps)} />
       <Row label={t('drawCalls')} value={String(s.drawCalls)} color={drawCallColor(s.drawCalls)} />
@@ -101,9 +95,9 @@ export default function PerfHUD() {
       <Row label={t('geometries')} value={String(s.geometries)} />
       <Row label={t('textures')} value={String(s.textures)} />
       <Row label={t('renderScale')} value={`${s.pixelRatio.toFixed(2)}×`} />
-      <div style={{ color: C_DIM, fontSize: 9, marginTop: 8, letterSpacing: 'var(--tracking-wide)' }}>
+      <Text variant="overline" tone="subtle" style={{ marginTop: 6 }}>
         {t('hideHint')}
-      </div>
+      </Text>
     </Panel>
   );
 }

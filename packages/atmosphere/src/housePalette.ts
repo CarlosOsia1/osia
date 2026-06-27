@@ -9,7 +9,7 @@
  * Los azules/índigos profundos SÍ entran (chroma alto pero tono azul, no verde/magenta).
  */
 
-import { rgbToOklab } from './color';
+import { rgbToOklab, oklabToRGB } from './color';
 import type { AtmosphereParams, RGB } from './types';
 
 /** Chroma OKLab por encima del cual un tono prohibido se considera "neón"/fuera de gamut. */
@@ -63,4 +63,26 @@ export function lintAtmosphereParams(p: AtmosphereParams): string[] {
     if (reason) out.push(`${field}: ${reason}`);
   }
   return out;
+}
+
+/**
+ * Empuja un color DENTRO del gamut house-celestial si lo viola (devuelve el mismo si ya es
+ * admisible). Clampa la luminancia lejos del clipping a negro/blanco y baja la chroma de los
+ * tonos prohibidos (verde ácido / magenta). Sirve para teñir la UI con el cielo (S2-A1) sin
+ * que un color extremo rompa la marca. Complementa a checkHouseCelestial (que solo valida).
+ */
+export function clampToHouseCelestial(c: RGB): RGB {
+  if (checkHouseCelestial(c) === null) return c;
+  const [L0, a0, b0] = rgbToOklab(c);
+  const L = Math.min(CLIP_WHITE_L - 0.01, Math.max(CLIP_BLACK_L + 0.01, L0));
+  let a = a0;
+  let b = b0;
+  const chroma = Math.hypot(a, b);
+  const h = hueDeg(a, b);
+  if (chroma >= CHROMA_NEON && (inBand(h, GREEN_HUE) || inBand(h, MAGENTA_HUE))) {
+    const scale = (CHROMA_NEON * 0.9) / chroma; // baja la chroma justo bajo el umbral neón
+    a *= scale;
+    b *= scale;
+  }
+  return oklabToRGB(L, a, b);
 }

@@ -18,7 +18,7 @@ Backlogs por fase (detalle ejecutable):
 |---|---|
 | 0 — El Sentimiento | [./fase-0-el-sentimiento.md](./fase-0-el-sentimiento.md) |
 | 1 — Identidad + Vestíbulo | [./fase-1-identidad.md](./fase-1-identidad.md) |
-| 2 — Mundo Vivo | [./fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md) |
+| 2 — Mundo Vivo *(IA diferida)* | **Activo:** [./fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md) · **Diferido (IA/eventos):** [./fase-2-mundo-vivo.md](./fase-2-mundo-vivo.md) |
 | 3 — Tejido Social | [./fase-3-tejido-social.md](./fase-3-tejido-social.md) |
 | 4 — Juego y Estatus | [./fase-4-juego-estatus.md](./fase-4-juego-estatus.md) |
 | 5+ — Hacia Gigante | [./fase-5-hacia-gigante.md](./fase-5-hacia-gigante.md) |

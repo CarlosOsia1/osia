@@ -4,9 +4,10 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { fog, positionView, positionWorld, uniform } from 'three/tsl';
-import { resolveAtmosphere, applyWeather, biomeById } from '@osia/atmosphere';
+import { resolveAtmosphere, applyWeather, applySeason, resolveSeasonTints, biomeById } from '@osia/atmosphere';
 import { atmo, world, tickWeatherDisplay } from './atmosphereRuntime';
 import { worldClock, tickWorldClock } from './worldClockRuntime';
+import { tickAtmoHud } from './atmoHudBus';
 import { FOG } from './weatherConfig';
 
 /**
@@ -71,8 +72,13 @@ export default function Atmosphere() {
     tickWorldClock(delta);
     tickWeatherDisplay(delta); // rampa suave del clima hacia el objetivo (override ?? server)
     const biome = biomeById(world.biomeId);
-    const p = applyWeather(resolveAtmosphere(worldClock.tod, biome.cycle), world.weather);
+    // Pipeline: preset por hora → tinte lento de la ESTACIÓN (S2-B1) → CLIMA efímero. La
+    // estación se deriva del mismo reloj (worldClock.toy); no toca la transición de clima. El
+    // tinte del SUELO/VEGETACIÓN lo aplica la escena (Scene) con el mismo timeOfYear.
+    const base = applySeason(resolveAtmosphere(worldClock.tod, biome.cycle), resolveSeasonTints(worldClock.toy).sky);
+    const p = applyWeather(base, world.weather);
     atmo.current = p;
+    tickAtmoHud(p, performance.now()); // el HUD respira el cielo (S2-A1); throttled, sin re-render
 
     // Piso de luz LUNAR: la noche nunca es oscuridad TOTAL — la luna ilumina un poco
     // (no mucho). Sube la luna direccional y el relleno ambiente según lo "noche" que sea.

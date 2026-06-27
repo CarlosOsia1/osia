@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { LineBasicNodeMaterial } from 'three/webgpu';
 import { uniform, attribute, vec3, vec2, sin, cos, float } from 'three/tsl';
-import { precipKind, mulberry32 } from '@osia/atmosphere';
+import { precipKind, mulberry32, smoothstep } from '@osia/atmosphere';
 import { world, atmo } from './atmosphereRuntime';
 import { prefersReducedMotion } from './motionPrefs';
 import { RAIN, SAND, FX_BOX } from './weatherConfig';
@@ -119,8 +119,9 @@ export default function RainStreaks() {
       colU.value.copy(SAND_DAY).lerp(tmpCol.copy(SAND_NIGHT), night);
     }
     const mat = lines.material as LineBasicNodeMaterial;
+    // Rampa de opacidad con smoothstep (ease in-out), no lineal — mismo punto de saturación. (S2-A3)
     mat.opacity =
-      (isRain ? RAIN.opacity : SAND.opacity) * Math.min(1, world.weather.intensity * 1.3);
+      (isRain ? RAIN.opacity : SAND.opacity) * smoothstep(world.weather.intensity * 1.3);
     lines.geometry.setDrawRange(0, (isRain ? RAIN.count : SAND.count) * 2);
   });
 

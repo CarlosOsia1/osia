@@ -34,6 +34,7 @@ export * from './net/entities';
 export * from './net/messages';
 export * from './net/codec';
 export * from './net/voiceState';
+export * from './net/schemas/atmosphere';
 
 // --- Utilidades de texto ---
 export * from './text/sanitizeChat';

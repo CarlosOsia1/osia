@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uniform, positionLocal, range, vec3, sin, cos, float, mod } from 'three/tsl';
-import { precipKind } from '@osia/atmosphere';
+import { precipKind, smoothstep } from '@osia/atmosphere';
 import { world } from './atmosphereRuntime';
 import { prefersReducedMotion } from './motionPrefs';
 import { SNOW, FX_BOX } from './weatherConfig';
@@ -79,8 +79,10 @@ export default function Precipitation() {
     mesh.visible = true;
     mesh.position.copy(camera.position); // la caja sigue al jugador
     if (!prefersReducedMotion()) timeU.value += delta; // §9: congela la caída con reduced-motion
+    // Rampa de opacidad con smoothstep (ease in-out), no lineal: la nieve aparece/se va más suave
+    // sin cambiar su punto de saturación. (S2-A3)
     (mesh.material as MeshBasicNodeMaterial).opacity =
-      SNOW.opacity * Math.min(1, world.weather.intensity * 1.2);
+      SNOW.opacity * smoothstep(world.weather.intensity * 1.2);
   });
 
   useEffect(

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './web/auth.controller';
 import { WaitlistController } from './web/waitlist.controller';
 import { WorldController } from './web/world.controller';
+import { AccountController } from './web/account.controller';
 import { ProfileController } from './web/profile.controller';
 import { ProfileService } from './application/profile.service';
 import { PROFILE_REPOSITORY } from './application/ports/out/profile.repository';
@@ -18,6 +19,7 @@ import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from './application/use-cases/resend-verification.use-case';
 import { IssueWorldTicketUseCase } from './application/use-cases/issue-world-ticket.use-case';
+import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
 import { WAITLIST_REPOSITORY } from './application/ports/out/waitlist.repository';
 import { INVITATION_REPOSITORY } from './application/ports/out/invitation.repository';
 import { ACCOUNT_REPOSITORY } from './application/ports/out/account.repository';
@@ -38,6 +40,7 @@ import { AuthGuard } from '../common/auth.guard';
     AuthController,
     WaitlistController,
     WorldController,
+    AccountController,
     ProfileController,
     AvatarController,
   ],
@@ -52,6 +55,7 @@ import { AuthGuard } from '../common/auth.guard';
     VerifyEmailUseCase,
     ResendVerificationUseCase,
     IssueWorldTicketUseCase,
+    DeleteAccountUseCase,
     AuthGuard,
     { provide: WAITLIST_REPOSITORY, useClass: PgWaitlistRepository },
     { provide: INVITATION_REPOSITORY, useClass: PgInvitationRepository },

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Dot, HudPanel, Panel } from '@osia/ui';
+import { Button, Dot, HudPanel, Panel, Text } from '@osia/ui';
 import { useNetState } from '../net/useNet';
 import { isChatTyping } from '../net/store';
 import { meshVoice } from '../voice/MeshVoice';
@@ -106,17 +106,11 @@ export default function VoiceHUD() {
     >
       {/* Quién está hablando ahora (de los remotos) */}
       {speakers.length > 0 && (
-        <Panel
-          style={{
-            display: 'flex',
-            gap: 6,
-            padding: '4px 10px',
-            color: 'var(--color-text)',
-            font: '500 var(--text-base)/var(--leading-tight) var(--font-ui)',
-          }}
-        >
+        <Panel style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px' }}>
           <Dot color="var(--color-success)" />
-          {speakers.map((s) => s.handle).join(', ')}
+          <Text variant="body" style={{ fontWeight: 500 }}>
+            {speakers.map((s) => s.handle).join(', ')}
+          </Text>
         </Panel>
       )}
 
@@ -126,23 +120,15 @@ export default function VoiceHUD() {
             🎙 {t('enable')}
           </Button>
           {error && (
-            <span
-              style={{
-                color: 'var(--color-danger)',
-                font: '400 var(--text-xs)/var(--leading-tight) var(--font-ui)',
-                maxWidth: 200,
-                textAlign: 'right',
-              }}
-            >
+            <Text variant="body" style={{ color: 'var(--color-danger)', maxWidth: 200, textAlign: 'right' }}>
               {t(error === 'https' ? 'errorHttps' : 'errorMic')}
-            </span>
+            </Text>
           )}
         </>
       ) : (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {/* Indicador persistente de privacidad: tu mic está activo */}
           <span
-            className="osia-overline"
             title={speaking ? t('speaking') : t('micActive')}
             style={{
               display: 'flex',
@@ -151,7 +137,6 @@ export default function VoiceHUD() {
               padding: '5px 10px',
               borderRadius: 'var(--radius-md)',
               background: muted ? 'var(--color-danger-soft)' : 'var(--color-accent-soft)',
-              color: 'var(--color-accent)',
             }}
           >
             <Dot
@@ -163,7 +148,9 @@ export default function VoiceHUD() {
                     : 'var(--color-text-subtle)'
               }
             />
-            {muted ? t('micOff') : t('active')}
+            <Text variant="overline" tone="accent">
+              {muted ? t('micOff') : t('active')}
+            </Text>
           </span>
           {/* Medidor de nivel del mic (diagnóstico: si se mueve al hablar, el mic captura). */}
           <span

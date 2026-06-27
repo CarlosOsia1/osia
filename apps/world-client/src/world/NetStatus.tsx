@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Dot, HudPanel } from '@osia/ui';
+import { Dot, HudPanel, Text } from '@osia/ui';
 import { useNetState } from '../net/useNet';
 
 /**
@@ -38,21 +38,11 @@ export default function NetStatus() {
   }
 
   return (
-    <HudPanel
-      style={{
-        top: 52,
-        left: 28,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        color: 'var(--color-text-subtle)',
-        font: 'var(--text-sm)/var(--leading-none) var(--font-ui)',
-        letterSpacing: 'var(--tracking-wider)',
-        textTransform: 'lowercase',
-      }}
-    >
+    <HudPanel style={{ top: 52, left: 28, display: 'flex', alignItems: 'center', gap: 8 }}>
       <Dot color={dot} glow />
-      {label}
+      <Text variant="label" scrim style={{ textTransform: 'lowercase' }}>
+        {label}
+      </Text>
     </HudPanel>
   );
 }

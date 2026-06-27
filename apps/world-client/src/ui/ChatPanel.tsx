@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Field, HudPanel } from '@osia/ui';
+import { Field, HudPanel, Text } from '@osia/ui';
 import { getNetClient, useNetState } from '../net/useNet';
 import { setChatTyping, setChatNotice } from '../net/store';
 
@@ -125,17 +125,15 @@ export default function ChatPanel() {
                 alignSelf: 'flex-start',
                 maxWidth: '100%',
                 padding: '4px 10px',
-                color: 'var(--color-text)',
-                font: '400 var(--text-md)/var(--leading-base) var(--font-ui)',
                 wordBreak: 'break-word',
                 opacity,
                 transition: 'opacity .3s linear',
               }}
             >
-              <span style={{ color: 'var(--color-accent)', fontWeight: 600, marginRight: 6 }}>
+              <Text variant="body" tone="accent" style={{ fontWeight: 600, marginRight: 6 }}>
                 {l.handle}
-              </span>
-              {l.text}
+              </Text>
+              <Text variant="body">{l.text}</Text>
             </div>
           );
         })}
@@ -149,11 +147,11 @@ export default function ChatPanel() {
             marginBottom: 6,
             borderRadius: 'var(--radius-sm)',
             background: 'var(--color-danger-soft)',
-            color: 'var(--color-danger)',
-            font: '400 var(--text-sm)/var(--leading-snug) var(--font-ui)',
           }}
         >
-          {chatNotice === 'rateLimited' ? t('rateLimited') : chatNotice}
+          <Text variant="body" style={{ color: 'var(--color-danger)' }}>
+            {chatNotice === 'rateLimited' ? t('rateLimited') : chatNotice}
+          </Text>
         </div>
       )}
 

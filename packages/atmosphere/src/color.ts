@@ -48,6 +48,21 @@ export function rgbToOklab(c: RGB): [number, number, number] {
   return linearToOklab(srgbToLinear(c[0]), srgbToLinear(c[1]), srgbToLinear(c[2]));
 }
 
+/** OKLab [L, a, b] → sRGB (0..1), clampado al cubo. Inverso de rgbToOklab. */
+export function oklabToRGB(L: number, a: number, b: number): RGB {
+  const lin = oklabToLinear(L, a, b);
+  return [clamp01(linearToSrgb(lin[0])), clamp01(linearToSrgb(lin[1])), clamp01(linearToSrgb(lin[2]))];
+}
+
+/** sRGB (0..1) → '#rrggbb'. Para escribir colores resueltos del motor como variables CSS. */
+export function rgbToHex(c: RGB): string {
+  const h = (v: number): string =>
+    Math.round(clamp01(v) * 255)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${h(c[0])}${h(c[1])}${h(c[2])}`;
+}
+
 /** '#rrggbb' → [r,g,b] en sRGB 0..1. */
 export function hexToRGB(hex: string): RGB {
   const h = hex.replace('#', '');

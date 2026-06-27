@@ -37,6 +37,17 @@ export function originAllowed(origin: string | undefined): boolean {
   return origin !== undefined && config.corsOrigins.includes(origin);
 }
 
+/** Cuerpo JSON de /metrics (S2-C1): tick (EWMA/bytes) + conexiones WS + jugadores + difusiones. */
+export function metricsPayload(world: World): string {
+  return JSON.stringify({
+    tick: world.metrics.snapshot(),
+    connections: world.conns.size,
+    players: world.hub.entities.size,
+    atmosphereBroadcasts: world.atmosphereBroadcasts,
+    ts: Date.now(),
+  });
+}
+
 export function createHttpServer(world: World): Server {
   // Rate-limit de emisión de tickets por IP (anti-flood): ~20 por minuto.
   const ticketLimiter = new KeyedRateLimiter(20, 3000);
@@ -50,6 +61,15 @@ export function createHttpServer(world: World): Server {
       return void res
         .writeHead(200, { 'content-type': 'application/json' })
         .end(JSON.stringify({ ok: true, players: world.hub.entities.size, metrics: world.metrics.snapshot() }));
+    }
+
+    // Observabilidad (S2-C1): lo que ya se mide (tick EWMA, bytes/jugador) + conexiones WS y el
+    // contador de difusiones de atmósfera. Solo lectura, en memoria (<5 ms), sin Redis ni IA;
+    // responde SIEMPRE (también con 0 jugadores) para servir de liveness. Como /health, no exige Origin.
+    if (req.method === 'GET' && req.url === '/metrics') {
+      return void res
+        .writeHead(200, { 'content-type': 'application/json' })
+        .end(metricsPayload(world));
     }
 
     if (req.method === 'POST' && req.url === '/world/tickets') {

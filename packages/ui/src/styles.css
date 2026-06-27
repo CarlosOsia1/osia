@@ -167,6 +167,56 @@
 
 /* ============================ Componentes ============================ */
 
+/* ---- Text: ÚNICA puerta tipográfica (la fuente la decide el ROL, §2.5) ---- */
+.osia-text {
+  margin: 0;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+}
+/* `display` = Italiana (marca/ceremonia); el resto = Jost. */
+.osia-text--display {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-cosmic);
+  color: var(--color-accent);
+}
+.osia-text--title {
+  font-weight: 600;
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-strong);
+}
+.osia-text--body {
+  font-size: var(--text-sm);
+}
+.osia-text--label {
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-text-subtle);
+}
+.osia-text--overline {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-overline);
+  color: var(--color-text-subtle);
+}
+/* Números (fps, contadores, coordenadas): Jost con cifras tabulares (no monoespaciada). */
+.osia-text--value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-wide);
+}
+/* Tonos (sobrescriben el color de la variante). */
+.osia-text--subtle { color: var(--color-text-subtle); }
+.osia-text--muted { color: var(--color-text-muted); }
+.osia-text--accent { color: var(--color-accent); }
+/* Sobre la escena 3D: halo ónix para legibilidad de DÍA y de noche (no depende del cielo). */
+.osia-text--scrim {
+  text-shadow:
+    0 1px 2px var(--color-bg),
+    0 2px 16px var(--color-bg);
+}
+
+
 /* ---- Button: el único CTA es `primary`; uno por vista (escasez = jerarquía) ---- */
 .osia-btn {
   display: inline-flex;
@@ -349,13 +399,26 @@
 /* ---- Panel: superficie HUD translúcida (no roba el centro de la pantalla) ---- */
 .osia-panel {
   background: var(--color-hud-surface);
+  /* El HUD respira el cielo (S2-A1): la niebla "solidifica" el panel mezclando el fondo hacia
+     el ónix según --atmo-contrast; el resplandor se tiñe con --atmo-glow (champán de día,
+     tenue de noche). Las vars las escribe el world-client en runtime; aquí solo se consumen. */
+  background: color-mix(in oklab, var(--color-hud-surface), var(--color-bg) calc((var(--atmo-contrast) - 1) * 120%));
   border-radius: var(--radius-md);
   backdrop-filter: blur(6px);
   color: var(--color-text);
   font-family: var(--font-ui);
+  box-shadow: 0 12px 34px -18px var(--atmo-glow);
 }
 .osia-panel--solid {
   background: var(--color-hud-surface-solid);
+}
+/* La atmósfera cambia lentísimo; suavizamos el cruce SOLO si el usuario no pidió menos movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .osia-panel {
+    transition:
+      box-shadow var(--dur-cinematic) ease,
+      background-color var(--dur-cinematic) ease;
+  }
 }
 
 /* ---- Field: input de chat ---- */
