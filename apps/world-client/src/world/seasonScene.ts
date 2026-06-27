@@ -19,14 +19,21 @@ import { worldClock } from './worldClockRuntime';
 
 const TMP = new THREE.Color();
 
-let cachedToy = Number.NaN;
+// La estación cambia lentísimo (un "año" dura días reales), así que CUANTIZAMOS el timeOfYear para la
+// clave de caché: el reloj avanza un float distinto cada frame, pero re-resolver los tintes (asigna
+// objeto + arrays vía lerpRGB) por un cambio imperceptible viola §7 «cero asignaciones en el hot
+// path». Con este paso se re-resuelve ~cada minuto real de juego; el color sigue cambiando continuo.
+const TOY_CACHE_QUANTUM = 1e-4; // ~0.04 días de juego por paso (imperceptible)
+
+let cachedQuantum = Number.NaN;
 let cached: SeasonTints | null = null;
 
-/** Tintes de la estación vigente, cacheados POR FRAME (una resolución aunque lo llamen N meshes). */
+/** Tintes de la estación vigente, cacheados (una resolución por paso de tiempo, no por frame). */
 export function currentSeasonTints(): SeasonTints {
-  if (worldClock.toy !== cachedToy || cached === null) {
+  const q = Math.round(worldClock.toy / TOY_CACHE_QUANTUM);
+  if (q !== cachedQuantum || cached === null) {
     cached = resolveSeasonTints(worldClock.toy);
-    cachedToy = worldClock.toy;
+    cachedQuantum = q;
   }
   return cached;
 }

@@ -28,6 +28,6 @@ if (
     config.ticketSecret.length < WORLD_TICKET_MIN_SECRET_LEN)
 ) {
   throw new Error(
-    `WORLD_TICKET_SECRET ausente, default inseguro, o demasiado corto (<${WORLD_TICKET_MIN_SECRET_LEN} chars) en producción — configurá uno robusto.`,
+    `WORLD_TICKET_SECRET ausente, default inseguro, o demasiado corto (<${WORLD_TICKET_MIN_SECRET_LEN} chars) en producción — configura uno robusto.`,
   );
 }

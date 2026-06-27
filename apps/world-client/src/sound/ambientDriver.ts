@@ -28,9 +28,9 @@ const SEASON_LIVELINESS: Record<SeasonId, number> = {
 
 // Fases aleatorias (una vez) para que pájaros y grillos varíen INDEPENDIENTES y no en patrón fijo.
 const rndPhases = (): readonly number[] => [
-  Math.random() * 6.283,
-  Math.random() * 6.283,
-  Math.random() * 6.283,
+  Math.random() * Math.PI * 2,
+  Math.random() * Math.PI * 2,
+  Math.random() * Math.PI * 2,
 ];
 const BIRD_PHASES = rndPhases();
 

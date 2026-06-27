@@ -100,14 +100,15 @@ export class Instance {
 
   /** Recalcula el AOI por viewer (histéresis: entra a AOI_ENTER, sale a AOI_EXIT). */
   updateVisibility(): void {
-    const ents = [...this.entities.values()];
-    for (const viewer of ents) {
+    // §7: cero asignaciones por tick — se itera el Map directo (el bucle interno muta `this.visible`,
+    // no `this.entities`, así que doble-iterar sus values es seguro y evita el spread por tick).
+    for (const viewer of this.entities.values()) {
       let set = this.visible.get(viewer.state.id);
       if (!set) {
         set = new Set<EntityId>();
         this.visible.set(viewer.state.id, set);
       }
-      for (const target of ents) {
+      for (const target of this.entities.values()) {
         if (target.state.id === viewer.state.id) continue;
         const dx = target.state.x - viewer.state.x;
         const dz = target.state.z - viewer.state.z;

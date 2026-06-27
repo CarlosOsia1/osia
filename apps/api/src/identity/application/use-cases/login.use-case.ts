@@ -19,7 +19,7 @@ export class LoginUseCase {
       auth = await this.sessions.signInWithPassword(input.email, input.password);
     } catch (e) {
       if (e instanceof EmailNotVerifiedError) {
-        throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED, 403, 'Verificá tu email para entrar.');
+        throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED, 403, 'Verifica tu email para entrar.');
       }
       if (e instanceof InvalidCredentialsError) {
         throw new AppException(ErrorCode.INVALID_CREDENTIALS, 401, 'Email o contraseña incorrectos.');

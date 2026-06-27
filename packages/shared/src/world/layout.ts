@@ -55,6 +55,12 @@ export function forestTrees(): ForestTree[] {
   return out;
 }
 
+/**
+ * Radio del cono BASE del pino (el más ancho). FUENTE ÚNICA: el render lo usa como geometría del
+ * cono base y el spawn como footprint del obstáculo — así no se desincronizan (DRY, §1.1-O).
+ */
+export const TREE_CONE_BASE_RADIUS = 0.9;
+
 /** Monolito central (punto focal del claro). */
 export const MONOLITH: Obstacle = { x: 0, z: 0, radius: 1.6 };
 
@@ -63,8 +69,8 @@ export const PLAYER_RADIUS = 0.6;
 
 /** Todos los obstáculos sólidos del mundo (para la seguridad de spawn). */
 export function worldObstacles(): Obstacle[] {
-  // footprint de la copa ≈ radio del cono base (0.9) × escala del árbol.
-  const trees = forestTrees().map((t) => ({ x: t.x, z: t.z, radius: 0.9 * t.scale }));
+  // footprint de la copa ≈ radio del cono base × escala del árbol (mismo valor que el render).
+  const trees = forestTrees().map((t) => ({ x: t.x, z: t.z, radius: TREE_CONE_BASE_RADIUS * t.scale }));
   return [...trees, MONOLITH];
 }
 

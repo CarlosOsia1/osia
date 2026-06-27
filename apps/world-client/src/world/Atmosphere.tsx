@@ -4,10 +4,11 @@ import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { fog, positionView, positionWorld, uniform } from 'three/tsl';
-import { resolveAtmosphere, applyWeather, applySeason, resolveSeasonTints, biomeById } from '@osia/atmosphere';
+import { resolveAtmosphere, applyWeather, applySeason, biomeById } from '@osia/atmosphere';
 import { OSIA_COLORS } from '@osia/ui';
 import { atmo, world, tickWeatherDisplay } from './atmosphereRuntime';
 import { worldClock, tickWorldClock } from './worldClockRuntime';
+import { currentSeasonTints } from './seasonScene';
 import { tickAtmoHud } from './atmoHudBus';
 import { FOG } from './weatherConfig';
 
@@ -100,7 +101,7 @@ export default function Atmosphere() {
     // Pipeline: preset por hora → tinte lento de la ESTACIÓN (S2-B1) → CLIMA efímero. La
     // estación se deriva del mismo reloj (worldClock.toy); no toca la transición de clima. El
     // tinte del SUELO/VEGETACIÓN lo aplica la escena (Scene) con el mismo timeOfYear.
-    const base = applySeason(resolveAtmosphere(worldClock.tod, biome.cycle), resolveSeasonTints(worldClock.toy).sky);
+    const base = applySeason(resolveAtmosphere(worldClock.tod, biome.cycle), currentSeasonTints().sky);
     const p = applyWeather(base, world.weather);
     atmo.current = p;
     tickAtmoHud(p, performance.now()); // el HUD respira el cielo (S2-A1); throttled, sin re-render

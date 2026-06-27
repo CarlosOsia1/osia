@@ -36,6 +36,7 @@ function makeNoise(ctx: BaseAudioContext, seconds: number): AudioBuffer {
 export class AmbientEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private sfxBus: GainNode | null = null;
   private noise: AudioBuffer | null = null;
   private readonly layers = new Map<AmbientLayer, Layer>();
   private readonly sfxBuffers = new Map<SfxName, AudioBuffer | null>();
@@ -60,6 +61,11 @@ export class AmbientEngine {
     master.gain.value = 0; // arranca en silencio; updateMaster lo sube con fade
     master.connect(ctx.destination);
     this.master = master;
+    // Sub-bus de one-shots (SFX/llamados de animales): cuelga del master, así heredan MASTER_GAIN,
+    // el ducking de voz P2P y el silencio del ambiente (no se enrutan directo a destination).
+    const sfxBus = ctx.createGain();
+    sfxBus.connect(master);
+    this.sfxBus = sfxBus;
     const assets = await this.loadAssetBuffers(ctx, season); // tus archivos, si los hay (S2-A2)
     for (const id of AMBIENT_LAYERS)
       this.layers.set(id, this.buildLayer(ctx, id, master, assets.get(id) ?? null));
@@ -110,7 +116,7 @@ export class AmbientEngine {
     const g = this.ctx.createGain();
     g.gain.value = gainValue;
     src.connect(g);
-    g.connect(this.ctx.destination);
+    g.connect(this.sfxBus ?? this.ctx.destination); // por el sub-bus → master (ducking + mute)
     src.onended = () => {
       src.disconnect();
       g.disconnect();
@@ -216,6 +222,8 @@ export class AmbientEngine {
     }
     this.layers.clear();
     this.sfxBuffers.clear();
+    this.sfxBus?.disconnect();
+    this.sfxBus = null;
     this.master?.disconnect();
     this.master = null;
     if (this.ctx) {

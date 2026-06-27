@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { texture, instanceIndex, vec2 } from 'three/tsl';
 import { varyFoliage } from '@osia/atmosphere';
-import { forestTrees } from '@osia/shared';
+import { forestTrees, TREE_CONE_BASE_RADIUS } from '@osia/shared';
 import { OSIA_COLORS } from '@osia/ui';
 import { prefersReducedMotion } from './motionPrefs';
 import { tintBySeason, currentSeasonTints } from './seasonScene';
@@ -52,7 +52,7 @@ function Forest({ trees }: { trees: Tree[] }) {
     // instancia GARANTIZADA. Se hornea aquí (init) y se re-hornea al cambiar la estación (useFrame).
     const parts = [
       { geo: new THREE.CylinderGeometry(0.12, 0.16, 1, 6).translate(0, 0.5, 0), tinted: false, roughness: 0.9, color: 0x2a211a },
-      { geo: new THREE.ConeGeometry(0.9, 1.1, 7).translate(0, 1.1, 0), tinted: true, roughness: 0.85 },
+      { geo: new THREE.ConeGeometry(TREE_CONE_BASE_RADIUS, 1.1, 7).translate(0, 1.1, 0), tinted: true, roughness: 0.85 },
       { geo: new THREE.ConeGeometry(0.68, 1.1, 7).translate(0, 1.8, 0), tinted: true, roughness: 0.85 },
       { geo: new THREE.ConeGeometry(0.46, 1.1, 7).translate(0, 2.5, 0), tinted: true, roughness: 0.85 },
     ];

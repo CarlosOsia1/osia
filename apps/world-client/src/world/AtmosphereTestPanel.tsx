@@ -18,7 +18,7 @@ const SEASON_IDS: readonly SeasonId[] = ['primavera', 'verano', 'otono', 'invier
 
 /**
  * AtmosphereTestPanel — controles de TEST (se quitan luego). El clima REAL lo dicta
- * el server (sincronizado entre todos); aquí podés hacer un PREVIEW LOCAL de bioma y
+ * el server (sincronizado entre todos); aquí puedes hacer un PREVIEW LOCAL de bioma y
  * clima (override) sin afectar a nadie, o volver a "En vivo" para seguir al server.
  *
  * UI por @osia/ui (Button/Panel + tokens); texto vía i18n (@osia/i18n). Toggle: tecla "b".

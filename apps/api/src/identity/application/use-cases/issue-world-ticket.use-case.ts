@@ -22,7 +22,7 @@ export class IssueWorldTicketUseCase {
     const passport = await this.accounts.getPassport(accountId);
     if (!passport) throw new AppException(ErrorCode.NOT_FOUND, 404, 'Pasaporte no encontrado.');
     if (!passport.featureFlags.world) {
-      throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED, 403, 'Verificá tu email para entrar al Mundo.');
+      throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED, 403, 'Verifica tu email para entrar al Mundo.');
     }
     const { ticket, expiresIn } = await this.tickets.issue({
       handle: passport.profile.handle,

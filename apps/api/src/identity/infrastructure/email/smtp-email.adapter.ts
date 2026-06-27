@@ -36,10 +36,10 @@ export class SmtpEmailAdapter implements EmailPort {
 
   private async send(to: string, subject: string, text: string): Promise<void> {
     if (!this.transporter) {
-      // Dev sin SMTP: no se envía; se registra para poder probar el flujo de extremo a extremo.
-      this.logger.warn(
-        `[email no enviado: SMTP sin configurar] para=${to} asunto="${subject}"\n${text}`,
-      );
+      // Dev sin SMTP: se registra el cuerpo (con el link) para poder probar de extremo a extremo. En
+      // PRODUCCIÓN NO se loguea el cuerpo: llevaría el token de borrado EN CLARO a los logs (§8).
+      const detail = this.env.isProd ? '' : `\n${text}`;
+      this.logger.warn(`[email no enviado: SMTP sin configurar] para=${to} asunto="${subject}"${detail}`);
       return;
     }
     await this.transporter.sendMail({ from: this.env.EMAIL_FROM, to, subject, text });

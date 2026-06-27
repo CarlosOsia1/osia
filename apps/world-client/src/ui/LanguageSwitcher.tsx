@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Button, HudPanel } from '@osia/ui';
 import { locales, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@osia/i18n';
 
@@ -11,10 +11,11 @@ import { locales, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from '@osia/i18n';
  *
  * Usa `router.refresh()` (NO recarga el documento): el layout vuelve a leer la cookie
  * y actualiza los textos, pero Next preserva el estado de los Client Components → el
- * mundo 3D y el WebSocket de voz NO se reinician (no perdés posición ni conexión).
+ * mundo 3D y el WebSocket de voz NO se reinician (no pierdes posición ni conexión).
  */
 export default function LanguageSwitcher() {
   const locale = useLocale();
+  const t = useTranslations('lang');
   const router = useRouter();
   const set = (l: string) => {
     if (l === locale) return;
@@ -22,7 +23,7 @@ export default function LanguageSwitcher() {
     router.refresh();
   };
   return (
-    <HudPanel interactive style={{ top: 22, right: 28, display: 'flex', gap: 4 }}>
+    <HudPanel interactive role="group" aria-label={t('label')} style={{ top: 22, right: 28, display: 'flex', gap: 4 }}>
       {locales.map((l) => (
         <Button
           key={l}

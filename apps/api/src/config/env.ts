@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEV_WORLD_TICKET_SECRET, parseCsvList } from '@osia/shared';
+import { DEV_WORLD_TICKET_SECRET, WORLD_TICKET_MIN_SECRET_LEN, parseCsvList } from '@osia/shared';
 
 /**
  * Esquema del entorno de apps/api, validado por Zod en el arranque: si falta o está mal una var,
@@ -26,8 +26,9 @@ const envSchema = z.object({
   WORLD_TICKET_SECRET: z.string().min(1).default(DEV_WORLD_TICKET_SECRET),
   // URL pública del WS que se devuelve al cliente al emitir el ticket.
   WORLD_WS_URL: z.string().min(1).default('ws://localhost:2567/world'),
-  // URL base del frontend para armar links de email (p. ej. el de borrado de cuenta).
-  APP_BASE_URL: z.string().min(1).default('http://localhost:3000'),
+  // URL base del frontend (apps/web, el Vestíbulo) para armar links de email: el de borrado apunta
+  // a APP_BASE_URL/cuenta/borrar?token=... En dev, apps/web corre en :3001.
+  APP_BASE_URL: z.string().min(1).default('http://localhost:3001'),
   // Email SMTP (opcional): si NO está configurado, el adaptador cae a "loguear el link" (dev).
   // Cuando lo configures (proveedor con presupuesto), los emails salen de verdad.
   SMTP_HOST: z.string().optional(),
@@ -50,6 +51,18 @@ export function loadEnv(): Env {
     throw new Error(`Config de entorno inválida — ${issues}`);
   }
   const data = parsed.data;
+  // Seguridad (§8): apps/api EMITE los world tickets (HS256). En PRODUCCIÓN el secreto no puede ser
+  // el default público ni uno débil → fail-closed por sí mismo (defensa en profundidad), igual que
+  // el world-server (consumidor) ya hace en su config.
+  if (
+    data.NODE_ENV === 'production' &&
+    (data.WORLD_TICKET_SECRET === DEV_WORLD_TICKET_SECRET ||
+      data.WORLD_TICKET_SECRET.length < WORLD_TICKET_MIN_SECRET_LEN)
+  ) {
+    throw new Error(
+      `WORLD_TICKET_SECRET ausente, default inseguro o demasiado corto (<${WORLD_TICKET_MIN_SECRET_LEN} chars) en producción — configura uno robusto.`,
+    );
+  }
   return {
     ...data,
     isProd: data.NODE_ENV === 'production',
