@@ -132,6 +132,18 @@
     "errInvalid": "Código inválido o expirado.",
     "errGeneric": "Algo salió mal. Prueba de nuevo."
   },
+  "deleteAccount": {
+    "kicker": "Cuenta",
+    "title": "Borrar tu cuenta",
+    "warning": "Esta acción es permanente. Se borrarán tu perfil, avatar y presencia, y se cerrarán todas tus sesiones. No se puede deshacer.",
+    "confirm": "Borrar mi cuenta",
+    "cancel": "Conservar mi cuenta",
+    "success": "Tu cuenta fue borrada. Gracias por haber pasado por aquí.",
+    "home": "Volver al inicio",
+    "noToken": "A este enlace le falta el token. Vuelve a pedir el correo de borrado.",
+    "errInvalid": "Este enlace ya no es válido (dura 24 horas y un solo uso). Pide uno nuevo.",
+    "errGeneric": "Algo salió mal. Prueba de nuevo."
+  },
   "login": {
     "kicker": "Bienvenido de vuelta",
     "title": "Entra a OSIA",

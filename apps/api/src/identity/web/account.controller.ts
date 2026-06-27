@@ -44,10 +44,10 @@ export class AccountController {
     this.clearSession(res);
   }
 
-  /** Pide el LINK de borrado por email (protegido). 202: aceptado, revisa tu correo. */
+  /** Pide el LINK de borrado por email (protegido). 204: aceptado, revisa tu correo. */
   @Post('me/deletion-request')
   @UseGuards(AuthGuard)
-  @HttpCode(202)
+  @HttpCode(204)
   async requestDeletionByEmail(@CurrentAccount() account: AccountContext): Promise<void> {
     await this.requestDeletion.execute(account.accountId);
   }

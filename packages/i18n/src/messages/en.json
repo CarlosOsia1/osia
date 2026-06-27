@@ -132,6 +132,18 @@
     "errInvalid": "Invalid or expired code.",
     "errGeneric": "Something went wrong. Try again."
   },
+  "deleteAccount": {
+    "kicker": "Account",
+    "title": "Delete your account",
+    "warning": "This is permanent. Your profile, avatar and presence will be erased and all your sessions closed. It can't be undone.",
+    "confirm": "Delete my account",
+    "cancel": "Keep my account",
+    "success": "Your account was deleted. Thank you for having passed through.",
+    "home": "Back to start",
+    "noToken": "This link is missing its token. Request the deletion email again.",
+    "errInvalid": "This link is no longer valid (it lasts 24 hours, single use). Request a new one.",
+    "errGeneric": "Something went wrong. Try again."
+  },
   "login": {
     "kicker": "Welcome back",
     "title": "Enter OSIA",

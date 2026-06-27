@@ -98,6 +98,37 @@ test('requestWorldTicket: con token fresco no re-fetcha session y manda Bearer',
   assert.equal(headers.authorization, 'Bearer access-1');
 });
 
+test('confirmAccountDeletion: POST público con el token, sin Bearer', async () => {
+  const { fetchImpl, calls } = mockFetch(() => ({ status: 204 }));
+  const client = new OsiaIdentityClient({ apiBaseUrl: 'http://api', fetchImpl });
+
+  await client.confirmAccountDeletion('plain-token');
+
+  const call = calls.find((c) => c.url.endsWith('/v1/accounts/deletion/confirm'))!;
+  assert.equal(call.init.method, 'POST');
+  assert.equal(JSON.parse(String(call.init.body)).token, 'plain-token');
+  const headers = (call.init.headers ?? {}) as Record<string, string>;
+  assert.equal(headers.authorization, undefined, 'es público: no manda Bearer');
+  // No debe intentar refrescar sesión (no requiere auth).
+  assert.ok(!calls.some((c) => c.url.endsWith('/v1/auth/session')));
+});
+
+test('requestAccountDeletion: requiere sesión y manda Bearer', async () => {
+  const { fetchImpl, calls } = mockFetch((call) =>
+    call.url.endsWith('/v1/auth/login')
+      ? { status: 200, body: { session: SESSION } }
+      : { status: 204 },
+  );
+  const client = new OsiaIdentityClient({ apiBaseUrl: 'http://api', fetchImpl });
+
+  await client.login({ email: 'a@b.com', password: 'x' });
+  await client.requestAccountDeletion();
+
+  const call = calls.find((c) => c.url.endsWith('/v1/accounts/me/deletion-request'))!;
+  const headers = call.init.headers as Record<string, string>;
+  assert.equal(headers.authorization, 'Bearer access-1');
+});
+
 test('logout: limpia el access token en memoria', async () => {
   const { fetchImpl } = mockFetch((call) =>
     call.url.endsWith('/v1/auth/logout')

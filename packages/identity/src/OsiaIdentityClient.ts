@@ -165,6 +165,23 @@ export class OsiaIdentityClient {
     });
   }
 
+  /** Pide por email el LINK de borrado de cuenta (24 h, un solo uso). Requiere sesión (tu cuenta). */
+  async requestAccountDeletion(): Promise<void> {
+    const token = await this.ensureAccessToken();
+    await this.request<void>('/v1/accounts/me/deletion-request', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  /** Confirma el borrado con el token del link de email. PÚBLICO: el token es la prueba (sin sesión). */
+  async confirmAccountDeletion(token: string): Promise<void> {
+    await this.request<void>('/v1/accounts/deletion/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
   /** Snapshot del access token vigente (o `null`). */
   get currentAccessToken(): string | null {
     return this.accessToken;
