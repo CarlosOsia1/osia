@@ -5,6 +5,9 @@ node_modules/
 # Builds / outputs
 dist/
 out/
+# …pero NO el directorio FUENTE de puertos hexagonales (application/ports/out/): la regla `out/`
+# de arriba lo capturaba por accidente y dejaba sus archivos sin versionar.
+!**/application/ports/out/
 build/
 .next/
 next-env.d.ts
