@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/account-erasure.service.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts && tsx src/identity/application/use-cases/request-account-deletion.use-case.test.ts && tsx src/identity/application/use-cases/confirm-account-deletion.use-case.test.ts && tsx src/identity/application/retention.service.test.ts"
+    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/account-erasure.service.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts && tsx src/identity/application/use-cases/request-account-deletion.use-case.test.ts && tsx src/identity/application/use-cases/confirm-account-deletion.use-case.test.ts && tsx src/identity/application/retention.service.test.ts && tsx src/social/application/social-health.service.test.ts && tsx src/social/application/use-cases/follow-account.use-case.test.ts && tsx src/social/application/use-cases/unfollow-account.use-case.test.ts && tsx src/social/application/follow-graph.service.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

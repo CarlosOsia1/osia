@@ -10,6 +10,7 @@ import { PostgresModule } from './identity/infrastructure/postgres/postgres.modu
 import { SupabaseModule } from './identity/infrastructure/supabase/supabase.module';
 import { HealthController } from './health/health.controller';
 import { IdentityModule } from './identity/identity.module';
+import { SocialModule } from './social/social.module';
 import { ApiExceptionFilter } from './common/http-exception.filter';
 
 /** Módulo raíz: config (env Zod), logging (Pino + requestId), Supabase e identity. */
@@ -38,6 +39,7 @@ import { ApiExceptionFilter } from './common/http-exception.filter';
     PostgresModule,
     SupabaseModule,
     IdentityModule,
+    SocialModule,
   ],
   controllers: [HealthController],
   providers: [
