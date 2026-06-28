@@ -14,6 +14,14 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260623000004_identity_rls.sql` | RLS **deny-all** + ownership por `auth.uid()` + grants. |
 | `20260623000005_auth_sync.sql` | Trigger `handle_new_auth_user` → crea cuenta + perfil + avatar al alta en `auth.users`. |
 | `20260623000006_seed_world_catalog.sql` | Catálogo idempotente: 1 world `osia` (live) + zona `hub` (El Claro) + instancia abierta. |
+| `20260623000007_fix_uuidv7_search_path.sql` | Fija `search_path` de `uuidv7()`. |
+| `20260623000008_auth_user_updated_sync.sql` | Sync de `email_verified` en updates de `auth.users`. |
+| `20260624000001_profile_prefs.sql` | `profiles.prefs` (jsonb: sonido/volumen/movimiento reducido/mic). |
+| `20260626000001_weather_checkpoint.sql` | Checkpoint persistente del clima del mundo (S2-B4). |
+| `20260627000001_account_retention.sql` | Borrado de cuenta: `system.audit_logs`, `identity.account_deletion_tokens`, retención (S2-C2). |
+| `20260627000002_retention_indexes.sql` | Índices de retención para el cron de purga. |
+| `20260627000003_social_core.sql` | **Tejido Social (S3.1-H3):** schema `social` + `follows`, `posts`, `reactions`, `comments`, `feed_items` (HASH x8), `notifications` + índices + trigger `updated_at`. |
+| `20260627000004_social_rls.sql` | RLS **deny-all** + lectura por visibilidad/propiedad + grants `social` (escrituras service-only). |
 
 ## Convención de nombres (nota importante)
 
