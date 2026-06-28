@@ -89,6 +89,12 @@ export const NOTIFICATION_TYPE_VALUES = ['follow', 'reaction', 'comment', 'menti
 export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number];
 export const isNotificationType = makeGuard(NOTIFICATION_TYPE_VALUES);
 
+// --- social.reports ---
+/** Qué se reporta (moderación manual, S3.6-H2; espejo del CHECK SQL). */
+export const REPORT_TARGET_TYPE_VALUES = ['post', 'comment'] as const;
+export type ReportTargetType = (typeof REPORT_TARGET_TYPE_VALUES)[number];
+export const isReportTargetType = makeGuard(REPORT_TARGET_TYPE_VALUES);
+
 // --- economy.reputation_ledger ---
 /**
  * Razones de un asiento del `reputation_ledger` (event-sourced; espejo del CHECK SQL). El estatus solo

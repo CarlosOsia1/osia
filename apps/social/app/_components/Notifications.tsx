@@ -15,7 +15,9 @@ const NOTIF_KEY = ['social', 'notifications'] as const;
 export function Notifications() {
   const t = useTranslations('social');
   const qc = useQueryClient();
-  const query = useQuery({ queryKey: NOTIF_KEY, queryFn: getNotifications });
+  // S3.6-H1: entrega "en vivo" por polling (cada 30 s). El push por Supabase Realtime queda diferido
+  // (mejora futura); el polling es el fallback que el backlog contempla.
+  const query = useQuery({ queryKey: NOTIF_KEY, queryFn: getNotifications, refetchInterval: 30_000 });
   const markRead = useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: () => void qc.invalidateQueries({ queryKey: NOTIF_KEY }),

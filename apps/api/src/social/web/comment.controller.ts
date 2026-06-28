@@ -20,6 +20,7 @@ import {
 } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
+import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { CreateCommentUseCase } from '../application/use-cases/create-comment.use-case';
 import { ListCommentsUseCase } from '../application/use-cases/list-comments.use-case';
 import { DeleteCommentUseCase } from '../application/use-cases/delete-comment.use-case';
@@ -41,6 +42,7 @@ export class PostCommentsController {
   ) {}
 
   @Post()
+  @UseGuards(EmailVerifiedGuard)
   async create(
     @CurrentAccount() account: AccountContext,
     @Param('postId', uuidParam) postId: string,

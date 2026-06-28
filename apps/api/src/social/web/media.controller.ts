@@ -2,6 +2,7 @@ import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { createUploadUrlSchema, type CreateUploadUrlInput, type UploadTargetDto } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
+import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { CreateUploadUrlUseCase } from '../application/use-cases/create-upload-url.use-case';
 
 /**
@@ -15,6 +16,7 @@ export class MediaController {
   constructor(private readonly createUploadUrl: CreateUploadUrlUseCase) {}
 
   @Post('upload-url')
+  @UseGuards(EmailVerifiedGuard)
   uploadUrl(
     @CurrentAccount() account: AccountContext,
     @Body(new ZodValidationPipe(createUploadUrlSchema)) body: CreateUploadUrlInput,

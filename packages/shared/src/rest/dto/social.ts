@@ -117,6 +117,16 @@ export type PublicProfileDto = ProfileBrief & {
   isFollowing: boolean;
 };
 
+/** Métricas operativas del Tejido Social (`GET /v1/metrics/social`, S3.6-H3). Conteos agregados. */
+export type SocialMetricsDto = {
+  posts: number;
+  reactions: number;
+  comments: number;
+  follows: number;
+  postsLast24h: number;
+  feedItems: number;
+};
+
 /** Una arista del grafo de seguidores (`social.follows`). */
 export type FollowDto = {
   id: FollowId;

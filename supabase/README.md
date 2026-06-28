@@ -30,6 +30,7 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260628000006_economy_reaction_dedup.sql` | **Reputación por reacción (S3.3-H2):** índice único parcial `uq_reputation_reaction` (dedup `reaction_received` por post+reactor). |
 | `20260628000007_social_comment_counts.sql` | **Comentarios (S3.3-H3):** trigger que mantiene `posts.comment_count` (cuenta vivos) + backfill. |
 | `20260628000008_social_feed_read_index.sql` | **Feed (S3.3-H4):** índice de recencia `idx_feed_acct_recency (account_id, created_at DESC, id DESC)` para la lectura keyset del feed. |
+| `20260628000009_social_reports.sql` | **Moderación (S3.6-H2):** `social.reports` (cola de reportes post/comment) + índice de cola abierta + RLS deny-all (service-only). |
 
 ## Convención de nombres (nota importante)
 

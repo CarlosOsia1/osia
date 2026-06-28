@@ -13,6 +13,7 @@ import {
   POST_KIND_VALUES,
   POST_VISIBILITY_VALUES,
   REACTION_KIND_VALUES,
+  REPORT_TARGET_TYPE_VALUES,
 } from '../domain/enums';
 import {
   POST_BODY_MAX,
@@ -62,6 +63,16 @@ export const setReactionSchema = z
   })
   .strict();
 export type SetReactionInput = z.infer<typeof setReactionSchema>;
+
+/** `POST /v1/reports` — reportar un post o comentario para moderación manual (S3.6-H2). */
+export const createReportSchema = z
+  .object({
+    targetType: z.enum(REPORT_TARGET_TYPE_VALUES),
+    targetId: z.string().uuid(),
+    reason: z.string().trim().min(1).max(500),
+  })
+  .strict();
+export type CreateReportInput = z.infer<typeof createReportSchema>;
 
 /** `POST /v1/follows` — seguir a otra cuenta (anti-self lo refuerza el server + `ck_follows_no_self`). */
 export const followSchema = z

@@ -54,6 +54,14 @@ import { GetPublicProfileUseCase } from './application/use-cases/get-public-prof
 import { ListProfilePostsUseCase } from './application/use-cases/list-profile-posts.use-case';
 import { PROFILE_QUERY } from './application/ports/out/profile.query';
 import { PgProfileQuery } from './infrastructure/persistence/profile.query';
+import { ReportController } from './web/report.controller';
+import { CreateReportUseCase } from './application/use-cases/create-report.use-case';
+import { REPORT_REPOSITORY } from './application/ports/out/report.repository';
+import { PgReportRepository } from './infrastructure/persistence/report.repository';
+import { EmailVerifiedGuard } from '../common/email-verified.guard';
+import { MetricsController } from './web/metrics.controller';
+import { METRICS_QUERY } from './application/ports/out/metrics.query';
+import { PgMetricsQuery } from './infrastructure/persistence/metrics.query';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -79,6 +87,8 @@ import { PgProfileQuery } from './infrastructure/persistence/profile.query';
     NotificationController,
     PresenceController,
     PublicProfileController,
+    ReportController,
+    MetricsController,
   ],
   providers: [
     SocialHealthService,
@@ -103,6 +113,8 @@ import { PgProfileQuery } from './infrastructure/persistence/profile.query';
     GetPresenceUseCase,
     GetPublicProfileUseCase,
     ListProfilePostsUseCase,
+    CreateReportUseCase,
+    EmailVerifiedGuard,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
@@ -114,6 +126,8 @@ import { PgProfileQuery } from './infrastructure/persistence/profile.query';
     { provide: NOTIFICATION_REPOSITORY, useClass: PgNotificationRepository },
     { provide: PRESENCE_QUERY, useClass: PgPresenceQuery },
     { provide: PROFILE_QUERY, useClass: PgProfileQuery },
+    { provide: REPORT_REPOSITORY, useClass: PgReportRepository },
+    { provide: METRICS_QUERY, useClass: PgMetricsQuery },
   ],
 })
 export class SocialModule {}

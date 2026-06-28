@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { followSchema, type FollowDto, type FollowInput } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
+import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { FollowAccountUseCase } from '../application/use-cases/follow-account.use-case';
 import { UnfollowAccountUseCase } from '../application/use-cases/unfollow-account.use-case';
 
@@ -23,6 +24,7 @@ export class FollowController {
   ) {}
 
   @Post()
+  @UseGuards(EmailVerifiedGuard)
   async follow(
     @CurrentAccount() account: AccountContext,
     @Body(new ZodValidationPipe(followSchema)) body: FollowInput,

@@ -2,6 +2,7 @@ import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { createPostSchema, type CreatePostInput, type PostDto } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
+import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { CreatePostUseCase } from '../application/use-cases/create-post.use-case';
 
 /**
@@ -15,6 +16,7 @@ export class PostController {
   constructor(private readonly createPost: CreatePostUseCase) {}
 
   @Post()
+  @UseGuards(EmailVerifiedGuard)
   async create(
     @CurrentAccount() account: AccountContext,
     @Body(new ZodValidationPipe(createPostSchema)) body: CreatePostInput,

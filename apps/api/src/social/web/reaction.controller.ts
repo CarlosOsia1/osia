@@ -8,6 +8,7 @@ import {
 } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
+import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { SetReactionUseCase } from '../application/use-cases/set-reaction.use-case';
 import { RemoveReactionUseCase } from '../application/use-cases/remove-reaction.use-case';
 
@@ -29,6 +30,7 @@ export class ReactionController {
   ) {}
 
   @Put()
+  @UseGuards(EmailVerifiedGuard)
   react(
     @CurrentAccount() account: AccountContext,
     @Param('postId', postIdParam) postId: string,
