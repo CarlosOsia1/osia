@@ -38,6 +38,13 @@ import { FeedFanoutListener } from './infrastructure/messaging/feed-fanout.liste
 import { FeedRetentionService } from './application/feed-retention.service';
 import { FEED_REPOSITORY } from './application/ports/out/feed.repository';
 import { PgFeedRepository } from './infrastructure/persistence/feed.repository';
+import { NotificationController } from './web/notification.controller';
+import { CreateNotificationUseCase } from './application/use-cases/create-notification.use-case';
+import { GetNotificationsUseCase } from './application/use-cases/get-notifications.use-case';
+import { MarkNotificationsReadUseCase } from './application/use-cases/mark-notifications-read.use-case';
+import { NotificationListener } from './infrastructure/messaging/notification.listener';
+import { NOTIFICATION_REPOSITORY } from './application/ports/out/notification.repository';
+import { PgNotificationRepository } from './infrastructure/persistence/notification.repository';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -46,7 +53,8 @@ import { PgFeedRepository } from './infrastructure/persistence/feed.repository';
  * agrega en su sprint: S3.1-H2 salud; S3.2-H1 grafo (follows); S3.2-H3 publicación de eventos de
  * dominio (`social.follow.created`/`social.post.reacted`, que consume `economy` para reputación);
  * S3.3-H1 media (upload-url) + publicar post; S3.3-H2 reaccionar; S3.3-H3 comentar; S3.3-H4 feed
- * (fan-out-on-write + lectura + poda). Faltan notificaciones/presencia (S3.4).
+ * (fan-out-on-write + lectura + poda); S3.4-H2 notificaciones (consume social.* + menciones). Falta
+ * presencia (S3.4-H1, lee Redis del world-server).
  */
 @Module({
   controllers: [
@@ -59,6 +67,7 @@ import { PgFeedRepository } from './infrastructure/persistence/feed.repository';
     PostCommentsController,
     CommentsController,
     FeedController,
+    NotificationController,
   ],
   providers: [
     SocialHealthService,
@@ -76,6 +85,10 @@ import { PgFeedRepository } from './infrastructure/persistence/feed.repository';
     FanOutPostUseCase,
     FeedFanoutListener,
     FeedRetentionService,
+    CreateNotificationUseCase,
+    GetNotificationsUseCase,
+    MarkNotificationsReadUseCase,
+    NotificationListener,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
@@ -84,6 +97,7 @@ import { PgFeedRepository } from './infrastructure/persistence/feed.repository';
     { provide: REACTION_REPOSITORY, useClass: PgReactionRepository },
     { provide: COMMENT_REPOSITORY, useClass: PgCommentRepository },
     { provide: FEED_REPOSITORY, useClass: PgFeedRepository },
+    { provide: NOTIFICATION_REPOSITORY, useClass: PgNotificationRepository },
   ],
 })
 export class SocialModule {}

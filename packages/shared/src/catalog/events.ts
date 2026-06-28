@@ -57,6 +57,22 @@ export interface SocialPostPublishedPayload {
   createdAt: string;
 }
 
+/** Nombre del evento de comentario nuevo (handle tipado para publicador y suscriptor). */
+export const SOCIAL_POST_COMMENTED = 'social.post.commented' satisfies SocialEventName;
+
+/**
+ * Payload de `social.post.commented`: un comentario nuevo. Lo consumen las notificaciones (S3.4): avisa
+ * al AUTOR del post y a las cuentas MENCIONADAS (`@handle` ya resueltas a accountId, sin el comentador
+ * ni el autor, que reciben su propio aviso). Sin auto-notificación.
+ */
+export interface SocialPostCommentedPayload {
+  postId: string;
+  postAuthorAccountId: string;
+  commenterAccountId: string;
+  commentId: string;
+  mentionedAccountIds: string[];
+}
+
 /** Nombre del evento de reacción nueva (handle tipado para publicador y suscriptor). */
 export const SOCIAL_POST_REACTED = 'social.post.reacted' satisfies SocialEventName;
 

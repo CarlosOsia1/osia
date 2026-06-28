@@ -213,6 +213,17 @@
       "comments": "{count, plural, one {# comentario} other {# comentarios}}",
       "more": "Ver más"
     },
+    "notif": {
+      "title": "Notificaciones",
+      "empty": "Sin notificaciones por ahora.",
+      "markRead": "Marcar leídas",
+      "unread": "{count} sin leer",
+      "someone": "Alguien",
+      "follow": "{name} te empezó a seguir.",
+      "reaction": "{name} reaccionó a tu post.",
+      "comment": "{name} comentó tu post.",
+      "mention": "{name} te mencionó."
+    },
     "compose": {
       "open": "Publicar algo",
       "title": "Componer",

@@ -2,18 +2,24 @@ import type { CommentDto, Cursor, Page } from '@osia/shared';
 
 export const COMMENT_REPOSITORY = Symbol('COMMENT_REPOSITORY');
 
+/** Comentario creado + el autor del POST (receptor de la notificación de comentario). */
+export type CreatedComment = { comment: CommentDto; postAuthorAccountId: string };
+
 export interface CommentRepository {
   /**
    * Crea un comentario SOLO si el post es visible para el autor (espejo de posts_select_visible) y, si se
    * da `parentCommentId`, este pertenece al mismo post y no está borrado. `null` si no se puede comentar
-   * (post inexistente/no visible o parent inválido) → 404.
+   * (post inexistente/no visible o parent inválido) → 404. Devuelve también el autor del post.
    */
   createComment(
     postId: string,
     authorAccountId: string,
     body: string,
     parentCommentId: string | null,
-  ): Promise<CommentDto | null>;
+  ): Promise<CreatedComment | null>;
+
+  /** Resuelve handles (minúsculas) a `accountId` de perfiles existentes — para notificar menciones. */
+  resolveMentionedAccountIds(handles: string[]): Promise<string[]>;
 
   /**
    * Página keyset (cronológica ASC) de comentarios VIVOS de un post visible para el lector. `null` si el

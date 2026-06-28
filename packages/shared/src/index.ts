@@ -45,6 +45,7 @@ export * from './world/layout';
 
 // --- Utilidades de texto ---
 export * from './text/sanitizeChat';
+export * from './text/mentions';
 
 // --- Utilidades de entorno ---
 export * from './util/env-list';

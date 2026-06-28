@@ -74,7 +74,12 @@
     `GET /v1/feed` (cursor keyset, post embebido + autor + `viewerReaction`); cron de poda (90 d); UI de
     feed en `apps/social` (infinite query, reacción estrella). Diferido a S3.4 (regla de slice):
     emisión de `social.post.commented` + detección de menciones.
-  - `S3.4` Presencia + Notificaciones ▶️ **SIGUIENTE**.
+  - `S3.4` Presencia + Notificaciones ▶️ **EN CURSO** — H2 ✅ notificaciones: el bus interno conecta los
+    eventos `social.*` (follow.created, post.reacted, post.commented + menciones `@handle` resueltas) a un
+    `NotificationListener` que persiste `Notification` (sin auto-notificación); `GET /v1/notifications`
+    (cursor + `unreadCount`), `POST /v1/notifications/read` (todas o `ids`), `POST /.../{id}/read`; UI de
+    notificaciones en `apps/social`. `CreateComment` ahora emite `social.post.commented` (consumidor: notif).
+    **H1 ▶️ SIGUIENTE** = presencia social (lee Redis del world-server; `GET /v1/presence`).
   - Pendientes: `S3.5` Perfil público + puerta en el Vestíbulo (chisme IA ❌) · `S3.6` Endurecimiento +
     tiempo real + lanzamiento.
 

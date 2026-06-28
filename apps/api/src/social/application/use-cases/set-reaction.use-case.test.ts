@@ -33,7 +33,12 @@ const reaction: ReactionDto = {
 const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialPostReactedPayload[] } => {
   const emitted: SocialPostReactedPayload[] = [];
   return {
-    pub: { followCreated: () => {}, postReacted: (p) => emitted.push(p), postPublished: () => {} },
+    pub: {
+      followCreated: () => {},
+      postReacted: (p) => emitted.push(p),
+      postPublished: () => {},
+      postCommented: () => {},
+    },
     emitted,
   };
 };

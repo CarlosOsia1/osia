@@ -25,6 +25,7 @@ import type {
   NotificationType,
 } from '../../domain/enums';
 import type { ProfileBrief } from './profile';
+import type { Page } from '../pagination';
 
 /** Límites de contenido (espejo de los CHECK del ER y de los esquemas Zod de `schemas/social.ts`). */
 export const POST_BODY_MAX = 2000;
@@ -139,6 +140,9 @@ export type NotificationDto = {
   readAt: string | null;
   createdAt: string;
 };
+
+/** Respuesta de `GET /v1/notifications`: página de notificaciones + contador de no-leídas (badge). */
+export type NotificationsPageDto = Page<NotificationDto> & { unreadCount: number };
 
 /** Presencia social de una cuenta (lectura de Redis `presence:{accountId}`; docs/10 §10). */
 export type PresenceEntryDto = {

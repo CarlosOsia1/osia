@@ -16,6 +16,7 @@ const repo = (deleted: boolean): CommentRepository => ({
   createComment: async () => null,
   listComments: async () => null,
   softDeleteOwnComment: async () => deleted,
+  resolveMentionedAccountIds: async () => [],
 });
 
 test('borra el comentario propio (repo true) → resuelve', async () => {

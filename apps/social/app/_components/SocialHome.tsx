@@ -6,6 +6,7 @@ import { Button, Text } from '@osia/ui';
 import { useOsiaSession } from '@osia/identity';
 import { identity } from '../../lib/identity';
 import { Feed } from './Feed';
+import { Notifications } from './Notifications';
 
 /**
  * SocialHome (S3.1-H1) — vista autenticada de La Red Social. La sesión la garantiza el `SessionGuard`
@@ -46,6 +47,7 @@ export function SocialHome() {
           {t('compose.open')}
         </Button>
       </div>
+      <Notifications />
       <Feed />
     </main>
   );

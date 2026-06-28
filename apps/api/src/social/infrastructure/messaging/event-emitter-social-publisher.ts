@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   SOCIAL_FOLLOW_CREATED,
+  SOCIAL_POST_COMMENTED,
   SOCIAL_POST_PUBLISHED,
   SOCIAL_POST_REACTED,
   type SocialFollowCreatedPayload,
+  type SocialPostCommentedPayload,
   type SocialPostPublishedPayload,
   type SocialPostReactedPayload,
 } from '@osia/shared';
@@ -29,5 +31,9 @@ export class EventEmitterSocialPublisher implements SocialEventPublisher {
 
   postReacted(payload: SocialPostReactedPayload): void {
     this.emitter.emit(SOCIAL_POST_REACTED, payload);
+  }
+
+  postCommented(payload: SocialPostCommentedPayload): void {
+    this.emitter.emit(SOCIAL_POST_COMMENTED, payload);
   }
 }

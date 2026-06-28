@@ -45,7 +45,12 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
 const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialFollowCreatedPayload[] } => {
   const emitted: SocialFollowCreatedPayload[] = [];
   return {
-    pub: { followCreated: (p) => emitted.push(p), postReacted: () => {}, postPublished: () => {} },
+    pub: {
+      followCreated: (p) => emitted.push(p),
+      postReacted: () => {},
+      postPublished: () => {},
+      postCommented: () => {},
+    },
     emitted,
   };
 };

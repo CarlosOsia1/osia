@@ -26,6 +26,7 @@ const spyRepo = () => {
   const repo: CommentRepository = {
     createComment: async () => null,
     softDeleteOwnComment: async () => false,
+    resolveMentionedAccountIds: async () => [],
     listComments: async (_postId, _viewer, limit, cursor) => {
       calls.push({ limit, cursor });
       return emptyPage;
@@ -54,6 +55,7 @@ test('post no visible (repo null) → NOT_FOUND (404)', async () => {
   const repo: CommentRepository = {
     createComment: async () => null,
     softDeleteOwnComment: async () => false,
+    resolveMentionedAccountIds: async () => [],
     listComments: async () => null,
   };
   const uc = new ListCommentsUseCase(repo);

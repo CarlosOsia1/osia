@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { encodeCursor, type CommentDto, type Cursor, type Page } from '@osia/shared';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
-import type { CommentRepository } from '../../application/ports/out/comment.repository';
+import type { CommentRepository, CreatedComment } from '../../application/ports/out/comment.repository';
 import {
   AUTHOR_BRIEF_ALIASED_COLS,
   toAuthorBrief,
@@ -25,8 +25,9 @@ const POST_VISIBLE_PREDICATE = `deleted_at IS NULL AND (
 )`;
 
 type CommentJoinRow = CommentRow & AuthorBriefAliasedRow;
+type CreateCommentRow = CommentJoinRow & { post_author_account_id: string };
 
-/** Adapter Postgres de comentarios (S3.3-H3). SQL directo (el schema `social` no se expone). */
+/** Adapter Postgres de comentarios (S3.3-H3 / S3.4). SQL directo (el schema `social` no se expone). */
 @Injectable()
 export class PgCommentRepository implements CommentRepository {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
@@ -36,12 +37,13 @@ export class PgCommentRepository implements CommentRepository {
     authorAccountId: string,
     body: string,
     parentCommentId: string | null,
-  ): Promise<CommentDto | null> {
+  ): Promise<CreatedComment | null> {
     // Atómico: inserta solo si el post está vivo Y es visible para el autor, y (si hay parent) el parent
     // pertenece a ESTE post y está vivo. Si algo falla, `ins` queda vacío → no hay fila → null → 404.
-    const res = await this.pool.query<CommentJoinRow>(
+    // `visible` también trae el autor del post (receptor de la notificación de comentario, S3.4).
+    const res = await this.pool.query<CreateCommentRow>(
       `WITH visible AS (
-         SELECT id FROM social.posts WHERE id = $1 AND ${POST_VISIBLE_PREDICATE}
+         SELECT id, author_account_id FROM social.posts WHERE id = $1 AND ${POST_VISIBLE_PREDICATE}
        ),
        ins AS (
          INSERT INTO social.comments (post_id, author_account_id, parent_comment_id, body)
@@ -54,13 +56,26 @@ export class PgCommentRepository implements CommentRepository {
          RETURNING id, post_id, author_account_id, parent_comment_id, body, created_at
        )
        SELECT i.id, i.post_id, i.author_account_id, i.parent_comment_id, i.body, i.created_at,
+              v.author_account_id AS post_author_account_id,
               ${AUTHOR_BRIEF_ALIASED_COLS}
        FROM ins i
+       JOIN visible v ON true
        JOIN identity.profiles p ON p.account_id = i.author_account_id AND p.deleted_at IS NULL`,
       [postId, authorAccountId, body, parentCommentId],
     );
     const row = res.rows[0];
-    return row ? toCommentDto(row, toAuthorBrief(row)) : null;
+    if (!row) return null;
+    return { comment: toCommentDto(row, toAuthorBrief(row)), postAuthorAccountId: row.post_author_account_id };
+  }
+
+  async resolveMentionedAccountIds(handles: string[]): Promise<string[]> {
+    if (handles.length === 0) return [];
+    // handle es citext (case-insensitive); los handles vienen en minúscula del parser.
+    const res = await this.pool.query<{ account_id: string }>(
+      `SELECT account_id FROM identity.profiles WHERE handle = ANY($1::citext[]) AND deleted_at IS NULL`,
+      [handles],
+    );
+    return res.rows.map((r) => r.account_id);
   }
 
   async listComments(

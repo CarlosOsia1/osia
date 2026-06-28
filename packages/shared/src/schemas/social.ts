@@ -88,12 +88,9 @@ export const listQuerySchema = z
   .strict();
 export type ListQueryInput = z.infer<typeof listQuerySchema>;
 
-/** Query de `GET /v1/notifications` — listado paginado + filtro de no-leídas. */
+/** Query de `GET /v1/notifications` — listado paginado + filtro de no-leídas (`unread=true`). */
 export const notificationsQuerySchema = listQuerySchema.extend({
-  unread: z
-    .union([z.literal('true'), z.literal('false')])
-    .transform((v) => v === 'true')
-    .optional(),
+  unread: z.enum(['true', 'false']).optional(),
 });
 export type NotificationsQueryInput = z.infer<typeof notificationsQuerySchema>;
 

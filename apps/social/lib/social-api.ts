@@ -2,6 +2,7 @@ import type {
   CreatePostInput,
   CreateUploadUrlInput,
   FeedItemDto,
+  NotificationsPageDto,
   Page,
   PostDto,
   PostMediaMime,
@@ -72,4 +73,14 @@ export function setReaction(postId: string, kind: ReactionKind): Promise<Reactio
 /** Quita una reacción (`DELETE /v1/posts/{id}/reactions/{kind}`), idempotente. */
 export function removeReaction(postId: string, kind: ReactionKind): Promise<void> {
   return identity.authedFetch<void>(`/v1/posts/${postId}/reactions/${kind}`, { method: 'DELETE' });
+}
+
+/** Lee notificaciones (`GET /v1/notifications`): página + `unreadCount` para el badge. */
+export function getNotifications(): Promise<NotificationsPageDto> {
+  return identity.authedFetch<NotificationsPageDto>('/v1/notifications', { method: 'GET' });
+}
+
+/** Marca todas las notificaciones como leídas (`POST /v1/notifications/read`). */
+export function markAllNotificationsRead(): Promise<void> {
+  return identity.authedFetch<void>('/v1/notifications/read', { method: 'POST', body: JSON.stringify({}) });
 }

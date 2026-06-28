@@ -1,5 +1,6 @@
 import type {
   SocialFollowCreatedPayload,
+  SocialPostCommentedPayload,
   SocialPostPublishedPayload,
   SocialPostReactedPayload,
 } from '@osia/shared';
@@ -20,4 +21,6 @@ export interface SocialEventPublisher {
   postPublished(payload: SocialPostPublishedPayload): void;
   /** Anuncia una reacción NUEVA (no el re-PUT idempotente del mismo kind). */
   postReacted(payload: SocialPostReactedPayload): void;
+  /** Anuncia un comentario nuevo (avisa al autor del post y a los mencionados). */
+  postCommented(payload: SocialPostCommentedPayload): void;
 }

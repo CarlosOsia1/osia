@@ -153,9 +153,10 @@ test('listQuery: coacciona limit de string y respeta tope', () => {
   assert.ok(listQuerySchema.safeParse({ cursor: 'opaco' }).success);
 });
 
-test('notificationsQuery: unread true/false → boolean; otro string falla', () => {
-  assert.equal(notificationsQuerySchema.parse({ unread: 'true' }).unread, true);
-  assert.equal(notificationsQuerySchema.parse({ unread: 'false' }).unread, false);
+test('notificationsQuery: unread acepta solo "true"/"false"; otro string falla', () => {
+  assert.equal(notificationsQuerySchema.parse({ unread: 'true' }).unread, 'true');
+  assert.equal(notificationsQuerySchema.parse({ unread: 'false' }).unread, 'false');
+  assert.equal(notificationsQuerySchema.parse({}).unread, undefined);
   assert.ok(!notificationsQuerySchema.safeParse({ unread: 'sí' }).success);
 });
 

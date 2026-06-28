@@ -1,7 +1,9 @@
 import {
+  ACCENT_COLOR_DEFAULT,
   asAccountId,
   asCommentId,
   asFollowId,
+  asNotificationId,
   asPostId,
   asProfileId,
   asReactionId,
@@ -10,6 +12,8 @@ import {
   type FeedReason,
   type FollowDto,
   type FollowStatus,
+  type NotificationDto,
+  type NotificationType,
   type PostDto,
   type PostKind,
   type PostVisibility,
@@ -175,6 +179,48 @@ export function toAuthorBrief(row: AuthorBriefAliasedRow): ProfileBrief {
     accent_color: row.author_accent_color,
     popularity_points: row.author_popularity_points,
   });
+}
+
+/** Fila de notificación (`social.notifications`) + actor (brief, nullable por LEFT JOIN al perfil). */
+export type NotificationRow = {
+  id: string;
+  kind: NotificationType;
+  payload: Record<string, unknown> | null;
+  read_at: Date | null;
+  created_at: Date;
+  actor_id: string | null;
+  actor_handle: string | null;
+  actor_display_name: string | null;
+  actor_avatar_url: string | null;
+  actor_accent_color: string | null;
+  actor_popularity_points: number | null;
+};
+
+/** Columnas del actor para la notificación (LEFT JOIN; prefijo `actor_`, pueden venir null). */
+export const NOTIFICATION_ACTOR_COLS =
+  'pa.id AS actor_id, pa.handle AS actor_handle, pa.display_name AS actor_display_name, ' +
+  'pa.avatar_url AS actor_avatar_url, pa.accent_color AS actor_accent_color, ' +
+  'pa.popularity_points AS actor_popularity_points';
+
+export function toNotificationDto(row: NotificationRow): NotificationDto {
+  const actor: ProfileBrief | null = row.actor_id
+    ? {
+        profileId: asProfileId(row.actor_id),
+        handle: row.actor_handle ?? '',
+        displayName: row.actor_display_name ?? '',
+        avatarUrl: row.actor_avatar_url,
+        accentColor: row.actor_accent_color ?? ACCENT_COLOR_DEFAULT,
+        popularityPoints: row.actor_popularity_points ?? 0,
+      }
+    : null;
+  return {
+    id: asNotificationId(row.id),
+    type: row.kind,
+    actor,
+    payload: row.payload,
+    readAt: row.read_at ? row.read_at.toISOString() : null,
+    createdAt: row.created_at.toISOString(),
+  };
 }
 
 /**
