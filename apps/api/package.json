@@ -9,11 +9,12 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src",
-    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/account-erasure.service.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts && tsx src/identity/application/use-cases/request-account-deletion.use-case.test.ts && tsx src/identity/application/use-cases/confirm-account-deletion.use-case.test.ts && tsx src/identity/application/retention.service.test.ts && tsx src/social/application/social-health.service.test.ts && tsx src/social/application/use-cases/follow-account.use-case.test.ts && tsx src/social/application/use-cases/unfollow-account.use-case.test.ts && tsx src/social/application/follow-graph.service.test.ts"
+    "test": "tsx src/common/zod-validation.pipe.test.ts && tsx src/identity/application/account-erasure.service.test.ts && tsx src/identity/application/use-cases/delete-account.use-case.test.ts && tsx src/identity/application/use-cases/request-account-deletion.use-case.test.ts && tsx src/identity/application/use-cases/confirm-account-deletion.use-case.test.ts && tsx src/identity/application/retention.service.test.ts && tsx src/social/application/social-health.service.test.ts && tsx src/social/application/use-cases/follow-account.use-case.test.ts && tsx src/social/application/use-cases/unfollow-account.use-case.test.ts && tsx src/social/application/follow-graph.service.test.ts && tsx src/economy/application/use-cases/credit-reputation-on-follow.use-case.test.ts && tsx src/social/application/use-cases/create-upload-url.use-case.test.ts && tsx src/social/application/use-cases/create-post.use-case.test.ts && tsx src/social/infrastructure/storage/supabase-storage.adapter.test.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/event-emitter": "^3.1.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/schedule": "^6.1.3",
     "@nestjs/throttler": "^6.5.0",

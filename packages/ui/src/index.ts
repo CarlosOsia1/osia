@@ -21,6 +21,7 @@ export { Modal, type ModalProps } from './Modal';
 export { Panel, type PanelProps } from './Panel';
 export { HudPanel, type HudPanelProps } from './HudPanel';
 export { Field, type FieldProps } from './Field';
+export { Textarea, type TextareaProps } from './Textarea';
 export { PasswordField, type PasswordFieldProps } from './PasswordField';
 export { CodeInput, type CodeInputProps } from './CodeInput';
 export { FormError } from './FormError';

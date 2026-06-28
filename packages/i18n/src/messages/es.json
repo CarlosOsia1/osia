@@ -206,6 +206,29 @@
     "welcome": "Hola de nuevo, {name}.",
     "tagline": "Aquí vivirán tu feed, tu red y tu estatus.",
     "loading": "Tejiendo tu red…",
-    "comingSoon": "El feed llega pronto."
+    "comingSoon": "El feed llega pronto.",
+    "compose": {
+      "open": "Publicar algo",
+      "title": "Componer",
+      "bodyPlaceholder": "¿Qué quieres compartir?",
+      "bodyLabel": "Tu post",
+      "charCount": "{count}/{max}",
+      "addImage": "Agregar imagen",
+      "removeImage": "Quitar imagen",
+      "uploading": "Subiendo la imagen…",
+      "visibility": "Visibilidad",
+      "visibilityPublic": "Público",
+      "visibilityFollowers": "Seguidores",
+      "visibilityPrivate": "Privado",
+      "publish": "Publicar",
+      "publishing": "Publicando…",
+      "success": "Tu post se publicó.",
+      "errorEmpty": "Escribe algo o agrega una imagen.",
+      "errorImageType": "Solo imágenes (PNG, JPG, WEBP o GIF).",
+      "errorImageSize": "La imagen supera el máximo de {mb} MB.",
+      "errorUpload": "No se pudo subir la imagen. Intenta de nuevo.",
+      "error": "No se pudo publicar. Intenta de nuevo.",
+      "back": "Volver"
+    }
   }
 }

@@ -13,7 +13,7 @@
 
 ## Estado actual del proyecto (vivo — actualizar al cerrar cada sprint)
 
-> **Última actualización:** 2026-06-27. Mantener este bloque al día: al cerrar un sprint o pasar un
+> **Última actualización:** 2026-06-28. Mantener este bloque al día: al cerrar un sprint o pasar un
 > gate, actualizarlo aquí **y** en [`docs/backlog/00-roadmap-overview.md`](./docs/backlog/00-roadmap-overview.md).
 
 **Fases cerradas**
@@ -46,12 +46,24 @@
   - `S3.1` Cimientos ✅ — H4 contratos `@osia/shared` · H3 schema `social` + RLS · H2 contexto hexagonal
     en `apps/api` + `GET /v1/social/health` · H1 scaffold `apps/social` + SSO (redirect 307 al Vestíbulo
     verificado, bundle sin Three.js ~147 kB).
-  - `S3.2` Grafo — H1 ✅ seguir/dejar de seguir (`POST`/`DELETE /v1/follows`, idempotente, anti-self) ·
-    H2 ✅ listas `GET /v1/profiles/{handle}/followers|following` (cursor keyset) + conteos
-    `profiles.followers_count/following_count` por trigger · **H3 ▶️ SIGUIENTE** = reputación derivada del
-    `reputation_ledger` append-only (acreditar al seguido vía evento `social.follow.created` + caps anti-grind).
-  - Pendientes: `S3.3` Feed (publicar/reaccionar/comentar + fan-out) · `S3.4` Presencia + Notificaciones ·
-    `S3.5` Perfil público + puerta en el Vestíbulo (chisme IA ❌) · `S3.6` Endurecimiento + tiempo real + lanzamiento.
+  - `S3.2` Grafo ✅ **CERRADO** — H1 ✅ seguir/dejar de seguir (`POST`/`DELETE /v1/follows`, idempotente,
+    anti-self) · H2 ✅ listas `GET /v1/profiles/{handle}/followers|following` (cursor keyset) + conteos
+    `profiles.followers_count/following_count` por trigger · H3 ✅ reputación derivada del
+    `reputation_ledger` append-only en schema `economy` (acreditar al seguido vía evento
+    `social.follow.created` por bus in-process `@nestjs/event-emitter`; anti-grind por índice único
+    parcial — caps en Postgres, NO Redis; cache `profiles.{reputation,popularity_points}` por trigger).
+    Decisiones: unfollow NO revierte reputación; `reputation = Σdelta`, `popularity = GREATEST(Σ,0)`.
+    QA multi-agente (10 agentes) + fix del clamp `popularity` (trigger==backfill ante deltas negativos).
+  - `S3.3` Feed ▶️ **EN CURSO** — H1 ✅ publicar Post: `POST /v1/posts` (texto ≤2000 y/o hasta 4 imágenes
+    por **URL prefirmada** a Supabase Storage, bucket público `post-media`, vía `POST /v1/media/upload-url`;
+    el API nunca recibe el binario) + validación anti-abuso (la media debe ser de nuestro Storage) + UI
+    composer en `apps/social` (`/compose`, subida directa por PUT, estados subiendo/publicando). Nuevos:
+    `StoragePort`/`SupabaseStorageAdapter`, `authedFetch` en el cliente SSO, `Textarea` en `@osia/ui`.
+    QA multi-agente (12 agentes); fixes aplicados (a11y del selector, error de subida tipado, prefijo de
+    bucket endurecido). **H2 ▶️ SIGUIENTE** = reaccionar (`PUT/DELETE` idempotente) · H3 comentar ·
+    H4 fan-out-on-write a `feed_items` HASH×8 + lectura del feed (emite `social.post.published`).
+  - Pendientes: `S3.4` Presencia + Notificaciones · `S3.5` Perfil público + puerta en el Vestíbulo
+    (chisme IA ❌) · `S3.6` Endurecimiento + tiempo real + lanzamiento.
 
   **Qué SÍ entra en Fase 3:** grafo de seguidores + reputación derivada (event-sourced), feed
   (fan-out-on-write a `feed_items` HASH×8), reacciones (`star|moon|sun`) y comentarios, presencia social
@@ -67,8 +79,10 @@
   1. **Slices verticales por HU:** cada HU = contrato (`@osia/shared`) → schema/migración → puerto+adapter+
      caso de uso (`apps/api` hexagonal, espejo de `identity`) → controller → UI (`apps/social`). **Los
      puertos/eventos/UI se crean en la HU que los consume, no antes** (evita código muerto §1.2/§12). De ahí
-     los diferidos explícitos: emisión de `social.follow.created` → S3.2-H3/S3.4; UI de follow/listas →
-     consolidada con el perfil en S3.5; rate-limit por cuenta (`rl:*`) y guard de email-verificado → S3.6.
+     los diferidos explícitos: emisión de `social.follow.created` → S3.2-H3/S3.4 (✅); emisión de
+     `social.post.published` (fan-out) → S3.3-H4; UI de follow/listas → consolidada con el perfil en S3.5;
+     rate-limit por cuenta (`rl:*`), guard de email-verificado y **barrido de media huérfana de Storage**
+     (post no creado tras subir) → S3.6.
   2. **QA por HU obligatorio (§10.1):** dev+QA, todos los flujos por tipo de usuario, tests por HU, DTOs
      alineados back↔front, y **gates verdes reales** (`pnpm typecheck/lint/test`, forzados sin caché) antes
      de declarar hecho. Para endpoints protegidos se verifica el wiring con un smoke (401 + sobre `ApiError`).

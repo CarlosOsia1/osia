@@ -182,6 +182,20 @@ export class OsiaIdentityClient {
     });
   }
 
+  /**
+   * Llamada autenticada genérica a apps/api: asegura un access token fresco (refresh silencioso vía
+   * cookie) y adjunta el Bearer. Para endpoints protegidos fuera de este cliente (p.ej. el contexto
+   * social: posts, media). Lanza `OsiaApiError` ante respuesta !ok; devuelve el JSON tipado (o
+   * `undefined` en 204). Centraliza el manejo del token: ninguna app reimplementa el refresh + Bearer.
+   */
+  async authedFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const token = await this.ensureAccessToken();
+    return this.request<T>(path, {
+      ...init,
+      headers: { authorization: `Bearer ${token}`, ...init.headers },
+    });
+  }
+
   /** Snapshot del access token vigente (o `null`). */
   get currentAccessToken(): string | null {
     return this.accessToken;

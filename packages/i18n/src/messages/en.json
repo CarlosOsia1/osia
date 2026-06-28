@@ -206,6 +206,29 @@
     "welcome": "Welcome back, {name}.",
     "tagline": "Your feed, your network and your status will live here.",
     "loading": "Weaving your network…",
-    "comingSoon": "The feed is coming soon."
+    "comingSoon": "The feed is coming soon.",
+    "compose": {
+      "open": "Post something",
+      "title": "Compose",
+      "bodyPlaceholder": "What do you want to share?",
+      "bodyLabel": "Your post",
+      "charCount": "{count}/{max}",
+      "addImage": "Add image",
+      "removeImage": "Remove image",
+      "uploading": "Uploading image…",
+      "visibility": "Visibility",
+      "visibilityPublic": "Public",
+      "visibilityFollowers": "Followers",
+      "visibilityPrivate": "Private",
+      "publish": "Publish",
+      "publishing": "Publishing…",
+      "success": "Your post is live.",
+      "errorEmpty": "Write something or add an image.",
+      "errorImageType": "Images only (PNG, JPG, WEBP or GIF).",
+      "errorImageSize": "The image exceeds the {mb} MB limit.",
+      "errorUpload": "Couldn't upload the image. Please try again.",
+      "error": "Couldn't publish. Please try again.",
+      "back": "Back"
+    }
   }
 }

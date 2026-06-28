@@ -31,6 +31,29 @@ export const POST_BODY_MAX = 2000;
 export const COMMENT_BODY_MAX = 1000;
 /** Máximo de adjuntos por post (URLs prefirmadas a Storage/R2; el API nunca recibe el binario). */
 export const POST_MEDIA_MAX = 4;
+/**
+ * Tipos MIME permitidos para adjuntos de post (solo imágenes en v1). El bucket valida contra el
+ * Content-Type DECLARADO en la subida (no los bytes reales), y es PÚBLICO de lectura: por eso esta
+ * allowlist NUNCA debe incluir `image/svg+xml` ni `text/html` — servir cualquiera de esos desde un
+ * bucket público abriría XSS almacenado. Solo formatos de imagen no ejecutables.
+ */
+export const POST_MEDIA_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const;
+export type PostMediaMime = (typeof POST_MEDIA_MIME_TYPES)[number];
+/** Tope de tamaño de un adjunto (bytes). Espejo del `file_size_limit` del bucket. */
+export const POST_MEDIA_SIZE_MAX = 10 * 1024 * 1024;
+
+/**
+ * Resultado de `POST /v1/media/upload-url`: destino prefirmado para subir el binario directo a Storage
+ * (el API nunca recibe el archivo) + la URL pública final que luego se guarda en `post.media`.
+ */
+export type UploadTargetDto = {
+  /** URL a la que el cliente sube el binario por PUT (token embebido; expira pronto). */
+  uploadUrl: string;
+  /** URL pública final del objeto; es la que viaja en `CreatePostInput.media`. */
+  publicUrl: string;
+  /** Ruta del objeto dentro del bucket (scoped por cuenta). */
+  path: string;
+};
 
 /** Un post del feed (`social.posts` + autor desnormalizado + estado del lector). */
 export type PostDto = {

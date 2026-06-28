@@ -13,6 +13,7 @@ export type OsiaSurfaceId = 'mundo' | 'social' | 'juegos';
 // --- Identificadores y enums de dominio (branded + espejo de los CHECK del ER) ---
 export * from './domain/ids';
 export * from './domain/enums';
+export * from './domain/reputation';
 
 // --- Contratos REST (sobre de error, paginación, DTOs de identidad) ---
 export * from './rest';

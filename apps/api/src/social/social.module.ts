@@ -10,23 +10,45 @@ import { UnfollowAccountUseCase } from './application/use-cases/unfollow-account
 import { FollowGraphService } from './application/follow-graph.service';
 import { FOLLOW_REPOSITORY } from './application/ports/out/follow.repository';
 import { PgFollowRepository } from './infrastructure/persistence/follow.repository';
+import { SOCIAL_EVENT_PUBLISHER } from './application/ports/out/social-event-publisher.port';
+import { EventEmitterSocialPublisher } from './infrastructure/messaging/event-emitter-social-publisher';
+import { MediaController } from './web/media.controller';
+import { PostController } from './web/post.controller';
+import { CreateUploadUrlUseCase } from './application/use-cases/create-upload-url.use-case';
+import { CreatePostUseCase } from './application/use-cases/create-post.use-case';
+import { STORAGE_PORT } from './application/ports/out/storage.port';
+import { SupabaseStorageAdapter } from './infrastructure/storage/supabase-storage.adapter';
+import { POST_REPOSITORY } from './application/ports/out/post.repository';
+import { PgPostRepository } from './infrastructure/persistence/post.repository';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
  * application (use cases + ports) → infrastructure (adapters). Los ports se inyectan por token; los
  * adapters concretos solo se cablean aquí. Cada slice vertical (puerto + adapter + caso de uso) se
- * agrega en su sprint: S3.1-H2 salud; S3.2-H1 grafo (follows). Faltan posts/reacciones/comentarios/
- * feed/notificaciones/presencia (S3.3–S3.4).
+ * agrega en su sprint: S3.1-H2 salud; S3.2-H1 grafo (follows); S3.2-H3 publicación de eventos de
+ * dominio (`social.follow.created`, que consume `economy` para reputación); S3.3-H1 media (upload-url)
+ * + publicar post. Faltan reacciones/comentarios/feed/notificaciones/presencia (S3.3-H2..H4, S3.4).
  */
 @Module({
-  controllers: [SocialHealthController, FollowController, FollowGraphController],
+  controllers: [
+    SocialHealthController,
+    FollowController,
+    FollowGraphController,
+    MediaController,
+    PostController,
+  ],
   providers: [
     SocialHealthService,
     FollowAccountUseCase,
     UnfollowAccountUseCase,
     FollowGraphService,
+    CreateUploadUrlUseCase,
+    CreatePostUseCase,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
+    { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
+    { provide: STORAGE_PORT, useClass: SupabaseStorageAdapter },
+    { provide: POST_REPOSITORY, useClass: PgPostRepository },
   ],
 })
 export class SocialModule {}

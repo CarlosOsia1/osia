@@ -129,6 +129,42 @@ test('requestAccountDeletion: requiere sesión y manda Bearer', async () => {
   assert.equal(headers.authorization, 'Bearer access-1');
 });
 
+test('authedFetch: adjunta Bearer del token fresco y devuelve el JSON tipado', async () => {
+  const { fetchImpl, calls } = mockFetch((call) => {
+    if (call.url.endsWith('/v1/auth/login')) return { status: 200, body: { session: SESSION } };
+    if (call.url.endsWith('/v1/posts')) return { status: 200, body: { post: { id: 'p1' } } };
+    return { status: 200, body: {} };
+  });
+  const client = new OsiaIdentityClient({ apiBaseUrl: 'http://api', fetchImpl });
+
+  await client.login({ email: 'a@b.com', password: 'x' }); // token fresco en memoria
+  const res = await client.authedFetch<{ post: { id: string } }>('/v1/posts', {
+    method: 'POST',
+    body: JSON.stringify({ body: 'hola' }),
+  });
+
+  assert.equal(res.post.id, 'p1');
+  const call = calls.find((c) => c.url.endsWith('/v1/posts'))!;
+  const headers = call.init.headers as Record<string, string>;
+  assert.equal(headers.authorization, 'Bearer access-1');
+  assert.equal(call.init.credentials, 'include');
+});
+
+test('authedFetch: sin token refresca vía /session; si 401, propaga OsiaApiError', async () => {
+  const { fetchImpl, calls } = mockFetch((call) =>
+    call.url.endsWith('/v1/auth/session')
+      ? { status: 401, body: { error: { code: 'SESSION_EXPIRED', message: 'expiró' } } }
+      : { status: 200, body: {} },
+  );
+  const client = new OsiaIdentityClient({ apiBaseUrl: 'http://api', fetchImpl });
+
+  await assert.rejects(
+    () => client.authedFetch('/v1/posts', { method: 'POST' }),
+    (e: unknown) => e instanceof OsiaApiError && e.status === 401,
+  );
+  assert.ok(calls.some((c) => c.url.endsWith('/v1/auth/session')), 'intentó refrescar antes de fallar');
+});
+
 test('logout: limpia el access token en memoria', async () => {
   const { fetchImpl } = mockFetch((call) =>
     call.url.endsWith('/v1/auth/logout')

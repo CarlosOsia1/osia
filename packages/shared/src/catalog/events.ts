@@ -28,3 +28,16 @@ const SOCIAL_EVENT_SET: ReadonlySet<string> = new Set(SOCIAL_EVENTS);
 export function isSocialEvent(value: unknown): value is SocialEventName {
   return typeof value === 'string' && SOCIAL_EVENT_SET.has(value);
 }
+
+/** Nombre del evento de arista nueva (handle tipado para publicador y suscriptor; sin string suelto). */
+export const SOCIAL_FOLLOW_CREATED = 'social.follow.created' satisfies SocialEventName;
+
+/**
+ * Payload de `social.follow.created`: SOLO aristas nuevas (no el re-follow idempotente). Lo consume la
+ * reputación (acreditar al seguido, S3.2-H3) y, más adelante, las notificaciones (S3.4). El receptor de
+ * la reputación es `followeeAccountId`; el origen para la dedup anti-grind es `followerAccountId`.
+ */
+export interface SocialFollowCreatedPayload {
+  followerAccountId: string;
+  followeeAccountId: string;
+}

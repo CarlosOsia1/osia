@@ -89,6 +89,17 @@ export const NOTIFICATION_TYPE_VALUES = ['follow', 'reaction', 'comment', 'menti
 export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number];
 export const isNotificationType = makeGuard(NOTIFICATION_TYPE_VALUES);
 
+// --- economy.reputation_ledger ---
+/**
+ * Razones de un asiento del `reputation_ledger` (event-sourced; espejo del CHECK SQL). El estatus solo
+ * se mueve por estas razones acotadas — nunca por un número editable (backlog S3.2-H3). En H3 solo
+ * `new_follower` tiene emisor; `reaction_received` (S3.3) y `event_witness` (logros Fase 2) quedan
+ * declarados y se cablean en su HU.
+ */
+export const REPUTATION_REASON_VALUES = ['new_follower', 'reaction_received', 'event_witness'] as const;
+export type ReputationReason = (typeof REPUTATION_REASON_VALUES)[number];
+export const isReputationReason = makeGuard(REPUTATION_REASON_VALUES);
+
 // --- marca en el dato ---
 /** Acento por defecto del pasaporte: champán (ER §3.3 — la marca vive en el dato). */
 export const ACCENT_COLOR_DEFAULT = '#CBB89A';

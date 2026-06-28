@@ -14,7 +14,12 @@ import {
   POST_VISIBILITY_VALUES,
   REACTION_KIND_VALUES,
 } from '../domain/enums';
-import { POST_BODY_MAX, COMMENT_BODY_MAX, POST_MEDIA_MAX } from '../rest/dto/social';
+import {
+  POST_BODY_MAX,
+  COMMENT_BODY_MAX,
+  POST_MEDIA_MAX,
+  POST_MEDIA_MIME_TYPES,
+} from '../rest/dto/social';
 
 /** `POST /v1/posts` — publicar un post (texto y/o hasta 4 adjuntos por URL prefirmada). */
 export const createPostSchema = z
@@ -32,6 +37,14 @@ export const createPostSchema = z
     { message: 'Un post necesita texto o al menos un adjunto', path: ['body'] },
   );
 export type CreatePostInput = z.infer<typeof createPostSchema>;
+
+/** `POST /v1/media/upload-url` — pedir destino prefirmado para subir un adjunto (solo imágenes). */
+export const createUploadUrlSchema = z
+  .object({
+    contentType: z.enum(POST_MEDIA_MIME_TYPES),
+  })
+  .strict();
+export type CreateUploadUrlInput = z.infer<typeof createUploadUrlSchema>;
 
 /** `POST /v1/posts/{id}/comments` — comentar un post (con hilo opcional). */
 export const createCommentSchema = z

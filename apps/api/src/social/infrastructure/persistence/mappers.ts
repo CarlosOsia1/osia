@@ -1,10 +1,15 @@
 import {
   asAccountId,
   asFollowId,
+  asPostId,
   asProfileId,
   type FollowDto,
   type FollowStatus,
+  type PostDto,
+  type PostKind,
+  type PostVisibility,
   type ProfileBrief,
+  type ReactionKind,
 } from '@osia/shared';
 
 /** Mapeo de filas `social.*` (snake_case) → DTOs públicos (camelCase, branded ids). Frontera infra/web. */
@@ -26,6 +31,44 @@ export function toFollowDto(row: FollowRow): FollowDto {
     followeeAccountId: asAccountId(row.followee_account_id),
     status: row.status,
     createdAt: row.created_at.toISOString(),
+  };
+}
+
+/** Columnas de un post (`social.posts`) para RETURNING/SELECT. `media` (jsonb) vuelve ya parseado por pg. */
+export const POST_COLS =
+  'id, author_account_id, kind, body, media, visibility, reaction_count, comment_count, created_at, updated_at';
+
+export type PostRow = {
+  id: string;
+  author_account_id: string;
+  kind: PostKind;
+  body: string | null;
+  media: string[];
+  visibility: PostVisibility;
+  reaction_count: number;
+  comment_count: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+/** Fila → `PostDto`. El autor (brief) y la reacción del lector se resuelven aparte y se inyectan. */
+export function toPostDto(
+  post: PostRow,
+  author: ProfileBrief,
+  viewerReaction: ReactionKind | null = null,
+): PostDto {
+  return {
+    id: asPostId(post.id),
+    author,
+    kind: post.kind,
+    body: post.body,
+    media: post.media ?? [],
+    visibility: post.visibility,
+    reactionCount: post.reaction_count,
+    commentCount: post.comment_count,
+    viewerReaction,
+    createdAt: post.created_at.toISOString(),
+    updatedAt: post.updated_at.toISOString(),
   };
 }
 

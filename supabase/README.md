@@ -22,6 +22,10 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260627000002_retention_indexes.sql` | Índices de retención para el cron de purga. |
 | `20260627000003_social_core.sql` | **Tejido Social (S3.1-H3):** schema `social` + `follows`, `posts`, `reactions`, `comments`, `feed_items` (HASH x8), `notifications` + índices + trigger `updated_at`. |
 | `20260627000004_social_rls.sql` | RLS **deny-all** + lectura por visibilidad/propiedad + grants `social` (escrituras service-only). |
+| `20260628000001_social_follow_counts.sql` | **Grafo (S3.2-H2):** `profiles.followers_count/following_count` + trigger desde `social.follows` + backfill. |
+| `20260628000002_economy_reputation_ledger.sql` | **Reputación (S3.2-H3):** schema `economy` + `reputation_ledger` append-only (dedup anti-grind por índice parcial) + RLS deny-all + trigger que mantiene `profiles.{reputation,popularity_points}` + backfill. |
+| `20260628000003_economy_reputation_clamp_fix.sql` | **Reputación (S3.2-H3, fix QA):** unifica el clamp de `popularity_points` entre trigger y backfill (deriva del agregado, no por-paso) para que coincidan ante deltas negativos futuros. |
+| `20260628000004_storage_post_media.sql` | **Media de posts (S3.3-H1):** bucket público `post-media` (solo imágenes, ≤10 MiB) para adjuntos por URL prefirmada (el API nunca recibe el binario). |
 
 ## Convención de nombres (nota importante)
 

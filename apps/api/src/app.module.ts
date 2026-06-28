@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
@@ -11,13 +12,15 @@ import { SupabaseModule } from './identity/infrastructure/supabase/supabase.modu
 import { HealthController } from './health/health.controller';
 import { IdentityModule } from './identity/identity.module';
 import { SocialModule } from './social/social.module';
+import { EconomyModule } from './economy/economy.module';
 import { ApiExceptionFilter } from './common/http-exception.filter';
 
-/** Módulo raíz: config (env Zod), logging (Pino + requestId), Supabase e identity. */
+/** Módulo raíz: config (env Zod), logging (Pino + requestId), Supabase, identity, social y economy. */
 @Module({
   imports: [
     ConfigModule,
     ScheduleModule.forRoot(), // cron de retención (RetentionService)
+    EventEmitterModule.forRoot(), // bus de dominio in-process (social.* → reputación/notif)
     // §8 rate-limit de borde: tope global por IP (generoso; corta abuso de signup/resend/confirm sin
     // molestar uso normal). Detrás de proxy en prod, habilitar trust proxy para la IP real.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
@@ -40,6 +43,7 @@ import { ApiExceptionFilter } from './common/http-exception.filter';
     SupabaseModule,
     IdentityModule,
     SocialModule,
+    EconomyModule,
   ],
   controllers: [HealthController],
   providers: [

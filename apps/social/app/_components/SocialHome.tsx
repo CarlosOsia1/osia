@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Text } from '@osia/ui';
+import { Button, Text } from '@osia/ui';
 import { useOsiaSession } from '@osia/identity';
 import { identity } from '../../lib/identity';
 import { vestibuleLoginUrl } from '../../lib/vestibule';
@@ -14,6 +15,7 @@ import { vestibuleLoginUrl } from '../../lib/vestibule';
  */
 export function SocialHome() {
   const t = useTranslations('social');
+  const router = useRouter();
   const session = useOsiaSession(identity);
 
   useEffect(() => {
@@ -62,6 +64,11 @@ export function SocialHome() {
       <Text variant="body" tone="muted">
         {t('tagline')}
       </Text>
+      <div style={{ justifySelf: 'start' }}>
+        <Button variant="primary" onClick={() => router.push('/compose')}>
+          {t('compose.open')}
+        </Button>
+      </div>
       <Text variant="label" tone="subtle">
         {t('comingSoon')}
       </Text>
