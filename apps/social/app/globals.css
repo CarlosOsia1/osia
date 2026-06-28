@@ -1,0 +1,25 @@
+/* Reset + base de apps/social (La Red Social). Los tokens viven en @osia/ui (styles.css).
+   Dark-first, editorial; la app scrollea (feed). */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+a {
+  color: inherit;
+}
+
+/* Foco siempre visible (CLAUDE.md §9): anillo champán, nunca outline:none sin reemplazo. */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

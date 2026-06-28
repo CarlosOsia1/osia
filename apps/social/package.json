@@ -1,0 +1,28 @@
+{
+  "name": "@osia/social",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3002",
+    "build": "next build",
+    "start": "next start -p 3002",
+    "lint": "eslint app i18n lib",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx lib/vestibule.test.ts"
+  },
+  "dependencies": {
+    "@osia/i18n": "workspace:*",
+    "@osia/identity": "workspace:*",
+    "@osia/shared": "workspace:*",
+    "@osia/ui": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "next": "^15.2.4",
+    "next-intl": "^3.26.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4"
+  }
+}
