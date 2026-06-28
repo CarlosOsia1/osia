@@ -25,6 +25,12 @@ import { SetReactionUseCase } from './application/use-cases/set-reaction.use-cas
 import { RemoveReactionUseCase } from './application/use-cases/remove-reaction.use-case';
 import { REACTION_REPOSITORY } from './application/ports/out/reaction.repository';
 import { PgReactionRepository } from './infrastructure/persistence/reaction.repository';
+import { PostCommentsController, CommentsController } from './web/comment.controller';
+import { CreateCommentUseCase } from './application/use-cases/create-comment.use-case';
+import { ListCommentsUseCase } from './application/use-cases/list-comments.use-case';
+import { DeleteCommentUseCase } from './application/use-cases/delete-comment.use-case';
+import { COMMENT_REPOSITORY } from './application/ports/out/comment.repository';
+import { PgCommentRepository } from './infrastructure/persistence/comment.repository';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -32,8 +38,8 @@ import { PgReactionRepository } from './infrastructure/persistence/reaction.repo
  * adapters concretos solo se cablean aquí. Cada slice vertical (puerto + adapter + caso de uso) se
  * agrega en su sprint: S3.1-H2 salud; S3.2-H1 grafo (follows); S3.2-H3 publicación de eventos de
  * dominio (`social.follow.created`/`social.post.reacted`, que consume `economy` para reputación);
- * S3.3-H1 media (upload-url) + publicar post; S3.3-H2 reaccionar. Faltan comentarios/feed/notificaciones/
- * presencia (S3.3-H3..H4, S3.4).
+ * S3.3-H1 media (upload-url) + publicar post; S3.3-H2 reaccionar; S3.3-H3 comentar. Faltan feed/
+ * notificaciones/presencia (S3.3-H4, S3.4).
  */
 @Module({
   controllers: [
@@ -43,6 +49,8 @@ import { PgReactionRepository } from './infrastructure/persistence/reaction.repo
     MediaController,
     PostController,
     ReactionController,
+    PostCommentsController,
+    CommentsController,
   ],
   providers: [
     SocialHealthService,
@@ -53,12 +61,16 @@ import { PgReactionRepository } from './infrastructure/persistence/reaction.repo
     CreatePostUseCase,
     SetReactionUseCase,
     RemoveReactionUseCase,
+    CreateCommentUseCase,
+    ListCommentsUseCase,
+    DeleteCommentUseCase,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
     { provide: STORAGE_PORT, useClass: SupabaseStorageAdapter },
     { provide: POST_REPOSITORY, useClass: PgPostRepository },
     { provide: REACTION_REPOSITORY, useClass: PgReactionRepository },
+    { provide: COMMENT_REPOSITORY, useClass: PgCommentRepository },
   ],
 })
 export class SocialModule {}
