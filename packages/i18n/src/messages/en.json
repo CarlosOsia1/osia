@@ -199,5 +199,13 @@
       "name": "El Mundo",
       "tagline": "A quiet world, on foot, with voice."
     }
+  },
+  "social": {
+    "kicker": "The Social Fabric",
+    "title": "La Red Social",
+    "welcome": "Welcome back, {name}.",
+    "tagline": "Your feed, your network and your status will live here.",
+    "loading": "Weaving your network…",
+    "comingSoon": "The feed is coming soon."
   }
 }

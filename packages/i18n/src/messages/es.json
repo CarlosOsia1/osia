@@ -199,5 +199,13 @@
       "name": "El Mundo",
       "tagline": "Un mundo tranquilo, a pie, con voz."
     }
+  },
+  "social": {
+    "kicker": "El Tejido Social",
+    "title": "La Red Social",
+    "welcome": "Hola de nuevo, {name}.",
+    "tagline": "Aquí vivirán tu feed, tu red y tu estatus.",
+    "loading": "Tejiendo tu red…",
+    "comingSoon": "El feed llega pronto."
   }
 }
