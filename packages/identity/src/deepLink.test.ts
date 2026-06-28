@@ -10,6 +10,11 @@ test('buildDeepLink: agrega query params', () => {
   assert.equal(buildDeepLink('world', { room: 'hub' }), 'https://mundo.osia.com?room=hub');
 });
 
-test('buildDeepLink: experiencia desconocida lanza', () => {
-  assert.throws(() => buildDeepLink('social' as 'world'));
+test('buildDeepLink: La Red Social resuelve a su dominio', () => {
+  assert.equal(buildDeepLink('social'), 'https://social.osia.com');
+});
+
+test('buildDeepLink: experiencia no presente en el catálogo lanza', () => {
+  // `games` es un ExperienceId válido pero aún no tiene entrada viva en el catálogo.
+  assert.throws(() => buildDeepLink('games'));
 });

@@ -26,9 +26,10 @@ export type Experience = {
   fase: number;
 };
 
-/** El catálogo. Fase 1: solo El Mundo. Aditivo: nuevas puertas se agregan aquí. */
+/** El catálogo. Aditivo: nuevas puertas se agregan aquí (datos, no código). */
 export const EXPERIENCES = [
   { id: 'world', nombre: 'El Mundo', dominio: 'mundo.osia.com', estado: 'live', fase: 1 },
+  { id: 'social', nombre: 'La Red Social', dominio: 'social.osia.com', estado: 'live', fase: 3 },
 ] as const satisfies readonly Experience[];
 
 /** Las experiencias con puerta activa (deep-link real) — lo que el Vestíbulo muestra encendido. */

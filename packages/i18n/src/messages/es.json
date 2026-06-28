@@ -198,6 +198,10 @@
     "world": {
       "name": "El Mundo",
       "tagline": "Un mundo tranquilo, a pie, con voz."
+    },
+    "social": {
+      "name": "La Red Social",
+      "tagline": "Tu feed, tu red y tu estatus."
     }
   },
   "social": {

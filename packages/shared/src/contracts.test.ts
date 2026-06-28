@@ -43,19 +43,23 @@ test('ErrorCode: cada entrada es canónica (key === value, sin drift)', () => {
 });
 
 // --- Catálogo de experiencias ---
-test('experiences: El Mundo es la única puerta viva de Fase 1', () => {
-  assert.equal(EXPERIENCES.length, 1);
-  const mundo = getExperience('world');
-  assert.ok(mundo);
-  assert.deepEqual(mundo, {
+test('experiences: El Mundo y La Red Social son puertas vivas (Fase 1 y Fase 3)', () => {
+  assert.equal(EXPERIENCES.length, 2);
+  assert.deepEqual(getExperience('world'), {
     id: 'world',
     nombre: 'El Mundo',
     dominio: 'mundo.osia.com',
     estado: 'live',
     fase: 1,
   });
-  assert.equal(LIVE_EXPERIENCES.length, 1);
-  assert.equal(getExperience('social' as 'world'), undefined);
+  assert.deepEqual(getExperience('social'), {
+    id: 'social',
+    nombre: 'La Red Social',
+    dominio: 'social.osia.com',
+    estado: 'live',
+    fase: 3,
+  });
+  assert.equal(LIVE_EXPERIENCES.length, 2);
 });
 
 // --- Enums espejo del ER ---

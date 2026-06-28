@@ -83,8 +83,13 @@
     online, zona del instance) filtrado por relación (sigue/lo siguen). **Corrección de backlog**: la
     fuente real es Postgres `presence_sessions`, NO Redis (el world-server no publica a Redis); presencia
     en vivo con TTL queda para S3.6. UI de presencia diferida a S3.5 (junto al perfil/seguidos).
-  - `S3.5` Perfil público + puerta en el Vestíbulo (chisme IA ❌) ▶️ **SIGUIENTE**.
-  - Pendiente: `S3.6` Endurecimiento + tiempo real + lanzamiento.
+  - `S3.5` Perfil público + Vestíbulo ✅ **CERRADO** — H1 ✅ `GET /v1/profiles/{handle}` (estatus: brief +
+    reputación + conteos + isFollowing) + `/posts` (visibles); `PopularityMeter` en `@osia/ui`; UI `/[handle]`
+    (cabecera, meter, seguir/dejar de seguir, posts) y enlace de autor en el feed. H2 ✅ puerta de La Red
+    Social en el Vestíbulo (catálogo `experiences` + i18n `door.social`; cruce con deep-link por experiencia,
+    `experienceUrl` con override dev). Chisme IA ❌ descartado. Diferidos: achievements (sin tabla) y presencia
+    en perfil.
+  - `S3.6` Endurecimiento + tiempo real + lanzamiento ▶️ **SIGUIENTE** (último sprint de Fase 3).
 
   **Qué SÍ entra en Fase 3:** grafo de seguidores + reputación derivada (event-sourced), feed
   (fan-out-on-write a `feed_items` HASH×8), reacciones (`star|moon|sun`) y comentarios, presencia social

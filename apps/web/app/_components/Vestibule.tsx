@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AppSwitcher, Button, ExperienceThreshold, PassportCard, ThresholdTransition } from '@osia/ui';
 import { useOsiaSession } from '@osia/identity';
-import { LIVE_EXPERIENCES, OSIA } from '@osia/shared';
+import { LIVE_EXPERIENCES, OSIA, type ExperienceId } from '@osia/shared';
 import { identity } from '../../lib/identity';
-import { worldUrl } from '../../lib/worldUrl';
+import { experienceUrl } from '../../lib/experienceUrl';
 import { track } from '../../lib/analytics';
 
 /**
@@ -20,7 +20,7 @@ export function Vestibule() {
   const tDoor = useTranslations('door');
   const router = useRouter();
   const session = useOsiaSession(identity);
-  const [crossing, setCrossing] = useState(false);
+  const [crossingId, setCrossingId] = useState<ExperienceId | null>(null);
 
   useEffect(() => {
     if (session.isError) router.replace('/login');
@@ -43,9 +43,9 @@ export function Vestibule() {
   }
   const { profile } = passport;
 
-  function cross(experienceId: string): void {
+  function cross(experienceId: ExperienceId): void {
     track('vestibulo.threshold.crossed', { experienceId });
-    setCrossing(true);
+    setCrossingId(experienceId);
   }
 
   return (
@@ -100,11 +100,11 @@ export function Vestibule() {
       </section>
 
       <ThresholdTransition
-        active={crossing}
+        active={crossingId !== null}
         brand={OSIA.name}
         label={t('crossing')}
         onComplete={() => {
-          window.location.href = worldUrl();
+          if (crossingId) window.location.href = experienceUrl(crossingId);
         }}
       />
     </main>
