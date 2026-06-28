@@ -16,8 +16,11 @@ const envSchema = z.object({
   SUPABASE_JWT_SECRET: z.string().min(1).optional(),
   // Conexión directa Postgres (session pooler) para los repos de identity/world (no PostgREST).
   SUPABASE_DB_URL: z.string().min(1),
-  // Allowlist CORS (coma-separado); nunca '*' (docs/09 §CORS).
-  CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
+  // Allowlist CORS (coma-separado); nunca '*' (docs/09 §CORS). Dev: world-client :3000, Vestíbulo :3001,
+  // La Red Social :3002. En prod se setea explícito por entorno.
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:3000,http://localhost:3001,http://localhost:3002'),
   // Cookie de refresh del SSO. En prod: Domain=.osia.com + Secure. En dev local: host-only.
   COOKIE_DOMAIN: z.string().optional(),
   COOKIE_SECURE: z

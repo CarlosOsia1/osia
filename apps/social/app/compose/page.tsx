@@ -1,29 +1,25 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { SESSION_REFRESH_COOKIE } from '@osia/shared';
+import { SessionGuard } from '../_components/SessionGuard';
 import { PostComposer } from '../_components/PostComposer';
-import { vestibuleLoginUrl } from '../../lib/vestibule';
 
 /**
- * "/compose" (S3.3-H1) — publicar un Post. Privado como toda La Red Social: el branch es por PRESENCIA
- * de la cookie de refresh (SSR, sin flash); sin cookie, al login del Vestíbulo. Con cookie, render del
- * composer (que llama al API con el pasaporte SSO y maneja el 401 si la sesión está stale).
+ * "/compose" (S3.3-H1) — publicar un Post. Privado: el `SessionGuard` (cliente) valida la sesión vía SSO
+ * contra el API y redirige al login del Vestíbulo si no hay. El composer llama al API con el Pasaporte.
  */
-export default async function ComposePage() {
-  const hasSession = (await cookies()).has(SESSION_REFRESH_COOKIE);
-  if (!hasSession) redirect(vestibuleLoginUrl());
+export default function ComposePage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        alignContent: 'start',
-        maxWidth: '48rem',
-        margin: '0 auto',
-        padding: 'var(--space-7) var(--space-5)',
-      }}
-    >
-      <PostComposer />
-    </main>
+    <SessionGuard>
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          alignContent: 'start',
+          maxWidth: '48rem',
+          margin: '0 auto',
+          padding: 'var(--space-7) var(--space-5)',
+        }}
+      >
+        <PostComposer />
+      </main>
+    </SessionGuard>
   );
 }

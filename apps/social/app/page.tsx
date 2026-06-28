@@ -1,16 +1,15 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { SESSION_REFRESH_COOKIE } from '@osia/shared';
+import { SessionGuard } from './_components/SessionGuard';
 import { SocialHome } from './_components/SocialHome';
-import { vestibuleLoginUrl } from '../lib/vestibule';
 
 /**
- * "/" (S3.1-H1) — La Red Social es privada: solo residentes con sesión. El branch es por PRESENCIA
- * de la cookie de refresh (SSR, sin flash): si no hay, al login del Vestíbulo (el middleware también
- * lo cubre). Con cookie, render del shell, que revalida la sesión vía SSO y redirige si está stale.
+ * "/" (S3.1-H1) — La Red Social es privada. El `SessionGuard` (cliente) valida la sesión vía SSO contra
+ * el API y manda al login del Vestíbulo si no hay; robusto en dev (puertos) y prod (subdominios). Ya NO
+ * se gatea por presencia de cookie en este origen (frágil: la cookie de refresh es host-only del API).
  */
-export default async function HomePage() {
-  const hasSession = (await cookies()).has(SESSION_REFRESH_COOKIE);
-  if (!hasSession) redirect(vestibuleLoginUrl());
-  return <SocialHome />;
+export default function HomePage() {
+  return (
+    <SessionGuard>
+      <SocialHome />
+    </SessionGuard>
+  );
 }
