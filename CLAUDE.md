@@ -30,16 +30,67 @@
   de color de árboles (OKLCH) y legibilidad de escena, contrato versionado, checkpoint de clima,
   `/metrics`, y **borrado de cuenta completo** (por contraseña y por link de email, con cron de
   retención + `system.audit_logs`). Detalle por historia: [`docs/backlog/fase-2-atmosfera-viva.md`](./docs/backlog/fase-2-atmosfera-viva.md) §0.
-  Pendiente solo de **configuración** (no de código): variables `SMTP_*` para que el email salga de
-  verdad, y aplicar la migración `20260627000001_account_retention.sql`.
+  Se hizo un **QA grande de cierre** (revisión multi-agente + verificación) con sus hallazgos
+  corregidos. **Estado operativo:** migraciones **aplicadas al cloud** (incl. `account_retention` +
+  índices de retención) y **SMTP de Resend configurado** en `supabase/.env.local` (`noreply@codfysas.com`)
+  → el email de borrado ya sale en dev. En prod, `SMTP_*`/`SUPABASE_DB_URL` van en el host.
+  **Todos los commits están en `main` LOCAL — falta `git push` (lo hace Carlos).**
 
 **Fase activa**
-- **Fase 3 — Tejido Social: ▶️ por arrancar.** Backlog: [`docs/backlog/fase-3-tejido-social.md`](./docs/backlog/fase-3-tejido-social.md).
-  Feed, seguidores/reputación, presencia social y notificaciones como app independiente (`apps/social`).
-  **No depende de IA** (la IA en Habitantes quedó descartada).
+- **Fase 3 — Tejido Social: ▶️ EN CURSO.** Backlog: [`docs/backlog/fase-3-tejido-social.md`](./docs/backlog/fase-3-tejido-social.md).
+  App independiente `apps/social` (corre en **:3002**, deep-link por SSO). **No depende de IA** (descartada
+  al 100%). El backlog fue **alineado a «IA descartada»** (S3.5-H3 «Chisme IA» DESCARTADA; sin
+  `gossip`/`social.gossip.published`/`gossip_mention` ni métrica de gasto IA).
+
+  **Progreso (avanza HU por HU, en orden; todo verde y en cloud):**
+  - `S3.1` Cimientos ✅ — H4 contratos `@osia/shared` · H3 schema `social` + RLS · H2 contexto hexagonal
+    en `apps/api` + `GET /v1/social/health` · H1 scaffold `apps/social` + SSO (redirect 307 al Vestíbulo
+    verificado, bundle sin Three.js ~147 kB).
+  - `S3.2` Grafo — H1 ✅ seguir/dejar de seguir (`POST`/`DELETE /v1/follows`, idempotente, anti-self) ·
+    H2 ✅ listas `GET /v1/profiles/{handle}/followers|following` (cursor keyset) + conteos
+    `profiles.followers_count/following_count` por trigger · **H3 ▶️ SIGUIENTE** = reputación derivada del
+    `reputation_ledger` append-only (acreditar al seguido vía evento `social.follow.created` + caps anti-grind).
+  - Pendientes: `S3.3` Feed (publicar/reaccionar/comentar + fan-out) · `S3.4` Presencia + Notificaciones ·
+    `S3.5` Perfil público + puerta en el Vestíbulo (chisme IA ❌) · `S3.6` Endurecimiento + tiempo real + lanzamiento.
+
+  **Qué SÍ entra en Fase 3:** grafo de seguidores + reputación derivada (event-sourced), feed
+  (fan-out-on-write a `feed_items` HASH×8), reacciones (`star|moon|sun`) y comentarios, presencia social
+  (lee Redis del world-server), notificaciones, perfil público con estatus, puerta de La Red Social en el
+  Vestíbulo, tiempo real (Supabase Realtime/polling), RLS + rate-limit + observabilidad.
+
+  **Qué NO entra (anti-alcance §1.3 del backlog):** ❌ **toda IA** (chisme, contexto `ai`, gossip — el
+  cold-start del feed se resuelve SIN IA, decisión en S3.5) · ❌ DM/chat privado · ❌ grupos/hashtags/
+  búsqueda full-text · ❌ recomendación por ML · ❌ monetización/cosméticos (Fase 4/5) · ❌ subir binario
+  al API (solo URL prefirmada) · ❌ tocar `world-server` salvo leer presencia.
+
+  **Cómo se está trabajando AHORA (vinculante — seguir igual en una sesión con 0 contexto):**
+  1. **Slices verticales por HU:** cada HU = contrato (`@osia/shared`) → schema/migración → puerto+adapter+
+     caso de uso (`apps/api` hexagonal, espejo de `identity`) → controller → UI (`apps/social`). **Los
+     puertos/eventos/UI se crean en la HU que los consume, no antes** (evita código muerto §1.2/§12). De ahí
+     los diferidos explícitos: emisión de `social.follow.created` → S3.2-H3/S3.4; UI de follow/listas →
+     consolidada con el perfil en S3.5; rate-limit por cuenta (`rl:*`) y guard de email-verificado → S3.6.
+  2. **QA por HU obligatorio (§10.1):** dev+QA, todos los flujos por tipo de usuario, tests por HU, DTOs
+     alineados back↔front, y **gates verdes reales** (`pnpm typecheck/lint/test`, forzados sin caché) antes
+     de declarar hecho. Para endpoints protegidos se verifica el wiring con un smoke (401 + sobre `ApiError`).
+  3. **Migraciones:** forward-only, **aplicadas al cloud** con `supabase db push --db-url` (§14) y
+     **verificadas por introspección** `pg`. Hoy hay **15 migraciones, todas aplicadas** en Supabase.
+  4. **Git:** se deja en **staged**; se commitea **solo** cuando Carlos lo pide (§0.1).
 - **Decisiones de Fase 2 (Carlos), vinculantes:** clima ESCASO (≤ 2 eventos por día de juego, 2–5 min
   c/u); estación derivada del reloj (no viaja por red); borrado de cuenta por contraseña **y por link
   de email**; **IA en Habitantes descartada al 100%**; regla §2.1 «ni el texto es nativo» (`Text`).
+
+**Deuda diferida del QA de cierre de Fase 2 (no bloquea Fase 3 — retomar cuando convenga)**
+- **Override «movimiento reducido» del pasaporte → mundo 3D:** hoy el Canvas solo respeta el
+  `prefers-reduced-motion` del SO; el `ThemeProvider` de world-client se monta sin la pref del
+  pasaporte. Falta **transportar esa preferencia a world-client** (handoff/sesión → `motionPrefs`).
+  Mini-feature de plumbing, no un fix de una línea. (§9)
+- **Sway de árboles en GPU:** hoy el meceo del bosque es CPU por frame (OK a 14 árboles). Si el bosque
+  crece a cientos/miles, migrarlo a TSL como `Precipitation`/`RainStreaks`. Umbral, no urgencia (§7/§12).
+- **Token de borrado por link consumido en tx aparte del DELETE:** decisión deliberada («claim then
+  act» evita doble-borrado); si el DELETE falla, el link queda quemado y se pide otro. Robustez extra
+  (una sola tx) requiere transacción cruzada entre repos. Aceptable como está.
+- **`DELETE /v1/accounts/me` (borrado por contraseña) sin UI:** el endpoint existe y está probado; es
+  un camino alterno. Decidir si se le hace UI en settings o se retira. (No es bug.)
 
 **Decisiones VINCULANTES del rediseño de Fase 2 (Carlos, 2026-06-25) — no revertir sin su visto bueno**
 - ❌ **IA en Habitantes: DESCARTADA AL 100% (Carlos, 2026-06-27).** Ya NO es "diferida": queda
@@ -405,6 +456,30 @@ Fuente: [`docs/09-seguridad-infra-costos.md`](./docs/09-seguridad-infra-costos.m
 - **Definition of Done** de una historia: criterios de aceptación del backlog cumplidos +
   typecheck/lint/test verdes + i18n (sin texto hardcodeado) + sin smells + sin fuga de recursos +
   (si es UI) usa `@osia/ui` y tokens + accesibilidad básica.
+
+### 10.1 Protocolo de QA por HU (VINCULANTE desde Fase 3 — Carlos, 2026-06-27)
+
+Carlos lo pidió explícito y aplica a **toda HU de Fase 3 y de aquí en adelante**: al cerrar cada HU,
+Claude actúa como **desarrollador Y como QA**, y **no la declara hecha sin pasar este protocolo**.
+Regla rectora: **funcionalidad y correctitud por encima de la velocidad.** Usar los agentes que hagan
+falta (revisión multi-agente + verificación adversarial) sin escatimar tiempo. **Que no se escape NADA.**
+
+**Al cerrar cada HU, antes de declararla hecha:**
+1. **QA completo de lo construido** y de **lo que Carlos pudo modificar** entremedio (revisar también
+   sus cambios, no solo los míos).
+2. **Cacería de bugs inmediata, recorriendo TODOS los flujos posibles por cada tipo de usuario**
+   (anónimo · autenticado sin email verificado · verificado · dueño vs. ajeno · rate-limited · etc.),
+   casos límite, errores y estados (vacío/carga/falla).
+3. **Estándar profesional de gran industria + SOLID** (§1): sin smells, sin `any`, sin código muerto,
+   reutilizable, determinista donde aplique. **100% a nivel backend Y frontend** — nada a medias.
+4. **DTOs/contratos alineados back↔front**: el mismo tipo de `@osia/shared` en ambos lados (si
+   divergen, ambos dejan de compilar). Validación Zod en cliente (UX) **y** servidor (seguridad).
+5. **Tests por HU**: unitarios de casos de uso, contract tests de DTOs/errores, y los flujos de
+   usuario relevantes (e2e cuando aplique). La lógica pura, siempre con tests.
+6. **Gates verdes reales (no asumidos)**: `pnpm typecheck`, `pnpm lint`, `pnpm test` (+ `build` si
+   toca), reportando la salida real. i18n en+es sin texto hardcodeado. Accesibilidad básica (§9).
+7. **Reporte honesto** (§0.5): qué quedó hecho, qué se probó (con salida), qué falta. Dejar en
+   **staged**, sin commitear (§0.1).
 
 ---
 

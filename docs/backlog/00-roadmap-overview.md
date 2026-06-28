@@ -69,7 +69,7 @@ gantt
 | 0 | 8 (`S0.1`–`S0.8`) | ~12.5 semanas | Demo pública: caminar + voz + atmósfera viva. |
 | 1 | 9 (`S1.1`–`S1.9`) | ~12-15 semanas | Producto con cuentas, pasaporte y Vestíbulo. |
 | 2 | 9 (`S2.1`–`S2.9`) → rediseñado a 9 HU sin IA | ~3 semanas (rediseño) | El Mundo que respira (clima + estaciones + sonido). *(IA ❌ descartada.)* |
-| 3 | 6 (`S3.1`–`S3.6`) | ~9-10 semanas | La Red Social (`apps/social`). |
+| 3 | 6 (`S3.1`–`S3.6`) | ~7-8 semanas *(IA ❌ recortada)* | La Red Social (`apps/social`). |
 | 4 | 9 (`S4.1`–`S4.9`) | ~14-17 semanas | Los Juegos (`apps/games`) con ranking + cosméticos. |
 | 5+ | 11 (`S5.1`–`S5.11`) | ~18-22 semanas | Plots, economía, apertura, self-host. |
 
@@ -135,7 +135,7 @@ Tabla maestra: id · nombre · fase. El id es estable y se referencia desde comm
 | `OSIA-S3.2` | Grafo Social: seguidores y reputación derivada | 3 |
 | `OSIA-S3.3` | Feed: publicar, reaccionar, comentar + fan-out-on-write | 3 |
 | `OSIA-S3.4` | Presencia social y Notificaciones | 3 |
-| `OSIA-S3.5` | Perfil público con estatus + Vestíbulo + Chisme IA | 3 |
+| `OSIA-S3.5` | Perfil público con estatus + Vestíbulo ~~+ Chisme IA~~ (IA ❌) | 3 |
 | `OSIA-S3.6` | Endurecimiento, tiempo real, observabilidad y lanzamiento | 3 |
 
 ### Fase 4 — Juego y Estatus
@@ -179,7 +179,7 @@ Cada fase tiene un **Definition of Done de fase** (detallado en su backlog) y un
 | **0 → 1** | Demo pública: 2 personas en la misma instancia se ven, se mueven suave (predicción/reconciliación), se oyen por voz P2P, comparten el mismo atardecer y un evento efímero; 60 fps; sin fuga de VRAM. | **2 de 3 amigos dicen, sin que se les pida, "me quiero quedar acá".** Si falla tras iterar el mood (ADR-000.1), **puerta no-go**: se detiene y se reevalúa el concepto. | `F0-DoD-1..10` |
 | **1 → 2** | Cuentas persistentes con email verificado; pasaporte SSO (cookie `.osia.com` + access JWT) que viaja entre apps; perfil + avatar editables y persistentes; Vestíbulo delgado (pasaporte + 1 puerta); entrada a El Mundo "como uno mismo" vía world ticket. | El residente **vuelve mañana y su pasaporte lo recuerda**; cruza el umbral hacia El Mundo como suyo. | `F1-DoD-1..12` |
 | **2 → 3** | Atmósfera completa autoritativa (clima/estaciones determinista); HUD que respira el cielo; paisaje sonoro por bioma/hora/clima; legibilidad de escena; borrado de cuenta + retención + audit. *(IA en Habitantes ❌ DESCARTADA — sin Habitantes ni voz IA.)* | Dos amigos: les llueve con una racha real, el ambiente cruza a lluvia y el HUD se tiñe con el crepúsculo, y dicen **"esto está vivo"** — por la atmósfera, no por IA. | DoD de [fase-2-atmosfera-viva.md](./fase-2-atmosfera-viva.md) |
-| **3 → 4** | La Red Social como app independiente (`apps/social`): feed (fan-out-on-write), seguidores/reputación, presencia social, notificaciones; segunda puerta en el Vestíbulo; el feed se alimenta también de mundo+IA. | El estatus **se vuelve visible y deseado**; una notificación trae de vuelta al jugador. | DoD de Fase 3 |
+| **3 → 4** | La Red Social como app independiente (`apps/social`): feed (fan-out-on-write), seguidores/reputación, presencia social, notificaciones; segunda puerta en el Vestíbulo. *(IA ❌ descartada — sin chisme IA; cold-start del feed se resuelve sin IA, decisión en S3.5.)* | El estatus **se vuelve visible y deseado**; una notificación trae de vuelta al jugador. | DoD de Fase 3 |
 | **4 → 5+** | Los Juegos como app independiente (`apps/games`): minijuego con ranking global (Redis ZSET + RankingSnapshot), logros, cosméticos; el estatus/cosmético **viaja en el pasaporte** a El Mundo y La Red Social; anti-cheat server-authoritative. | **Compiten y vuelven por el ranking**; el prestigio se luce en todo el ecosistema. | DoD de Fase 4 |
 | **5+ → escala** | Plots persistentes + economía cosmética que **paga los servidores**; apertura controlada (k-factor, anti-abuso); voz SFU para grupos grandes; migración a self-host con rollback probado; observabilidad y DR. | El **boca a boca y la economía se sostienen**; la infra aguanta sin romper el runway. | DoD de Fase 5 |
 
