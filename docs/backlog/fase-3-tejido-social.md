@@ -6,6 +6,14 @@ Cross-links: ver [Visión y Alcance](../00-vision-alcance.md) · [Pilares y Expe
 
 ---
 
+> **✅ CIERRE (2026-06-28): Fase 3 funcionalmente cerrada.** Las 6 HU principales (S3.1–S3.6) están
+> construidas, con QA por HU, gates verdes (typecheck/lint/test/build) y migraciones aplicadas + verificadas
+> en cloud (forward-only). Entregables vivos en `apps/social` (:3002) + `apps/api` (contexto `social` +
+> `economy`) + `apps/web` (puerta del Vestíbulo). **Diferidos** (infra externa / fuera del dev local):
+> push Realtime (hay polling), Sentry/Discord/e2e, `rl:*` por cuenta en Redis (hay throttler global por IP),
+> achievements en perfil, UI de presencia, resolución de reportes (manual) y ritual de lanzamiento. El
+> estado vivo por HU está en [`CLAUDE.md`](../../CLAUDE.md) §Estado actual.
+>
 > **⚠️ ACTUALIZACIÓN VINCULANTE (2026-06-27): IA descartada al 100%.** Este backlog se redactó
 > (2026-06-19) **antes** de que Carlos descartara la IA en Habitantes (ver [`CLAUDE.md`](../../CLAUDE.md)).
 > Todos los puntos que dependían de IA quedan **❌ DESCARTADOS** y están marcados inline:

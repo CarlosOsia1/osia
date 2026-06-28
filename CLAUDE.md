@@ -37,10 +37,18 @@
   **Todos los commits están en `main` LOCAL — falta `git push` (lo hace Carlos).**
 
 **Fase activa**
-- **Fase 3 — Tejido Social: ▶️ EN CURSO.** Backlog: [`docs/backlog/fase-3-tejido-social.md`](./docs/backlog/fase-3-tejido-social.md).
-  App independiente `apps/social` (corre en **:3002**, deep-link por SSO). **No depende de IA** (descartada
-  al 100%). El backlog fue **alineado a «IA descartada»** (S3.5-H3 «Chisme IA» DESCARTADA; sin
-  `gossip`/`social.gossip.published`/`gossip_mention` ni métrica de gasto IA).
+- **Fase 3 — Tejido Social: ✅ FUNCIONALMENTE CERRADA (2026-06-28).** Las 6 HU principales (S3.1–S3.6)
+  construidas, con QA por HU, gates verdes (typecheck/lint/test/build) y migraciones aplicadas y verificadas
+  en cloud. App independiente `apps/social` (**:3002**, deep-link por SSO). **No depende de IA** (descartada
+  al 100%; S3.5-H3 «Chisme IA» DESCARTADA — sin `gossip`/`social.gossip.published`/`gossip_mention` ni
+  métrica de gasto IA). Backlog: [`docs/backlog/fase-3-tejido-social.md`](./docs/backlog/fase-3-tejido-social.md).
+  **Commits en `main` LOCAL** (S3.3-H2 → cierre); falta `git push` (lo hace Carlos).
+  **Diferidos explícitos (infra externa / fuera de alcance del dev local, retomar cuando convenga):**
+  push por **Supabase Realtime** (hoy notif por polling 30 s) · **Sentry** (DSN) y **alertas Discord**
+  (webhook) y **e2e Playwright** · **rate-limit por cuenta `rl:*` en Redis** (hoy throttler global por IP) ·
+  **achievements** en el perfil (sin tabla de logros) · **UI de presencia** (endpoint listo) ·
+  **moderación**: resolución (soft-delete) del reporte es manual fuera de banda · **ritual de lanzamiento**
+  (anuncio Discord/GTM, manual).
 
   **Progreso (avanza HU por HU, en orden; todo verde y en cloud):**
   - `S3.1` Cimientos ✅ — H4 contratos `@osia/shared` · H3 schema `social` + RLS · H2 contexto hexagonal
@@ -89,7 +97,13 @@
     Social en el Vestíbulo (catálogo `experiences` + i18n `door.social`; cruce con deep-link por experiencia,
     `experienceUrl` con override dev). Chisme IA ❌ descartado. Diferidos: achievements (sin tabla) y presencia
     en perfil.
-  - `S3.6` Endurecimiento + tiempo real + lanzamiento ▶️ **SIGUIENTE** (último sprint de Fase 3).
+  - `S3.6` Endurecimiento + tiempo real + observabilidad ✅ **CERRADO** — H2 ✅ `EmailVerifiedGuard` en las
+    creaciones (publicar/reaccionar/comentar/seguir/upload → 403 si email sin verificar) + moderación
+    `social.reports` + `POST /v1/reports`. H1 ✅ notif en vivo por **polling** (30 s; Realtime diferido).
+    H3 ✅ `GET /v1/metrics/social` (conteos) + Pino ya integrado (Sentry/Discord/e2e diferidos). H4 ✅ cierre:
+    estados vacío/carga y contraste AA ya presentes; docs actualizados; lanzamiento (anuncio) manual diferido.
+  - **`ZodValidationPipe` generalizado** (acepta schemas con transform) y **deuda de UI/§2.1 respetada**
+    (todo texto vía `Text`, tokens) durante toda la fase.
 
   **Qué SÍ entra en Fase 3:** grafo de seguidores + reputación derivada (event-sourced), feed
   (fan-out-on-write a `feed_items` HASH×8), reacciones (`star|moon|sun`) y comentarios, presencia social
