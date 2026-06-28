@@ -49,6 +49,11 @@ import { PresenceController } from './web/presence.controller';
 import { GetPresenceUseCase } from './application/use-cases/get-presence.use-case';
 import { PRESENCE_QUERY } from './application/ports/out/presence.query';
 import { PgPresenceQuery } from './infrastructure/persistence/presence.query';
+import { PublicProfileController } from './web/public-profile.controller';
+import { GetPublicProfileUseCase } from './application/use-cases/get-public-profile.use-case';
+import { ListProfilePostsUseCase } from './application/use-cases/list-profile-posts.use-case';
+import { PROFILE_QUERY } from './application/ports/out/profile.query';
+import { PgProfileQuery } from './infrastructure/persistence/profile.query';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -73,6 +78,7 @@ import { PgPresenceQuery } from './infrastructure/persistence/presence.query';
     FeedController,
     NotificationController,
     PresenceController,
+    PublicProfileController,
   ],
   providers: [
     SocialHealthService,
@@ -95,6 +101,8 @@ import { PgPresenceQuery } from './infrastructure/persistence/presence.query';
     MarkNotificationsReadUseCase,
     NotificationListener,
     GetPresenceUseCase,
+    GetPublicProfileUseCase,
+    ListProfilePostsUseCase,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
@@ -105,6 +113,7 @@ import { PgPresenceQuery } from './infrastructure/persistence/presence.query';
     { provide: FEED_REPOSITORY, useClass: PgFeedRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: PgNotificationRepository },
     { provide: PRESENCE_QUERY, useClass: PgPresenceQuery },
+    { provide: PROFILE_QUERY, useClass: PgProfileQuery },
   ],
 })
 export class SocialModule {}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button, Card, Text } from '@osia/ui';
@@ -46,9 +47,11 @@ export function Feed() {
       {items.map((item) => (
         <Card key={item.id} pad>
           <article style={{ display: 'grid', gap: 'var(--space-2)' }}>
-            <Text variant="label" tone="accent">
-              {item.post.author.displayName}
-            </Text>
+            <Link href={`/${item.post.author.handle}`} style={{ textDecoration: 'none', justifySelf: 'start' }}>
+              <Text variant="label" tone="accent">
+                {item.post.author.displayName}
+              </Text>
+            </Link>
             {item.post.body && <Text variant="body">{item.post.body}</Text>}
             {item.post.media.map((url) => (
               <img key={url} src={url} alt="" style={{ maxWidth: '100%', borderRadius: 'var(--radius-2, 8px)' }} />

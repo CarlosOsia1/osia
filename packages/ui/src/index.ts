@@ -28,6 +28,7 @@ export { FormError } from './FormError';
 export { Switch, type SwitchProps } from './Switch';
 export { Nameplate, type NameplateProps } from './Nameplate';
 export { Dot } from './Dot';
+export { PopularityMeter, type PopularityMeterProps } from './PopularityMeter';
 
 // --- Vestíbulo (S1.7): pasaporte, puertas, cruce de umbral ---
 export {

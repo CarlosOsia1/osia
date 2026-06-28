@@ -224,6 +224,17 @@
       "comment": "{name} comentó tu post.",
       "mention": "{name} te mencionó."
     },
+    "profile": {
+      "loading": "Cargando perfil…",
+      "notFound": "Perfil no encontrado.",
+      "popularity": "Popularidad",
+      "followers": "{count, plural, one {# seguidor} other {# seguidores}}",
+      "following": "{count} siguiendo",
+      "follow": "Seguir",
+      "unfollow": "Dejar de seguir",
+      "posts": "Publicaciones",
+      "noPosts": "Aún no ha publicado nada."
+    },
     "compose": {
       "open": "Publicar algo",
       "title": "Componer",

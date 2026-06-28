@@ -103,6 +103,20 @@ export type ReactionResult = {
   reactionCount: number;
 };
 
+/**
+ * Perfil público con estatus (`GET /v1/profiles/{handle}`): el brief + bio, reputación, conteos del grafo
+ * y si el solicitante lo sigue. Los achievements (lectura de Fase 2) se sumarán cuando exista su tabla.
+ */
+export type PublicProfileDto = ProfileBrief & {
+  accountId: AccountId;
+  bio: string | null;
+  reputation: number;
+  followersCount: number;
+  followingCount: number;
+  /** ¿El solicitante sigue a este perfil? */
+  isFollowing: boolean;
+};
+
 /** Una arista del grafo de seguidores (`social.follows`). */
 export type FollowDto = {
   id: FollowId;

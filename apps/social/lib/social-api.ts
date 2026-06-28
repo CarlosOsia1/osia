@@ -6,6 +6,7 @@ import type {
   Page,
   PostDto,
   PostMediaMime,
+  PublicProfileDto,
   ReactionKind,
   ReactionResult,
   UploadTargetDto,
@@ -83,4 +84,35 @@ export function getNotifications(): Promise<NotificationsPageDto> {
 /** Marca todas las notificaciones como leídas (`POST /v1/notifications/read`). */
 export function markAllNotificationsRead(): Promise<void> {
   return identity.authedFetch<void>('/v1/notifications/read', { method: 'POST', body: JSON.stringify({}) });
+}
+
+/** Perfil público con estatus (`GET /v1/profiles/{handle}`). */
+export async function getPublicProfile(handle: string): Promise<PublicProfileDto> {
+  const { profile } = await identity.authedFetch<{ profile: PublicProfileDto }>(
+    `/v1/profiles/${encodeURIComponent(handle)}`,
+    { method: 'GET' },
+  );
+  return profile;
+}
+
+/** Posts de un perfil (`GET /v1/profiles/{handle}/posts`), por cursor. */
+export function getProfilePosts(handle: string, cursor?: string): Promise<Page<PostDto>> {
+  const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+  return identity.authedFetch<Page<PostDto>>(
+    `/v1/profiles/${encodeURIComponent(handle)}/posts${qs}`,
+    { method: 'GET' },
+  );
+}
+
+/** Seguir (`POST /v1/follows`), idempotente. */
+export async function followAccount(followeeAccountId: string): Promise<void> {
+  await identity.authedFetch<{ follow: unknown }>('/v1/follows', {
+    method: 'POST',
+    body: JSON.stringify({ followeeAccountId }),
+  });
+}
+
+/** Dejar de seguir (`DELETE /v1/follows/{id}`), idempotente. */
+export function unfollowAccount(followeeAccountId: string): Promise<void> {
+  return identity.authedFetch<void>(`/v1/follows/${followeeAccountId}`, { method: 'DELETE' });
 }
