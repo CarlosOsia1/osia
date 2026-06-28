@@ -144,14 +144,18 @@ export type NotificationDto = {
 /** Respuesta de `GET /v1/notifications`: página de notificaciones + contador de no-leídas (badge). */
 export type NotificationsPageDto = Page<NotificationDto> & { unreadCount: number };
 
-/** Presencia social de una cuenta (lectura de Redis `presence:{accountId}`; docs/10 §10). */
+/**
+ * Presencia social de una cuenta. Fuente real: el checkpoint durable `world.presence_sessions` que
+ * mantiene el world-server (open/close); una sesión abierta = online. (La presencia EN VIVO con TTL en
+ * Redis es una mejora futura; ver S3.6.) Solo se devuelve para cuentas en relación con el solicitante.
+ */
 export type PresenceEntryDto = {
   accountId: AccountId;
   online: boolean;
-  /** Zona del Mundo donde está (p. ej. "Plaza Crepúsculo"); `null` si offline. */
+  /** Zona del Mundo donde está (p. ej. "El Claro"); `null` si offline. */
   zone: string | null;
   /** Instancia del Mundo; `null` si offline. */
   instanceId: string | null;
-  /** Última señal vista (ISO-8601 UTC). */
-  lastSeen: string;
+  /** Última señal vista (ISO-8601 UTC); `null` si nunca se ha conectado. */
+  lastSeen: string | null;
 };
