@@ -48,6 +48,47 @@ export const WORLD_INSTANCE_STATUS_VALUES = ['open', 'full', 'draining', 'closed
 export type WorldInstanceStatus = (typeof WORLD_INSTANCE_STATUS_VALUES)[number];
 export const isWorldInstanceStatus = makeGuard(WORLD_INSTANCE_STATUS_VALUES);
 
+// --- social.posts (Fase 3 — S3.1-H4; espejo ER §7.1) ---
+/** Tipo de contenido del post (ER `posts.kind`). */
+export const POST_KIND_VALUES = ['text', 'image', 'moment'] as const;
+export type PostKind = (typeof POST_KIND_VALUES)[number];
+export const isPostKind = makeGuard(POST_KIND_VALUES);
+
+/** Visibilidad del post (ER `posts.visibility`). */
+export const POST_VISIBILITY_VALUES = ['public', 'followers', 'private'] as const;
+export type PostVisibility = (typeof POST_VISIBILITY_VALUES)[number];
+export const isPostVisibility = makeGuard(POST_VISIBILITY_VALUES);
+
+// --- social.reactions ---
+/**
+ * Reacciones dentro del gamut house-celestial (ER `reactions.kind` = `star|moon|sun`).
+ * Sin emojis saturados: la marca es prestigio curado, no métricas de vanidad (backlog S3.3-H2).
+ */
+export const REACTION_KIND_VALUES = ['star', 'moon', 'sun'] as const;
+export type ReactionKind = (typeof REACTION_KIND_VALUES)[number];
+export const isReactionKind = makeGuard(REACTION_KIND_VALUES);
+
+// --- social.follows ---
+/** Estado de una arista de seguimiento (ER `follows.status`). */
+export const FOLLOW_STATUS_VALUES = ['active', 'blocked'] as const;
+export type FollowStatus = (typeof FOLLOW_STATUS_VALUES)[number];
+export const isFollowStatus = makeGuard(FOLLOW_STATUS_VALUES);
+
+// --- social.feed_items ---
+/** Por qué un post entró al feed de alguien (ER `feed_items.reason`). */
+export const FEED_REASON_VALUES = ['follow', 'trending', 'event'] as const;
+export type FeedReason = (typeof FEED_REASON_VALUES)[number];
+export const isFeedReason = makeGuard(FEED_REASON_VALUES);
+
+// --- social.notifications ---
+/**
+ * Tipos de notificación social (espejo ER `notifications.kind`). `gossip` queda DESCARTADO
+ * (IA en Habitantes descartada al 100%, CLAUDE.md): sin Habitantes no hay chisme que notificar.
+ */
+export const NOTIFICATION_TYPE_VALUES = ['follow', 'reaction', 'comment', 'mention'] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number];
+export const isNotificationType = makeGuard(NOTIFICATION_TYPE_VALUES);
+
 // --- marca en el dato ---
 /** Acento por defecto del pasaporte: champán (ER §3.3 — la marca vive en el dato). */
 export const ACCENT_COLOR_DEFAULT = '#CBB89A';

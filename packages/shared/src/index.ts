@@ -23,6 +23,9 @@ export * from './schemas';
 // --- Catálogo declarativo de experiencias del Vestíbulo ---
 export * from './catalog/experiences';
 
+// --- Catálogo de eventos de dominio (Tejido Social, Fase 3) ---
+export * from './catalog/events';
+
 // --- Constantes de auth/SSO (cookie de refresh compartida) ---
 export * from './auth';
 

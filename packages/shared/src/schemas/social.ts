@@ -1,0 +1,101 @@
+/**
+ * Esquemas Zod del Tejido Social (Fase 3 — S3.1-H4). Validación en el borde: el cliente los usa para
+ * UX (`apps/social`) y el servidor para SEGURIDAD (`apps/api`) — nunca se confía en el cliente
+ * (CLAUDE.md §5). El tipo de entrada se deriva con `z.infer`, una sola fuente de verdad.
+ *
+ * Límites espejo del ER §7 / `rest/dto/social.ts`: body de post 1..2000, comentario 1..1000, hasta
+ * 4 adjuntos por URL. Los `kind`/`visibility` validan contra las tuplas de `domain/enums.ts`.
+ */
+
+import { z } from 'zod';
+import { MAX_PAGE_LIMIT } from '../rest/pagination';
+import {
+  POST_KIND_VALUES,
+  POST_VISIBILITY_VALUES,
+  REACTION_KIND_VALUES,
+} from '../domain/enums';
+import { POST_BODY_MAX, COMMENT_BODY_MAX, POST_MEDIA_MAX } from '../rest/dto/social';
+
+/** `POST /v1/posts` — publicar un post (texto y/o hasta 4 adjuntos por URL prefirmada). */
+export const createPostSchema = z
+  .object({
+    kind: z.enum(POST_KIND_VALUES).default('text'),
+    body: z.string().trim().min(1).max(POST_BODY_MAX).optional(),
+    media: z.array(z.string().url()).max(POST_MEDIA_MAX).optional(),
+    visibility: z.enum(POST_VISIBILITY_VALUES).default('public'),
+  })
+  .strict()
+  // Regla de dominio: un post necesita contenido. Si no hay `body`, debe haber al menos un adjunto;
+  // si hay `body`, ya pasó `.trim().min(1)`, así que es válido aunque `media` venga vacío.
+  .refine(
+    (p) => (p.body !== undefined && p.body.length > 0) || (p.media !== undefined && p.media.length > 0),
+    { message: 'Un post necesita texto o al menos un adjunto', path: ['body'] },
+  );
+export type CreatePostInput = z.infer<typeof createPostSchema>;
+
+/** `POST /v1/posts/{id}/comments` — comentar un post (con hilo opcional). */
+export const createCommentSchema = z
+  .object({
+    body: z.string().trim().min(1).max(COMMENT_BODY_MAX),
+    parentCommentId: z.string().uuid().optional(),
+  })
+  .strict();
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+
+/** `PUT /v1/posts/{id}/reactions` — reaccionar (idempotente por par). `kind` dentro del gamut. */
+export const setReactionSchema = z
+  .object({
+    kind: z.enum(REACTION_KIND_VALUES),
+  })
+  .strict();
+export type SetReactionInput = z.infer<typeof setReactionSchema>;
+
+/** `POST /v1/follows` — seguir a otra cuenta (anti-self lo refuerza el server + `ck_follows_no_self`). */
+export const followSchema = z
+  .object({
+    followeeAccountId: z.string().uuid(),
+  })
+  .strict();
+export type FollowInput = z.infer<typeof followSchema>;
+
+/** `POST /v1/notifications/read` — marcar leídas (sin `ids` = todas). */
+export const markNotificationsReadSchema = z
+  .object({
+    ids: z.array(z.string().uuid()).optional(),
+  })
+  .strict();
+export type MarkNotificationsReadInput = z.infer<typeof markNotificationsReadSchema>;
+
+/** Query de listados paginados por cursor keyset (feed, comentarios, listas de grafo). */
+export const listQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().positive().max(MAX_PAGE_LIMIT).optional(),
+    cursor: z.string().optional(),
+  })
+  .strict();
+export type ListQueryInput = z.infer<typeof listQuerySchema>;
+
+/** Query de `GET /v1/notifications` — listado paginado + filtro de no-leídas. */
+export const notificationsQuerySchema = listQuerySchema.extend({
+  unread: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .optional(),
+});
+export type NotificationsQueryInput = z.infer<typeof notificationsQuerySchema>;
+
+/**
+ * Query de `GET /v1/presence` — cuentas separadas por coma (`?accountIds=a,b,c`). El CSV se parte,
+ * se recortan espacios y cada id se valida como UUID; la salida ya es un `string[]` listo para el
+ * servidor (no se le pasa basura). `?accountIds=` ausente o vacío → `[]`.
+ */
+export const presenceQuerySchema = z
+  .object({
+    accountIds: z
+      .string()
+      .optional()
+      .transform((s) => (s ? s.split(',').map((x) => x.trim()).filter(Boolean) : []))
+      .pipe(z.array(z.string().uuid()).max(MAX_PAGE_LIMIT)),
+  })
+  .strict();
+export type PresenceQueryInput = z.infer<typeof presenceQuerySchema>;

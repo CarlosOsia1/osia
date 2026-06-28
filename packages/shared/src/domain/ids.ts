@@ -23,3 +23,25 @@ export const asEntityId = (n: number): EntityId => n as EntityId;
 export const asAccountId = (s: string): AccountId => s as AccountId;
 /** Construye un `ProfileId` (Fase 1: el `profiles.id`). */
 export const asProfileId = (s: string): ProfileId => s as ProfileId;
+
+/**
+ * IDs del Tejido Social (Fase 3 — S3.1-H4). En la DB son `uuid` (uuidv7) y en el cable viajan como
+ * string; el brand vive solo en el sistema de tipos (cero costo en runtime) y evita mezclar, p. ej.,
+ * un `PostId` con un `CommentId`.
+ */
+export type PostId = Brand<string, 'PostId'>;
+export type CommentId = Brand<string, 'CommentId'>;
+export type ReactionId = Brand<string, 'ReactionId'>;
+export type FollowId = Brand<string, 'FollowId'>;
+export type NotificationId = Brand<string, 'NotificationId'>;
+
+/** Construye un `PostId` (el `social.posts.id`). */
+export const asPostId = (s: string): PostId => s as PostId;
+/** Construye un `CommentId` (el `social.comments.id`). */
+export const asCommentId = (s: string): CommentId => s as CommentId;
+/** Construye un `ReactionId` (el `social.reactions.id`). */
+export const asReactionId = (s: string): ReactionId => s as ReactionId;
+/** Construye un `FollowId` (el `social.follows.id`). */
+export const asFollowId = (s: string): FollowId => s as FollowId;
+/** Construye un `NotificationId` (el `social.notifications.id`). */
+export const asNotificationId = (s: string): NotificationId => s as NotificationId;

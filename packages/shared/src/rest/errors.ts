@@ -37,6 +37,7 @@ export const ErrorCode = {
   // dominio social / economía / plots (contrato listo; se implementan Fase 3+)
   ALREADY_FOLLOWING: 'ALREADY_FOLLOWING',
   CANNOT_FOLLOW_SELF: 'CANNOT_FOLLOW_SELF',
+  ALREADY_REACTED: 'ALREADY_REACTED',
   INSUFFICIENT_POINTS: 'INSUFFICIENT_POINTS',
   ALREADY_OWNED: 'ALREADY_OWNED',
   PLOT_TAKEN: 'PLOT_TAKEN',

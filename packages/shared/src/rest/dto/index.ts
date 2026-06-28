@@ -6,3 +6,4 @@ export * from './avatar';
 export * from './invitation';
 export * from './session';
 export * from './world-ticket';
+export * from './social';
