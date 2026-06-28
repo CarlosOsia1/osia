@@ -3,12 +3,14 @@ import {
   asFollowId,
   asPostId,
   asProfileId,
+  asReactionId,
   type FollowDto,
   type FollowStatus,
   type PostDto,
   type PostKind,
   type PostVisibility,
   type ProfileBrief,
+  type ReactionDto,
   type ReactionKind,
 } from '@osia/shared';
 
@@ -69,6 +71,27 @@ export function toPostDto(
     viewerReaction,
     createdAt: post.created_at.toISOString(),
     updatedAt: post.updated_at.toISOString(),
+  };
+}
+
+/** Columnas de una reacción (`social.reactions`) para RETURNING/SELECT. */
+export const REACTION_COLS = 'id, post_id, account_id, kind, created_at';
+
+export type ReactionRow = {
+  id: string;
+  post_id: string;
+  account_id: string;
+  kind: ReactionKind;
+  created_at: Date;
+};
+
+export function toReactionDto(row: ReactionRow): ReactionDto {
+  return {
+    id: asReactionId(row.id),
+    postId: asPostId(row.post_id),
+    accountId: asAccountId(row.account_id),
+    kind: row.kind,
+    createdAt: row.created_at.toISOString(),
   };
 }
 

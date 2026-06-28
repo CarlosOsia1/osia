@@ -20,14 +20,20 @@ import { STORAGE_PORT } from './application/ports/out/storage.port';
 import { SupabaseStorageAdapter } from './infrastructure/storage/supabase-storage.adapter';
 import { POST_REPOSITORY } from './application/ports/out/post.repository';
 import { PgPostRepository } from './infrastructure/persistence/post.repository';
+import { ReactionController } from './web/reaction.controller';
+import { SetReactionUseCase } from './application/use-cases/set-reaction.use-case';
+import { RemoveReactionUseCase } from './application/use-cases/remove-reaction.use-case';
+import { REACTION_REPOSITORY } from './application/ports/out/reaction.repository';
+import { PgReactionRepository } from './infrastructure/persistence/reaction.repository';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
  * application (use cases + ports) → infrastructure (adapters). Los ports se inyectan por token; los
  * adapters concretos solo se cablean aquí. Cada slice vertical (puerto + adapter + caso de uso) se
  * agrega en su sprint: S3.1-H2 salud; S3.2-H1 grafo (follows); S3.2-H3 publicación de eventos de
- * dominio (`social.follow.created`, que consume `economy` para reputación); S3.3-H1 media (upload-url)
- * + publicar post. Faltan reacciones/comentarios/feed/notificaciones/presencia (S3.3-H2..H4, S3.4).
+ * dominio (`social.follow.created`/`social.post.reacted`, que consume `economy` para reputación);
+ * S3.3-H1 media (upload-url) + publicar post; S3.3-H2 reaccionar. Faltan comentarios/feed/notificaciones/
+ * presencia (S3.3-H3..H4, S3.4).
  */
 @Module({
   controllers: [
@@ -36,6 +42,7 @@ import { PgPostRepository } from './infrastructure/persistence/post.repository';
     FollowGraphController,
     MediaController,
     PostController,
+    ReactionController,
   ],
   providers: [
     SocialHealthService,
@@ -44,11 +51,14 @@ import { PgPostRepository } from './infrastructure/persistence/post.repository';
     FollowGraphService,
     CreateUploadUrlUseCase,
     CreatePostUseCase,
+    SetReactionUseCase,
+    RemoveReactionUseCase,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
     { provide: STORAGE_PORT, useClass: SupabaseStorageAdapter },
     { provide: POST_REPOSITORY, useClass: PgPostRepository },
+    { provide: REACTION_REPOSITORY, useClass: PgReactionRepository },
   ],
 })
 export class SocialModule {}

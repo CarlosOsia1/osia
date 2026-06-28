@@ -9,6 +9,8 @@
  * (CLAUDE.md) — sin Habitantes no hay chisme que publicar.
  */
 
+import type { ReactionKind } from '../domain/enums';
+
 /** Nombres canónicos de los eventos `social.*` (orden estable). */
 export const SOCIAL_EVENTS = [
   'social.post.published',
@@ -40,4 +42,20 @@ export const SOCIAL_FOLLOW_CREATED = 'social.follow.created' satisfies SocialEve
 export interface SocialFollowCreatedPayload {
   followerAccountId: string;
   followeeAccountId: string;
+}
+
+/** Nombre del evento de reacción nueva (handle tipado para publicador y suscriptor). */
+export const SOCIAL_POST_REACTED = 'social.post.reacted' satisfies SocialEventName;
+
+/**
+ * Payload de `social.post.reacted`: SOLO reacciones nuevas (no el re-PUT idempotente del mismo kind). Lo
+ * consume la reputación (acreditar `reaction_received` al AUTOR del post, S3.3-H2) y, más adelante, las
+ * notificaciones (S3.4). La dedup anti-grind acredita una vez por (post, reactor); no hay auto-crédito
+ * (si `reactorAccountId === postAuthorAccountId` no se acredita).
+ */
+export interface SocialPostReactedPayload {
+  postId: string;
+  postAuthorAccountId: string;
+  reactorAccountId: string;
+  kind: ReactionKind;
 }

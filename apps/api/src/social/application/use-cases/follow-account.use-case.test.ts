@@ -44,7 +44,7 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
 /** Publicador espía: registra cada `social.follow.created` emitido. */
 const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialFollowCreatedPayload[] } => {
   const emitted: SocialFollowCreatedPayload[] = [];
-  return { pub: { followCreated: (p) => emitted.push(p) }, emitted };
+  return { pub: { followCreated: (p) => emitted.push(p), postReacted: () => {} }, emitted };
 };
 
 test('follow: nuevo follow devuelve la arista activa y emite social.follow.created', async () => {

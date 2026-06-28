@@ -23,6 +23,7 @@ test('acredita al seguido por su seguidor (receptor=seguido, origen=seguidor)', 
       calls.push([followee, follower]);
       return { credited: true };
     },
+    creditReactionReceived: async () => ({ credited: false }),
   };
   const uc = new CreditReputationOnFollowUseCase(ledger);
   const res = await uc.execute(payload);
@@ -31,7 +32,10 @@ test('acredita al seguido por su seguidor (receptor=seguido, origen=seguidor)', 
 });
 
 test('idempotente: si el asiento ya existía, credited=false (sin doble crédito)', async () => {
-  const ledger: ReputationLedgerPort = { creditNewFollower: async () => ({ credited: false }) };
+  const ledger: ReputationLedgerPort = {
+    creditNewFollower: async () => ({ credited: false }),
+    creditReactionReceived: async () => ({ credited: false }),
+  };
   const uc = new CreditReputationOnFollowUseCase(ledger);
   const res = await uc.execute(payload);
   assert.equal(res.credited, false);

@@ -60,8 +60,16 @@
     composer en `apps/social` (`/compose`, subida directa por PUT, estados subiendo/publicando). Nuevos:
     `StoragePort`/`SupabaseStorageAdapter`, `authedFetch` en el cliente SSO, `Textarea` en `@osia/ui`.
     QA multi-agente (12 agentes); fixes aplicados (a11y del selector, error de subida tipado, prefijo de
-    bucket endurecido). **H2 ▶️ SIGUIENTE** = reaccionar (`PUT/DELETE` idempotente) · H3 comentar ·
-    H4 fan-out-on-write a `feed_items` HASH×8 + lectura del feed (emite `social.post.published`).
+    bucket endurecido).
+    · H2 ✅ reaccionar: `PUT /v1/posts/{id}/reactions {kind}` (idempotente) + `DELETE /.../{kind}` (204);
+    trigger `posts.reaction_count`; emite `social.post.reacted` → `economy` acredita `reaction_received`
+    al AUTOR **una vez por (post, reactor)** (UUID v5 determinista + índice único parcial), sin auto-crédito,
+    sin revertir en un-react. QA multi-agente (11 agentes); fix mayor: la reacción **respeta la visibilidad
+    del post** (CTE atómico que reimpone `posts_select_visible` en el write path service_role → no se puede
+    reaccionar a un post privado/followers ajeno; cierra además la carrera TOCTOU). `uuidV5` extraído a
+    `common/` con test de vector RFC 4122.
+    · **H3 ▶️ SIGUIENTE** = comentar · H4 fan-out-on-write a `feed_items` HASH×8 + lectura del feed (emite
+    `social.post.published`).
   - Pendientes: `S3.4` Presencia + Notificaciones · `S3.5` Perfil público + puerta en el Vestíbulo
     (chisme IA ❌) · `S3.6` Endurecimiento + tiempo real + lanzamiento.
 

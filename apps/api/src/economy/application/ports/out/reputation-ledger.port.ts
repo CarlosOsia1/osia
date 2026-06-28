@@ -15,4 +15,15 @@ export interface ReputationLedgerPort {
     followeeAccountId: string,
     followerAccountId: string,
   ): Promise<{ credited: boolean }>;
+
+  /**
+   * Acredita reputación al AUTOR del post por una reacción recibida. Idempotente por (post, reactor):
+   * re-reaccionar, cambiar de kind o quitar+volver a reaccionar NO re-acredita. `credited=false` si el
+   * asiento ya existía.
+   */
+  creditReactionReceived(
+    authorAccountId: string,
+    postId: string,
+    reactorAccountId: string,
+  ): Promise<{ credited: boolean }>;
 }
