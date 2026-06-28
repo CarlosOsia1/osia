@@ -26,6 +26,10 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260628000002_economy_reputation_ledger.sql` | **Reputación (S3.2-H3):** schema `economy` + `reputation_ledger` append-only (dedup anti-grind por índice parcial) + RLS deny-all + trigger que mantiene `profiles.{reputation,popularity_points}` + backfill. |
 | `20260628000003_economy_reputation_clamp_fix.sql` | **Reputación (S3.2-H3, fix QA):** unifica el clamp de `popularity_points` entre trigger y backfill (deriva del agregado, no por-paso) para que coincidan ante deltas negativos futuros. |
 | `20260628000004_storage_post_media.sql` | **Media de posts (S3.3-H1):** bucket público `post-media` (solo imágenes, ≤10 MiB) para adjuntos por URL prefirmada (el API nunca recibe el binario). |
+| `20260628000005_social_reaction_counts.sql` | **Reacciones (S3.3-H2):** trigger que mantiene `posts.reaction_count` desde `social.reactions` + backfill. |
+| `20260628000006_economy_reaction_dedup.sql` | **Reputación por reacción (S3.3-H2):** índice único parcial `uq_reputation_reaction` (dedup `reaction_received` por post+reactor). |
+| `20260628000007_social_comment_counts.sql` | **Comentarios (S3.3-H3):** trigger que mantiene `posts.comment_count` (cuenta vivos) + backfill. |
+| `20260628000008_social_feed_read_index.sql` | **Feed (S3.3-H4):** índice de recencia `idx_feed_acct_recency (account_id, created_at DESC, id DESC)` para la lectura keyset del feed. |
 
 ## Convención de nombres (nota importante)
 

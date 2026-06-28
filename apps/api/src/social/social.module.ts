@@ -31,6 +31,13 @@ import { ListCommentsUseCase } from './application/use-cases/list-comments.use-c
 import { DeleteCommentUseCase } from './application/use-cases/delete-comment.use-case';
 import { COMMENT_REPOSITORY } from './application/ports/out/comment.repository';
 import { PgCommentRepository } from './infrastructure/persistence/comment.repository';
+import { FeedController } from './web/feed.controller';
+import { GetFeedUseCase } from './application/use-cases/get-feed.use-case';
+import { FanOutPostUseCase } from './application/use-cases/fan-out-post.use-case';
+import { FeedFanoutListener } from './infrastructure/messaging/feed-fanout.listener';
+import { FeedRetentionService } from './application/feed-retention.service';
+import { FEED_REPOSITORY } from './application/ports/out/feed.repository';
+import { PgFeedRepository } from './infrastructure/persistence/feed.repository';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -38,8 +45,8 @@ import { PgCommentRepository } from './infrastructure/persistence/comment.reposi
  * adapters concretos solo se cablean aquí. Cada slice vertical (puerto + adapter + caso de uso) se
  * agrega en su sprint: S3.1-H2 salud; S3.2-H1 grafo (follows); S3.2-H3 publicación de eventos de
  * dominio (`social.follow.created`/`social.post.reacted`, que consume `economy` para reputación);
- * S3.3-H1 media (upload-url) + publicar post; S3.3-H2 reaccionar; S3.3-H3 comentar. Faltan feed/
- * notificaciones/presencia (S3.3-H4, S3.4).
+ * S3.3-H1 media (upload-url) + publicar post; S3.3-H2 reaccionar; S3.3-H3 comentar; S3.3-H4 feed
+ * (fan-out-on-write + lectura + poda). Faltan notificaciones/presencia (S3.4).
  */
 @Module({
   controllers: [
@@ -51,6 +58,7 @@ import { PgCommentRepository } from './infrastructure/persistence/comment.reposi
     ReactionController,
     PostCommentsController,
     CommentsController,
+    FeedController,
   ],
   providers: [
     SocialHealthService,
@@ -64,6 +72,10 @@ import { PgCommentRepository } from './infrastructure/persistence/comment.reposi
     CreateCommentUseCase,
     ListCommentsUseCase,
     DeleteCommentUseCase,
+    GetFeedUseCase,
+    FanOutPostUseCase,
+    FeedFanoutListener,
+    FeedRetentionService,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
@@ -71,6 +83,7 @@ import { PgCommentRepository } from './infrastructure/persistence/comment.reposi
     { provide: POST_REPOSITORY, useClass: PgPostRepository },
     { provide: REACTION_REPOSITORY, useClass: PgReactionRepository },
     { provide: COMMENT_REPOSITORY, useClass: PgCommentRepository },
+    { provide: FEED_REPOSITORY, useClass: PgFeedRepository },
   ],
 })
 export class SocialModule {}

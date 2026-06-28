@@ -44,6 +44,19 @@ export interface SocialFollowCreatedPayload {
   followeeAccountId: string;
 }
 
+/** Nombre del evento de post publicado (handle tipado para publicador y suscriptor). */
+export const SOCIAL_POST_PUBLISHED = 'social.post.published' satisfies SocialEventName;
+
+/**
+ * Payload de `social.post.published`: un post recién creado. Lo consume el fan-out-on-write (materializa
+ * `feed_items` para el autor y sus seguidores, S3.3-H4). `createdAt` se usa como orden del feed.
+ */
+export interface SocialPostPublishedPayload {
+  postId: string;
+  authorAccountId: string;
+  createdAt: string;
+}
+
 /** Nombre del evento de reacción nueva (handle tipado para publicador y suscriptor). */
 export const SOCIAL_POST_REACTED = 'social.post.reacted' satisfies SocialEventName;
 

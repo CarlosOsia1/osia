@@ -206,7 +206,13 @@
     "welcome": "Hola de nuevo, {name}.",
     "tagline": "Aquí vivirán tu feed, tu red y tu estatus.",
     "loading": "Tejiendo tu red…",
-    "comingSoon": "El feed llega pronto.",
+    "feed": {
+      "loading": "Cargando el feed…",
+      "empty": "Tu feed está en silencio. Sigue a alguien o publica algo.",
+      "star": "Estrella · {count}",
+      "comments": "{count, plural, one {# comentario} other {# comentarios}}",
+      "more": "Ver más"
+    },
     "compose": {
       "open": "Publicar algo",
       "title": "Componer",

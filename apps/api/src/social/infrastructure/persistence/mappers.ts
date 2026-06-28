@@ -6,6 +6,8 @@ import {
   asProfileId,
   asReactionId,
   type CommentDto,
+  type FeedItemDto,
+  type FeedReason,
   type FollowDto,
   type FollowStatus,
   type PostDto,
@@ -173,4 +175,53 @@ export function toAuthorBrief(row: AuthorBriefAliasedRow): ProfileBrief {
     accent_color: row.author_accent_color,
     popularity_points: row.author_popularity_points,
   });
+}
+
+/**
+ * Fila combinada de la lectura del feed: el `feed_item` + el post embebido + el autor (brief) + la
+ * reacción del lector. Las columnas del feed/post se aliasan (`feed_*`/`post_*`) para no chocar entre sí
+ * ni con el brief del autor (`author_*`).
+ */
+export type FeedItemRow = AuthorBriefAliasedRow & {
+  feed_id: string;
+  feed_reason: FeedReason;
+  feed_score: number;
+  feed_created_at: Date;
+  post_id: string;
+  post_author_account_id: string;
+  post_kind: PostKind;
+  post_body: string | null;
+  post_media: string[];
+  post_visibility: PostVisibility;
+  post_reaction_count: number;
+  post_comment_count: number;
+  post_created_at: Date;
+  post_updated_at: Date;
+  viewer_reaction: ReactionKind | null;
+};
+
+export function toFeedItemDto(row: FeedItemRow): FeedItemDto {
+  const post = toPostDto(
+    {
+      id: row.post_id,
+      author_account_id: row.post_author_account_id,
+      kind: row.post_kind,
+      body: row.post_body,
+      media: row.post_media,
+      visibility: row.post_visibility,
+      reaction_count: row.post_reaction_count,
+      comment_count: row.post_comment_count,
+      created_at: row.post_created_at,
+      updated_at: row.post_updated_at,
+    },
+    toAuthorBrief(row),
+    row.viewer_reaction,
+  );
+  return {
+    id: row.feed_id,
+    post,
+    reason: row.feed_reason,
+    score: row.feed_score,
+    createdAt: row.feed_created_at.toISOString(),
+  };
 }

@@ -3,18 +3,22 @@ import { ErrorCode, type CreatePostInput, type PostDto } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
 import { POST_REPOSITORY, type PostRepository } from '../ports/out/post.repository';
 import { STORAGE_PORT, type StoragePort } from '../ports/out/storage.port';
+import {
+  SOCIAL_EVENT_PUBLISHER,
+  type SocialEventPublisher,
+} from '../ports/out/social-event-publisher.port';
 
 /**
- * Publicar un Post (S3.3-H1). El cuerpo/visibilidad ya pasaron Zod en el borde. Aquí se valida que
- * cada adjunto sea una URL de NUESTRO Storage (no una URL externa arbitraria inyectada por el cliente)
- * y luego se persiste. La emisión de `social.post.published` (fan-out al feed) llega en S3.3-H4, donde
- * existe su consumidor (regla de slice §1.2).
+ * Publicar un Post (S3.3-H1/H4). El cuerpo/visibilidad ya pasaron Zod en el borde. Aquí se valida que
+ * cada adjunto sea una URL de NUESTRO Storage (no una URL externa arbitraria) y luego se persiste. Al
+ * crearse emite `social.post.published`, que el fan-out (S3.3-H4) consume para materializar el feed.
  */
 @Injectable()
 export class CreatePostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly posts: PostRepository,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
   ) {}
 
   async execute(authorAccountId: string, input: CreatePostInput): Promise<PostDto> {
@@ -25,6 +29,8 @@ export class CreatePostUseCase {
         });
       }
     }
-    return this.posts.createPost(authorAccountId, input);
+    const post = await this.posts.createPost(authorAccountId, input);
+    this.events.postPublished({ postId: post.id, authorAccountId, createdAt: post.createdAt });
+    return post;
   }
 }

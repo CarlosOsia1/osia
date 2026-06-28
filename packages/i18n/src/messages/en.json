@@ -206,7 +206,13 @@
     "welcome": "Welcome back, {name}.",
     "tagline": "Your feed, your network and your status will live here.",
     "loading": "Weaving your network…",
-    "comingSoon": "The feed is coming soon.",
+    "feed": {
+      "loading": "Loading your feed…",
+      "empty": "Your feed is quiet. Follow someone or post something.",
+      "star": "Star · {count}",
+      "comments": "{count, plural, one {# comment} other {# comments}}",
+      "more": "Load more"
+    },
     "compose": {
       "open": "Post something",
       "title": "Compose",

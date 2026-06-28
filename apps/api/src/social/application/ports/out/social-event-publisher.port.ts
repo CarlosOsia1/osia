@@ -1,4 +1,8 @@
-import type { SocialFollowCreatedPayload, SocialPostReactedPayload } from '@osia/shared';
+import type {
+  SocialFollowCreatedPayload,
+  SocialPostPublishedPayload,
+  SocialPostReactedPayload,
+} from '@osia/shared';
 
 export const SOCIAL_EVENT_PUBLISHER = Symbol('SOCIAL_EVENT_PUBLISHER');
 
@@ -12,6 +16,8 @@ export const SOCIAL_EVENT_PUBLISHER = Symbol('SOCIAL_EVENT_PUBLISHER');
 export interface SocialEventPublisher {
   /** Anuncia una arista de seguimiento NUEVA (no el re-follow idempotente). */
   followCreated(payload: SocialFollowCreatedPayload): void;
+  /** Anuncia un post recién publicado (dispara el fan-out al feed). */
+  postPublished(payload: SocialPostPublishedPayload): void;
   /** Anuncia una reacción NUEVA (no el re-PUT idempotente del mismo kind). */
   postReacted(payload: SocialPostReactedPayload): void;
 }

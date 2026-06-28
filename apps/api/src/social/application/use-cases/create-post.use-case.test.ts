@@ -15,6 +15,7 @@ import {
 import { CreatePostUseCase } from './create-post.use-case';
 import type { PostRepository } from '../ports/out/post.repository';
 import type { StoragePort } from '../ports/out/storage.port';
+import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
 
 const ACCOUNT = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
@@ -49,6 +50,7 @@ const input = (p: Partial<CreatePostInput>): CreatePostInput => ({ kind: 'text',
 
 const deps = (over: { owns?: (u: string) => boolean } = {}) => {
   const created: CreatePostInput[] = [];
+  const published: Array<{ postId: string; authorAccountId: string }> = [];
   const posts: PostRepository = {
     createPost: async (_acc, input) => {
       created.push(input);
@@ -61,31 +63,38 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
     },
     ownsPublicUrl: over.owns ?? ((u) => u.startsWith('https://ref.supabase.co/storage/v1/object/public/post-media/')),
   };
-  return { posts, storage, created };
+  const events: SocialEventPublisher = {
+    followCreated: () => {},
+    postReacted: () => {},
+    postPublished: (p) => published.push({ postId: p.postId, authorAccountId: p.authorAccountId }),
+  };
+  return { posts, storage, events, created, published };
 };
 
-test('publica un post de solo texto', async () => {
-  const { posts, storage, created } = deps();
-  const uc = new CreatePostUseCase(posts, storage);
+test('publica un post de solo texto y emite social.post.published', async () => {
+  const { posts, storage, events, created, published } = deps();
+  const uc = new CreatePostUseCase(posts, storage, events);
   const post = await uc.execute(ACCOUNT, input({ body: 'Hola mundo' }));
   assert.equal(post.body, 'Hola mundo');
   assert.equal(created.length, 1);
+  assert.deepEqual(published, [{ postId: post.id, authorAccountId: ACCOUNT }]);
 });
 
 test('publica un post con adjunto de nuestro Storage', async () => {
-  const { posts, storage, created } = deps();
-  const uc = new CreatePostUseCase(posts, storage);
+  const { posts, storage, events, created } = deps();
+  const uc = new CreatePostUseCase(posts, storage, events);
   const post = await uc.execute(ACCOUNT, input({ kind: 'image', media: [OWN] }));
   assert.deepEqual(post.media, [OWN]);
   assert.equal(created.length, 1);
 });
 
-test('rechaza un adjunto externo (no de OSIA) con VALIDATION_FAILED y no persiste', async () => {
-  const { posts, storage, created } = deps();
-  const uc = new CreatePostUseCase(posts, storage);
+test('rechaza un adjunto externo (no de OSIA) con VALIDATION_FAILED, no persiste ni emite', async () => {
+  const { posts, storage, events, created, published } = deps();
+  const uc = new CreatePostUseCase(posts, storage, events);
   await assert.rejects(
     () => uc.execute(ACCOUNT, input({ body: 'mira', media: [FOREIGN] })),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.VALIDATION_FAILED && e.status === 422,
   );
   assert.equal(created.length, 0);
+  assert.equal(published.length, 0);
 });

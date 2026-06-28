@@ -10,7 +10,6 @@ import {
   POST_BODY_MAX,
   POST_MEDIA_MIME_TYPES,
   POST_MEDIA_SIZE_MAX,
-  type PostMediaMime,
   type PostVisibility,
 } from '@osia/shared';
 import { createPost, MediaUploadError, uploadImage } from '../../lib/social-api';

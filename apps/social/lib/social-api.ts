@@ -1,8 +1,12 @@
 import type {
   CreatePostInput,
   CreateUploadUrlInput,
+  FeedItemDto,
+  Page,
   PostDto,
   PostMediaMime,
+  ReactionKind,
+  ReactionResult,
   UploadTargetDto,
 } from '@osia/shared';
 import { identity } from './identity';
@@ -49,4 +53,23 @@ export async function createPost(input: CreatePostInput): Promise<PostDto> {
     body: JSON.stringify(input),
   });
   return post;
+}
+
+/** Lee una página del feed propio (`GET /v1/feed`), cronológico inverso por cursor. */
+export function getFeed(cursor?: string): Promise<Page<FeedItemDto>> {
+  const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+  return identity.authedFetch<Page<FeedItemDto>>(`/v1/feed${qs}`, { method: 'GET' });
+}
+
+/** Reacciona a un post (`PUT /v1/posts/{id}/reactions`), idempotente. */
+export function setReaction(postId: string, kind: ReactionKind): Promise<ReactionResult> {
+  return identity.authedFetch<ReactionResult>(`/v1/posts/${postId}/reactions`, {
+    method: 'PUT',
+    body: JSON.stringify({ kind }),
+  });
+}
+
+/** Quita una reacción (`DELETE /v1/posts/{id}/reactions/{kind}`), idempotente. */
+export function removeReaction(postId: string, kind: ReactionKind): Promise<void> {
+  return identity.authedFetch<void>(`/v1/posts/${postId}/reactions/${kind}`, { method: 'DELETE' });
 }

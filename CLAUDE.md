@@ -54,7 +54,7 @@
     parcial — caps en Postgres, NO Redis; cache `profiles.{reputation,popularity_points}` por trigger).
     Decisiones: unfollow NO revierte reputación; `reputation = Σdelta`, `popularity = GREATEST(Σ,0)`.
     QA multi-agente (10 agentes) + fix del clamp `popularity` (trigger==backfill ante deltas negativos).
-  - `S3.3` Feed ▶️ **EN CURSO** — H1 ✅ publicar Post: `POST /v1/posts` (texto ≤2000 y/o hasta 4 imágenes
+  - `S3.3` Feed ✅ **CERRADO** — H1 ✅ publicar Post: `POST /v1/posts` (texto ≤2000 y/o hasta 4 imágenes
     por **URL prefirmada** a Supabase Storage, bucket público `post-media`, vía `POST /v1/media/upload-url`;
     el API nunca recibe el binario) + validación anti-abuso (la media debe ser de nuestro Storage) + UI
     composer en `apps/social` (`/compose`, subida directa por PUT, estados subiendo/publicando). Nuevos:
@@ -68,10 +68,15 @@
     del post** (CTE atómico que reimpone `posts_select_visible` en el write path service_role → no se puede
     reaccionar a un post privado/followers ajeno; cierra además la carrera TOCTOU). `uuidV5` extraído a
     `common/` con test de vector RFC 4122.
-    · **H3 ▶️ SIGUIENTE** = comentar · H4 fan-out-on-write a `feed_items` HASH×8 + lectura del feed (emite
-    `social.post.published`).
-  - Pendientes: `S3.4` Presencia + Notificaciones · `S3.5` Perfil público + puerta en el Vestíbulo
-    (chisme IA ❌) · `S3.6` Endurecimiento + tiempo real + lanzamiento.
+    · H3 ✅ comentar: `POST/GET /v1/posts/{id}/comments` (cursor keyset) + `DELETE /v1/comments/{id}`
+    (soft-delete propio); trigger `posts.comment_count`; visibilidad del post reimpuesta en create/list.
+    · H4 ✅ feed: emite `social.post.published` → fan-out-on-write a `feed_items` (autor + seguidores);
+    `GET /v1/feed` (cursor keyset, post embebido + autor + `viewerReaction`); cron de poda (90 d); UI de
+    feed en `apps/social` (infinite query, reacción estrella). Diferido a S3.4 (regla de slice):
+    emisión de `social.post.commented` + detección de menciones.
+  - `S3.4` Presencia + Notificaciones ▶️ **SIGUIENTE**.
+  - Pendientes: `S3.5` Perfil público + puerta en el Vestíbulo (chisme IA ❌) · `S3.6` Endurecimiento +
+    tiempo real + lanzamiento.
 
   **Qué SÍ entra en Fase 3:** grafo de seguidores + reputación derivada (event-sourced), feed
   (fan-out-on-write a `feed_items` HASH×8), reacciones (`star|moon|sun`) y comentarios, presencia social
