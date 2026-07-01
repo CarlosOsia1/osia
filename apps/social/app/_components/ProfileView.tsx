@@ -1,93 +1,221 @@
 'use client';
 
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Button, Card, PopularityMeter, Text } from '@osia/ui';
+import {
+  Avatar,
+  Button,
+  Card,
+  Divider,
+  PopularityMeter,
+  Skeleton,
+  Text,
+  IconLock,
+} from '@osia/ui';
+import type { PostDto } from '@osia/shared';
 import { useOsiaSession } from '@osia/identity';
 import { identity } from '../../lib/identity';
 import { followAccount, getProfilePosts, getPublicProfile, unfollowAccount } from '../../lib/social-api';
+import { ProfileEditModal } from './ProfileEditModal';
+
+const profileKey = (handle: string) => ['social', 'profile', handle] as const;
 
 /**
- * Perfil público (S3.5-H1): cabecera + `PopularityMeter` (estatus) + conteos + seguir/dejar de seguir +
- * los posts del perfil (visibles para el lector). Texto vía `Text`/i18n, tokens (§2.1). El SessionGuard
- * (que envuelve la página) garantiza sesión; aquí solo se lee y se compone.
+ * ProfileView (S3.8) — perfil de lujo estilo Instagram: portada + foto solapada + nombre + bio + conteos
+ * + medidor de popularidad. Editable si es tuyo; seguir/solicitar si es ajeno. Gating estricto: una cuenta
+ * privada de la que no eres dueño ni seguidor muestra solo la cabecera + candado. Compone @osia/ui (§2.1).
  */
 export function ProfileView({ handle }: { handle: string }) {
   const t = useTranslations('social');
   const qc = useQueryClient();
-  const viewerHandle = useOsiaSession(identity).data?.passport?.profile?.handle ?? null;
+  const [editing, setEditing] = useState(false);
 
-  const profileQ = useQuery({ queryKey: ['social', 'profile', handle], queryFn: () => getPublicProfile(handle) });
+  const profileQ = useQuery({ queryKey: profileKey(handle), queryFn: () => getPublicProfile(handle) });
+  const canView = profileQ.data?.canViewContent ?? false;
   const postsQ = useQuery({
-    queryKey: ['social', 'profile', handle, 'posts'],
+    queryKey: [...profileKey(handle), 'posts'],
     queryFn: () => getProfilePosts(handle),
-    enabled: profileQ.isSuccess,
+    enabled: profileQ.isSuccess && canView,
   });
 
   const follow = useMutation({
     mutationFn: async () => {
       const p = profileQ.data;
       if (!p) return;
-      if (p.isFollowing) await unfollowAccount(p.accountId);
+      if (p.viewerState === 'following') await unfollowAccount(p.accountId);
       else await followAccount(p.accountId);
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['social', 'profile', handle] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: profileKey(handle) }),
   });
 
-  if (profileQ.isPending) return <Text tone="muted">{t('profile.loading')}</Text>;
-  if (profileQ.isError || !profileQ.data) return <Text tone="muted">{t('profile.notFound')}</Text>;
+  if (profileQ.isPending) return <ProfileSkeleton />;
+  if (profileQ.isError || !profileQ.data) {
+    return (
+      <Text variant="read" tone="muted">
+        {t('profile.notFound')}
+      </Text>
+    );
+  }
 
-  const profile = profileQ.data;
-  const isSelf = viewerHandle === profile.handle;
+  const p = profileQ.data;
+  const isSelf = p.viewerState === 'self';
+  const photo = p.photoUrl ?? p.avatarUrl;
   const posts = postsQ.data?.data ?? [];
 
+  const followLabel =
+    p.viewerState === 'following'
+      ? t('profile.followingState')
+      : p.viewerState === 'requested'
+        ? t('profile.requested')
+        : p.isPrivate
+          ? t('profile.requestFollow')
+          : t('profile.follow');
+
   return (
-    <div style={{ display: 'grid', gap: 'var(--space-5)' }}>
-      <header style={{ display: 'grid', gap: 'var(--space-2)' }}>
-        <Text variant="display">{profile.displayName}</Text>
-        <Text variant="label" tone="subtle">{`@${profile.handle}`}</Text>
-        {profile.bio && <Text variant="body">{profile.bio}</Text>}
-        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-          <Text variant="label" tone="muted">{t('profile.followers', { count: profile.followersCount })}</Text>
-          <Text variant="label" tone="muted">{t('profile.following', { count: profile.followingCount })}</Text>
+    <div className="osia-profile">
+      <div className="osia-profile__cover">{p.coverUrl && <img src={p.coverUrl} alt="" />}</div>
+
+      <div className="osia-profile__id">
+        <span className="osia-profile__photo">
+          <Avatar src={photo} name={p.displayName} size={112} ring />
+        </span>
+        <div className="osia-profile__names">
+          <Text variant="hero" as="h1">
+            {p.displayName}
+          </Text>
+          <Text variant="meta" tone="subtle">
+            {`@${p.handle}`}
+          </Text>
         </div>
-        <PopularityMeter points={profile.popularityPoints} label={t('profile.popularity')} />
-        {!isSelf && (
-          <div style={{ justifySelf: 'start' }}>
+        <div className="osia-profile__actions">
+          {isSelf ? (
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              {t('profile.edit')}
+            </Button>
+          ) : (
             <Button
-              variant={profile.isFollowing ? 'ghost' : 'primary'}
-              active={profile.isFollowing}
+              variant={p.viewerState === 'following' ? 'ghost' : 'primary'}
+              active={p.viewerState === 'following'}
               loading={follow.isPending}
               onClick={() => follow.mutate()}
             >
-              {profile.isFollowing ? t('profile.unfollow') : t('profile.follow')}
+              {followLabel}
             </Button>
-          </div>
-        )}
-      </header>
+          )}
+        </div>
+      </div>
 
-      <section style={{ display: 'grid', gap: 'var(--space-3)' }}>
-        <Text variant="title">{t('profile.posts')}</Text>
-        {posts.length === 0 ? (
-          <Text variant="label" tone="muted">
-            {t('profile.noPosts')}
+      {p.bio && (
+        <Text variant="read" className="osia-profile__bio">
+          {p.bio}
+        </Text>
+      )}
+
+      <div className="osia-profile__stats">
+        <span className="osia-profile__stat">
+          <Text variant="subheading" as="span">
+            {p.followersCount}
           </Text>
-        ) : (
-          posts.map((post) => (
-            <Card key={post.id} pad>
-              <article style={{ display: 'grid', gap: 'var(--space-2)' }}>
-                {post.body && <Text variant="body">{post.body}</Text>}
-                {post.media.map((url) => (
-                  <img key={url} src={url} alt="" style={{ maxWidth: '100%', borderRadius: 'var(--radius-2, 8px)' }} />
-                ))}
-                <Text variant="label" tone="subtle">
-                  {`${t('feed.star', { count: post.reactionCount })} · ${t('feed.comments', { count: post.commentCount })}`}
-                </Text>
-              </article>
-            </Card>
-          ))
-        )}
-      </section>
+          <Text variant="meta" tone="muted">
+            {t('profile.followersLabel')}
+          </Text>
+        </span>
+        <span className="osia-profile__stat">
+          <Text variant="subheading" as="span">
+            {p.followingCount}
+          </Text>
+          <Text variant="meta" tone="muted">
+            {t('profile.followingLabel')}
+          </Text>
+        </span>
+      </div>
+
+      <div style={{ paddingInline: 'var(--space-4)' }}>
+        <PopularityMeter points={p.popularityPoints} label={t('profile.popularity')} />
+      </div>
+
+      <Divider />
+
+      {canView ? (
+        <ProfilePosts posts={posts} loading={postsQ.isPending} emptyLabel={t('profile.noPosts')} />
+      ) : (
+        <div className="osia-profile__locked">
+          <IconLock />
+          <Text variant="subheading">{t('profile.privateTitle')}</Text>
+          <Text variant="read" tone="muted">
+            {t('profile.privateBody')}
+          </Text>
+        </div>
+      )}
+
+      {isSelf && <ProfileEditModal open={editing} onClose={() => setEditing(false)} profile={p} />}
+    </div>
+  );
+}
+
+
+
+/** Rejilla de posts del perfil (S3.8): miniatura de media o extracto de texto. El detalle llega en S3.10. */
+function ProfilePosts({
+  posts,
+  loading,
+  emptyLabel,
+}: {
+  posts: PostDto[];
+  loading: boolean;
+  emptyLabel: string;
+}) {
+  if (loading) {
+    return (
+      <div className="osia-profile__grid">
+        {Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={i} variant="block" width="100%" height={undefined} className="osia-profile__tile" />
+        ))}
+      </div>
+    );
+  }
+  if (posts.length === 0) {
+    return (
+      <Text variant="read" tone="muted" style={{ paddingInline: 'var(--space-4)' }}>
+        {emptyLabel}
+      </Text>
+    );
+  }
+  return (
+    <div className="osia-profile__grid">
+      {posts.map((post) => (
+        <Card key={post.id} className="osia-profile__tile">
+          {post.media[0] ? (
+            <img
+              src={post.media[0]}
+              alt=""
+              style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <Text variant="read" tone="muted">
+              {post.body}
+            </Text>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="osia-profile">
+      <Skeleton variant="block" width="100%" height="9rem" />
+      <div className="osia-profile__id">
+        <span className="osia-profile__photo">
+          <Skeleton variant="circle" width={112} height={112} />
+        </span>
+        <div className="osia-profile__names" style={{ gap: 'var(--space-2)' }}>
+          <Skeleton variant="text" width="12rem" height="1.4rem" />
+          <Skeleton variant="text" width="7rem" />
+        </div>
+      </div>
     </div>
   );
 }

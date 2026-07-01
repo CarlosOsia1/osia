@@ -31,6 +31,11 @@ const profile: PublicProfileDto = {
   followersCount: 1,
   followingCount: 0,
   isFollowing: true,
+  isPrivate: false,
+  photoUrl: null,
+  coverUrl: null,
+  viewerState: 'following',
+  canViewContent: true,
 };
 const emptyPage: Page<PostDto> = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
 

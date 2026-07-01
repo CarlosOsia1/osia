@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ACCENT_PALETTE } from '../domain/enums';
+import { PROFILE_BIO_MAX } from '../rest/dto/profile';
 
 /** Parche de preferencias (S1.6-H3): todo opcional, se mezcla sobre las prefs guardadas. */
 export const updatePrefsSchema = z
@@ -16,7 +17,7 @@ export type UpdatePrefsInput = z.infer<typeof updatePrefsSchema>;
 export const updateProfileSchema = z
   .object({
     displayName: z.string().trim().min(1).max(40).optional(),
-    bio: z.string().trim().max(280).optional(),
+    bio: z.string().trim().max(PROFILE_BIO_MAX).optional(),
     // accent solo dentro de la paleta de marca (no color libre, S1.6-H1).
     accentColor: z.enum(ACCENT_PALETTE).optional(),
     prefs: updatePrefsSchema.optional(),

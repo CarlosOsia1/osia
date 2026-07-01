@@ -41,6 +41,7 @@ export { Divider } from './Divider';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { Menu, type MenuProps, type MenuItem } from './Menu';
 export { AppShell, type AppShellProps, type ShellNavItem } from './AppShell';
+export { ImageUploadField, type ImageUploadFieldProps } from './ImageUploadField';
 export * from './icons';
 
 // --- Vestíbulo (S1.7): pasaporte, puertas, cruce de umbral ---

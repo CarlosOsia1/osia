@@ -20,6 +20,8 @@ import {
   COMMENT_BODY_MAX,
   POST_MEDIA_MAX,
   POST_MEDIA_MIME_TYPES,
+  PROFILE_MEDIA_KINDS,
+  PROFILE_MEDIA_MIME_TYPES,
 } from '../rest/dto/social';
 
 /** `POST /v1/posts` — publicar un post (texto y/o hasta 4 adjuntos por URL prefirmada). */
@@ -46,6 +48,31 @@ export const createUploadUrlSchema = z
   })
   .strict();
 export type CreateUploadUrlInput = z.infer<typeof createUploadUrlSchema>;
+
+/** `POST /v1/profiles/me/media/upload-url` (S3.8) — destino prefirmado para foto o portada de perfil. */
+export const createProfileMediaUploadUrlSchema = z
+  .object({
+    kind: z.enum(PROFILE_MEDIA_KINDS),
+    contentType: z.enum(PROFILE_MEDIA_MIME_TYPES),
+  })
+  .strict();
+export type CreateProfileMediaUploadUrlInput = z.infer<typeof createProfileMediaUploadUrlSchema>;
+
+/**
+ * `PATCH /v1/profiles/me/card` (S3.8) — actualizar la tarjeta social propia: privacidad y/o foto/portada.
+ * `null` en `photoUrl`/`coverUrl` la limpia (vuelve al respaldo); ausente = sin cambio. Al menos un campo.
+ */
+export const updateProfileCardSchema = z
+  .object({
+    isPrivate: z.boolean().optional(),
+    photoUrl: z.string().url().nullable().optional(),
+    coverUrl: z.string().url().nullable().optional(),
+  })
+  .strict()
+  .refine((o) => o.isPrivate !== undefined || 'photoUrl' in o || 'coverUrl' in o, {
+    message: 'Nada que actualizar',
+  });
+export type UpdateProfileCardInput = z.infer<typeof updateProfileCardSchema>;
 
 /** `POST /v1/posts/{id}/comments` — comentar un post (con hilo opcional). */
 export const createCommentSchema = z

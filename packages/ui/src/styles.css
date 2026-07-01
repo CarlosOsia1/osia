@@ -1624,6 +1624,153 @@
   color: var(--color-text-subtle);
 }
 
+/* ============================ Perfil (Instagram de lujo) ============================ */
+.osia-profile {
+  display: grid;
+  gap: var(--space-5);
+}
+.osia-profile__cover {
+  position: relative;
+  aspect-ratio: 4 / 1;
+  min-block-size: 8rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  background:
+    radial-gradient(120% 160% at 18% -30%, rgba(100, 98, 160, 0.45), transparent 60%),
+    linear-gradient(120deg, var(--osia-indigo-800), var(--color-surface-2));
+}
+.osia-profile__cover img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.osia-profile__id {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-block-start: calc(-1 * var(--space-8));
+  padding-inline: var(--space-4);
+}
+.osia-profile__photo {
+  flex: none;
+  border: 3px solid var(--color-bg);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+}
+.osia-profile__names {
+  display: grid;
+  gap: 2px;
+  padding-block-end: var(--space-2);
+  min-inline-size: 0;
+}
+.osia-profile__actions {
+  margin-inline-start: auto;
+  padding-block-end: var(--space-2);
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.osia-profile__bio {
+  padding-inline: var(--space-4);
+  max-inline-size: 60ch;
+}
+.osia-profile__stats {
+  display: flex;
+  gap: var(--space-6);
+  padding-inline: var(--space-4);
+}
+.osia-profile__stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.osia-profile__locked {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--hairline);
+  background: var(--color-surface);
+}
+.osia-profile__locked svg {
+  inline-size: 2rem;
+  block-size: 2rem;
+  color: var(--color-accent);
+}
+/* Rejilla de posts del perfil (estilo Instagram) */
+.osia-profile__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+@media (max-width: 640px) {
+  .osia-profile__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.osia-profile__tile {
+  aspect-ratio: 1;
+  padding: var(--space-3);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.osia-profile__tile img {
+  border-radius: var(--radius-md);
+}
+
+/* ============================ Campo de subida de imagen ============================ */
+.osia-mediafield {
+  display: grid;
+  gap: var(--space-2);
+}
+.osia-mediafield__drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--hairline-strong);
+  background: var(--color-surface-2);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-mediafield__drop:hover {
+  border-color: var(--color-accent);
+}
+.osia-mediafield__drop svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+.osia-mediafield__drop img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.osia-mediafield--round .osia-mediafield__drop {
+  aspect-ratio: 1;
+  inline-size: 6rem;
+  border-radius: var(--radius-full);
+  justify-self: start;
+}
+.osia-mediafield__input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Accesibilidad: sin shimmer/animaciones si el usuario pide menos movimiento */
 @media (prefers-reduced-motion: reduce) {
   .osia-skeleton::after {

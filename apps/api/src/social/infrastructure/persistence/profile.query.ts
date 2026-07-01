@@ -27,6 +27,10 @@ type PublicProfileRow = {
   followers_count: number;
   following_count: number;
   is_following: boolean;
+  is_self: boolean;
+  is_private: boolean;
+  photo_url: string | null;
+  cover_url: string | null;
 };
 
 type ProfilePostRow = PostRow & AuthorBriefAliasedRow & { viewer_reaction: ReactionKind | null };
@@ -40,17 +44,24 @@ export class PgProfileQuery implements ProfileQueryPort {
     const res = await this.pool.query<PublicProfileRow>(
       `SELECT p.id, p.account_id, p.handle, p.display_name, p.avatar_url, p.accent_color,
               p.popularity_points, p.bio, p.reputation, p.followers_count, p.following_count,
+              COALESCE(pc.is_private, false) AS is_private, pc.photo_url, pc.cover_url,
+              (p.account_id = $2) AS is_self,
               EXISTS (
                 SELECT 1 FROM social.follows f
                 WHERE f.follower_account_id = $2 AND f.followee_account_id = p.account_id
                   AND f.status = 'active'
               ) AS is_following
        FROM identity.profiles p
+       LEFT JOIN social.profile_cards pc ON pc.account_id = p.account_id
        WHERE p.handle = $1 AND p.deleted_at IS NULL`,
       [handle, viewerAccountId],
     );
     const row = res.rows[0];
     if (!row) return null;
+    // Gating estricto (S3.8, decisión de Carlos): en cuenta privada, quien no es dueño ni seguidor
+    // activo solo ve la cabecera; el contenido (posts/listas) va oculto hasta seguir/ser aprobado.
+    const canViewContent = !row.is_private || row.is_self || row.is_following;
+    const viewerState = row.is_self ? 'self' : row.is_following ? 'following' : 'none';
     return {
       profileId: asProfileId(row.id),
       accountId: asAccountId(row.account_id),
@@ -64,6 +75,11 @@ export class PgProfileQuery implements ProfileQueryPort {
       followersCount: row.followers_count,
       followingCount: row.following_count,
       isFollowing: row.is_following,
+      isPrivate: row.is_private,
+      photoUrl: row.photo_url,
+      coverUrl: row.cover_url,
+      viewerState,
+      canViewContent,
     };
   }
 
@@ -73,12 +89,33 @@ export class PgProfileQuery implements ProfileQueryPort {
     limit: number,
     cursor: Cursor | null,
   ): Promise<Page<PostDto> | null> {
-    const author = await this.pool.query<{ account_id: string }>(
-      `SELECT account_id FROM identity.profiles WHERE handle = $1 AND deleted_at IS NULL`,
-      [handle],
+    const author = await this.pool.query<{
+      account_id: string;
+      is_private: boolean;
+      is_self: boolean;
+      is_following: boolean;
+    }>(
+      `SELECT p.account_id,
+              COALESCE(pc.is_private, false) AS is_private,
+              (p.account_id = $2) AS is_self,
+              EXISTS (
+                SELECT 1 FROM social.follows f
+                WHERE f.follower_account_id = $2 AND f.followee_account_id = p.account_id
+                  AND f.status = 'active'
+              ) AS is_following
+       FROM identity.profiles p
+       LEFT JOIN social.profile_cards pc ON pc.account_id = p.account_id
+       WHERE p.handle = $1 AND p.deleted_at IS NULL`,
+      [handle, viewerAccountId],
     );
-    const authorId = author.rows[0]?.account_id;
-    if (!authorId) return null;
+    const authorRow = author.rows[0];
+    if (!authorRow) return null;
+    const authorId = authorRow.account_id;
+
+    // Gating estricto (S3.8): en cuenta privada, quien no es dueño ni seguidor activo no ve ningún post.
+    if (authorRow.is_private && !authorRow.is_self && !authorRow.is_following) {
+      return { data: [], page: { nextCursor: null, hasMore: false, limit } };
+    }
 
     // Posts del autor visibles para el lector (autor / público / followers con follow activo).
     const params: unknown[] = [authorId, viewerAccountId];

@@ -8,6 +8,9 @@
 
 import type { AccountId, ProfileId } from '../../domain/ids';
 
+/** Tope de caracteres de la bio (espejo del CHECK del ER y del schema Zod de identidad). */
+export const PROFILE_BIO_MAX = 280;
+
 export type ProfileVisibility = 'public' | 'members' | 'private';
 export type PresenceVisibility = 'public' | 'followers' | 'private';
 

@@ -31,6 +31,8 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260628000007_social_comment_counts.sql` | **Comentarios (S3.3-H3):** trigger que mantiene `posts.comment_count` (cuenta vivos) + backfill. |
 | `20260628000008_social_feed_read_index.sql` | **Feed (S3.3-H4):** índice de recencia `idx_feed_acct_recency (account_id, created_at DESC, id DESC)` para la lectura keyset del feed. |
 | `20260628000009_social_reports.sql` | **Moderación (S3.6-H2):** `social.reports` (cola de reportes post/comment) + índice de cola abierta + RLS deny-all (service-only). |
+| `20260701000001_social_profile_cards.sql` | **Perfil de lujo (S3.8):** `social.profile_cards` (privacidad de cuenta + foto/portada) + trigger `updated_at` + RLS deny-all. |
+| `20260701000002_storage_profile_media.sql` | **Perfil de lujo (S3.8):** bucket público `profile-media` (imágenes ≤5 MiB) para foto/portada por URL prefirmada. |
 
 ## Convención de nombres (nota importante)
 

@@ -1,14 +1,18 @@
 import type {
   CreatePostInput,
+  CreateProfileMediaUploadUrlInput,
   CreateUploadUrlInput,
   FeedItemDto,
   NotificationsPageDto,
   Page,
   PostDto,
   PostMediaMime,
+  ProfileMediaKind,
+  ProfileMediaMime,
   PublicProfileDto,
   ReactionKind,
   ReactionResult,
+  UpdateProfileCardInput,
   UploadTargetDto,
 } from '@osia/shared';
 import { identity } from './identity';
@@ -46,6 +50,46 @@ export async function uploadImage(file: File): Promise<string> {
   });
   if (!res.ok) throw new MediaUploadError(res.status);
   return target.publicUrl;
+}
+
+/** Pide destino prefirmado para subir foto o portada de perfil (`POST /v1/profiles/me/media/upload-url`). */
+export function requestProfileMediaTarget(
+  kind: ProfileMediaKind,
+  contentType: ProfileMediaMime,
+): Promise<UploadTargetDto> {
+  const input: CreateProfileMediaUploadUrlInput = { kind, contentType };
+  return identity.authedFetch<UploadTargetDto>('/v1/profiles/me/media/upload-url', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+/** Sube foto/portada DIRECTO a Storage (PUT prefirmado) y devuelve la URL pública. */
+export async function uploadProfileImage(kind: ProfileMediaKind, file: File): Promise<string> {
+  const target = await requestProfileMediaTarget(kind, file.type as ProfileMediaMime);
+  const res = await fetch(target.uploadUrl, {
+    method: 'PUT',
+    headers: { 'content-type': file.type },
+    body: file,
+  });
+  if (!res.ok) throw new MediaUploadError(res.status);
+  return target.publicUrl;
+}
+
+/** Actualiza la tarjeta social propia (`PATCH /v1/profiles/me/card`): privacidad y/o foto/portada. */
+export function updateProfileCard(input: UpdateProfileCardInput): Promise<void> {
+  return identity.authedFetch<void>('/v1/profiles/me/card', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+/** Edita la bio propia reusando el endpoint de identidad (`PATCH /v1/profiles/me`). */
+export function updateBio(bio: string): Promise<void> {
+  return identity.authedFetch<void>('/v1/profiles/me', {
+    method: 'PATCH',
+    body: JSON.stringify({ bio }),
+  });
 }
 
 /** Publica un post (`POST /v1/posts`) y devuelve el creado. */

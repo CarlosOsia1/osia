@@ -62,6 +62,13 @@ import { EmailVerifiedGuard } from '../common/email-verified.guard';
 import { MetricsController } from './web/metrics.controller';
 import { METRICS_QUERY } from './application/ports/out/metrics.query';
 import { PgMetricsQuery } from './infrastructure/persistence/metrics.query';
+import { ProfileMeController } from './web/profile-me.controller';
+import { UpdateProfileCardUseCase } from './application/use-cases/update-profile-card.use-case';
+import { CreateProfileMediaUploadUrlUseCase } from './application/use-cases/create-profile-media-upload-url.use-case';
+import { PROFILE_CARD_REPOSITORY } from './application/ports/out/profile-card.repository';
+import { PgProfileCardRepository } from './infrastructure/persistence/profile-card.repository';
+import { PROFILE_MEDIA_STORAGE } from './application/ports/out/profile-media.storage.port';
+import { SupabaseProfileMediaAdapter } from './infrastructure/storage/supabase-profile-media.adapter';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -89,6 +96,7 @@ import { PgMetricsQuery } from './infrastructure/persistence/metrics.query';
     PublicProfileController,
     ReportController,
     MetricsController,
+    ProfileMeController,
   ],
   providers: [
     SocialHealthService,
@@ -128,6 +136,10 @@ import { PgMetricsQuery } from './infrastructure/persistence/metrics.query';
     { provide: PROFILE_QUERY, useClass: PgProfileQuery },
     { provide: REPORT_REPOSITORY, useClass: PgReportRepository },
     { provide: METRICS_QUERY, useClass: PgMetricsQuery },
+    UpdateProfileCardUseCase,
+    CreateProfileMediaUploadUrlUseCase,
+    { provide: PROFILE_CARD_REPOSITORY, useClass: PgProfileCardRepository },
+    { provide: PROFILE_MEDIA_STORAGE, useClass: SupabaseProfileMediaAdapter },
   ],
 })
 export class SocialModule {}

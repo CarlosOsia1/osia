@@ -43,6 +43,23 @@ export type PostMediaMime = (typeof POST_MEDIA_MIME_TYPES)[number];
 /** Tope de tamaño de un adjunto (bytes). Espejo del `file_size_limit` del bucket. */
 export const POST_MEDIA_SIZE_MAX = 10 * 1024 * 1024;
 
+/** Media del PERFIL (S3.8): foto y portada. Misma allowlist no-ejecutable que los posts (sin gif/svg). */
+export const PROFILE_MEDIA_KINDS = ['photo', 'cover'] as const;
+export type ProfileMediaKind = (typeof PROFILE_MEDIA_KINDS)[number];
+export const PROFILE_MEDIA_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+export type ProfileMediaMime = (typeof PROFILE_MEDIA_MIME_TYPES)[number];
+/** Tope de tamaño de foto/portada (bytes). Espejo del `file_size_limit` del bucket `profile-media`. */
+export const PROFILE_MEDIA_SIZE_MAX = 5 * 1024 * 1024;
+
+/**
+ * Relación del solicitante con un perfil, para pintar el CTA correcto:
+ * - `self`: es tu propio perfil (editable).
+ * - `following`: lo sigues (follow activo).
+ * - `requested`: le enviaste una solicitud aún pendiente (cuentas privadas, S3.9).
+ * - `none`: no lo sigues ni tienes solicitud.
+ */
+export type ProfileViewerState = 'self' | 'following' | 'requested' | 'none';
+
 /**
  * Resultado de `POST /v1/media/upload-url`: destino prefirmado para subir el binario directo a Storage
  * (el API nunca recibe el archivo) + la URL pública final que luego se guarda en `post.media`.
@@ -113,8 +130,19 @@ export type PublicProfileDto = ProfileBrief & {
   reputation: number;
   followersCount: number;
   followingCount: number;
-  /** ¿El solicitante sigue a este perfil? */
+  /** ¿El solicitante sigue a este perfil? (equivale a `viewerState === 'following'`). */
   isFollowing: boolean;
+  /** Presentación de lujo (S3.8): cuenta privada + foto y portada reales (o `null` → respaldo al avatar). */
+  isPrivate: boolean;
+  photoUrl: string | null;
+  coverUrl: string | null;
+  /** Relación del solicitante con este perfil (para el CTA: editar / seguir / solicitado). */
+  viewerState: ProfileViewerState;
+  /**
+   * ¿El solicitante puede ver el contenido (posts, listas)? `false` en cuenta privada de la que no eres
+   * dueño ni seguidor activo — la UI muestra solo la cabecera + "Solicitar seguir" (gating estricto).
+   */
+  canViewContent: boolean;
 };
 
 /** Métricas operativas del Tejido Social (`GET /v1/metrics/social`, S3.6-H3). Conteos agregados. */
