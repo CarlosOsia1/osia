@@ -225,8 +225,14 @@
       "logout": "Cerrar sesión"
     },
     "discover": {
-      "soonTitle": "Nuevas voces, muy pronto",
-      "soonBody": "Estamos preparando a quién seguir, elegido por reputación — nunca por un algoritmo. Mientras tanto, invita a alguien o comparte una publicación."
+      "emptyTitle": "Nadie nuevo por sugerir",
+      "emptyBody": "Ya sigues a los residentes que te sugeriríamos. Invita a alguien o busca por nombre."
+    },
+    "search": {
+      "label": "Buscar personas",
+      "placeholder": "Buscar personas…",
+      "searching": "Buscando…",
+      "empty": "No se encontró a nadie."
     },
     "friends": {
       "tabs": {

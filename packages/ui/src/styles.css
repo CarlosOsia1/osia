@@ -1388,6 +1388,29 @@
   box-shadow: var(--glow-accent);
 }
 
+/* ============================ SearchBox (buscador con resultados) ============================ */
+.osia-searchbox {
+  position: relative;
+  inline-size: 100%;
+}
+.osia-searchbox__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline: 0;
+  z-index: 50;
+  max-block-size: 24rem;
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-frost-strong);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-lux);
+  animation: osia-rise var(--dur-fast) var(--ease-out-soft);
+}
+
 /* ============================ Menu / Dropdown ============================ */
 .osia-menu {
   position: relative;
@@ -1908,6 +1931,9 @@
 }
 .osia-userrow:hover {
   background: var(--color-surface);
+}
+.osia-userrow[data-unread] {
+  background: color-mix(in oklab, var(--color-indigo-deep) 34%, transparent);
 }
 .osia-userrow__link {
   display: flex;

@@ -225,8 +225,14 @@
       "logout": "Sign out"
     },
     "discover": {
-      "soonTitle": "New voices, coming soon",
-      "soonBody": "We're preparing who to follow, chosen by reputation — never by an algorithm. In the meantime, invite someone or share a post."
+      "emptyTitle": "No one new to suggest",
+      "emptyBody": "You already follow the residents we'd suggest. Invite someone or search by name."
+    },
+    "search": {
+      "label": "Search people",
+      "placeholder": "Search people…",
+      "searching": "Searching…",
+      "empty": "No one found."
     },
     "friends": {
       "tabs": {

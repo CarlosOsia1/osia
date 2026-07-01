@@ -65,6 +65,10 @@ import { EmailVerifiedGuard } from '../common/email-verified.guard';
 import { MetricsController } from './web/metrics.controller';
 import { METRICS_QUERY } from './application/ports/out/metrics.query';
 import { PgMetricsQuery } from './infrastructure/persistence/metrics.query';
+import { DiscoveryController } from './web/discovery.controller';
+import { DiscoveryService } from './application/discovery.service';
+import { DISCOVERY_QUERY } from './application/ports/out/discovery.query';
+import { PgDiscoveryQuery } from './infrastructure/persistence/discovery.query';
 import { ProfileMeController } from './web/profile-me.controller';
 import { UpdateProfileCardUseCase } from './application/use-cases/update-profile-card.use-case';
 import { CreateProfileMediaUploadUrlUseCase } from './application/use-cases/create-profile-media-upload-url.use-case';
@@ -104,6 +108,7 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     MetricsController,
     ProfileMeController,
     FollowRequestsController,
+    DiscoveryController,
   ],
   providers: [
     SocialHealthService,
@@ -146,6 +151,8 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     { provide: PROFILE_QUERY, useClass: PgProfileQuery },
     { provide: REPORT_REPOSITORY, useClass: PgReportRepository },
     { provide: METRICS_QUERY, useClass: PgMetricsQuery },
+    DiscoveryService,
+    { provide: DISCOVERY_QUERY, useClass: PgDiscoveryQuery },
     UpdateProfileCardUseCase,
     CreateProfileMediaUploadUrlUseCase,
     AcceptFollowRequestUseCase,

@@ -14,6 +14,7 @@ import type {
   ProfileBrief,
   ProfileMediaKind,
   ProfileMediaMime,
+  ProfileSummaryDto,
   PublicProfileDto,
   ReactionActorDto,
   ReactionKind,
@@ -256,4 +257,16 @@ export async function createComment(postId: string, input: CreateCommentInput): 
 /** Borrar un comentario propio (`DELETE /v1/comments/{id}`). */
 export function deleteComment(commentId: string): Promise<void> {
   return identity.authedFetch<void>(`/v1/comments/${commentId}`, { method: 'DELETE' });
+}
+
+/** Buscar personas por prefijo (`GET /v1/search/profiles?q=`). */
+export function searchProfiles(q: string): Promise<ProfileSummaryDto[]> {
+  return identity.authedFetch<ProfileSummaryDto[]>(`/v1/search/profiles?q=${encodeURIComponent(q)}`, {
+    method: 'GET',
+  });
+}
+
+/** Sugeridos a seguir (`GET /v1/discover`), sin IA/ML. */
+export function getSuggestions(): Promise<ProfileSummaryDto[]> {
+  return identity.authedFetch<ProfileSummaryDto[]>('/v1/discover', { method: 'GET' });
 }

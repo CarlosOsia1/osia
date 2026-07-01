@@ -130,6 +130,14 @@ export const listQuerySchema = z
   .strict();
 export type ListQueryInput = z.infer<typeof listQuerySchema>;
 
+/** Query de `GET /v1/profiles/search` (S3.11) — busca personas por prefijo de handle o nombre. */
+export const searchProfilesQuerySchema = z
+  .object({
+    q: z.string().trim().min(1).max(50),
+  })
+  .strict();
+export type SearchProfilesQueryInput = z.infer<typeof searchProfilesQuerySchema>;
+
 /** Query de `GET /v1/posts/{id}/reactions` (S3.10) — keyset + filtro opcional por `kind`. */
 export const reactionsQuerySchema = listQuerySchema.extend({
   kind: z.enum(REACTION_KIND_VALUES).optional(),

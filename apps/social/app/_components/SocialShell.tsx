@@ -27,6 +27,7 @@ import { useOsiaSession } from '@osia/identity';
 import { identity } from '../../lib/identity';
 import { getNotifications } from '../../lib/social-api';
 import { vestibuleBaseUrl, worldBaseUrl, vestibuleLoginUrl } from '../../lib/vestibule';
+import { SearchPeople } from './SearchPeople';
 
 const NOTIF_KEY = ['social', 'notifications'] as const;
 
@@ -113,6 +114,7 @@ export function SocialShell({ children }: { children: ReactNode }) {
       nav={nav}
       mobileNav={mobileNav}
       activeKey={activeKey}
+      searchSlot={<SearchPeople />}
       headerActions={headerActions}
       LinkComponent={Link}
     >

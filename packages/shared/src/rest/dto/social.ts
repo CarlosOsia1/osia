@@ -196,6 +196,15 @@ export type FollowRequestDto = ProfileBrief & {
   accountId: AccountId;
 };
 
+/**
+ * Una persona en Descubrir/Buscar (S3.11): brief + `accountId` (para seguir) + relación con el
+ * solicitante (`viewerState`, para pintar el botón). Nunca incluye al propio usuario.
+ */
+export type ProfileSummaryDto = ProfileBrief & {
+  accountId: AccountId;
+  viewerState: Extract<ProfileViewerState, 'following' | 'requested' | 'none'>;
+};
+
 /** Un ítem materializado del feed (`social.feed_items`) — embebe el post completo para render directo. */
 export type FeedItemDto = {
   /** `feed_items.id` (la PK real es `(account_id, id)`; aquí basta el id como string opaco). */
