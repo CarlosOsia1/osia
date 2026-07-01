@@ -29,17 +29,13 @@ export function ReactionListModal({ postId, onClose }: { postId: string; onClose
         ) : (
           users.map((u) => (
             <UserRow
-              key={`${u.profileId}-${u.kind}`}
+              key={u.profileId}
               name={u.displayName}
               handle={u.handle}
               avatarUrl={u.avatarUrl}
               href={`/profile/${u.handle}`}
               LinkComponent={Link}
-            >
-              <Text variant="meta" tone="accent">
-                {t(`post.react.${u.kind}`)}
-              </Text>
-            </UserRow>
+            />
           ))
         )}
         {q.hasNextPage && (

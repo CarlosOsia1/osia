@@ -31,7 +31,7 @@ test('reacción ajena: acredita al autor (author, post, reactor)', async () => {
     postId: POST,
     postAuthorAccountId: AUTHOR,
     reactorAccountId: REACTOR,
-    kind: 'sun',
+    kind: 'star',
   };
   const res = await uc.execute(payload);
   assert.equal(res.credited, true);

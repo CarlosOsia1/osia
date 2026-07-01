@@ -20,7 +20,8 @@ export type ShellNavItem = {
 };
 
 export type AppShellProps = {
-  brand: { href: string; label: string };
+  /** `logoSrc` = imagen del logo de marca (recomendado); si falta, se usa `label` como wordmark. */
+  brand: { href: string; label: string; logoSrc?: string };
   nav: ShellNavItem[];
   /** Items de la tab bar móvil (por defecto = `nav`). */
   mobileNav?: ShellNavItem[];
@@ -101,7 +102,11 @@ export function AppShell({
         {createElement(
           Link,
           { href: brand.href, className: 'osia-appheader__brand', 'aria-label': brand.label },
-          <span className="osia-appheader__wordmark">{brand.label}</span>,
+          brand.logoSrc ? (
+            <img className="osia-appheader__logo" src={brand.logoSrc} alt={brand.label} />
+          ) : (
+            <span className="osia-appheader__wordmark">{brand.label}</span>
+          ),
         )}
         {searchSlot && <div className="osia-appheader__search">{searchSlot}</div>}
         <div className="osia-appheader__actions">{headerActions}</div>

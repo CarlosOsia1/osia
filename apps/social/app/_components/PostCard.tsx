@@ -17,7 +17,7 @@ import {
   IconTrash,
   type MenuItem,
 } from '@osia/ui';
-import type { PostDto, ReactionKind } from '@osia/shared';
+import type { PostDto } from '@osia/shared';
 import { deletePost, removeReaction, setReaction } from '../../lib/social-api';
 import { relativeTime } from '../../lib/time';
 import { CommentThread } from './CommentThread';
@@ -48,9 +48,9 @@ export function PostCard({
   const isOwn = viewerHandle !== null && post.author.handle === viewerHandle;
 
   const react = useMutation({
-    mutationFn: async (kind: ReactionKind) => {
-      if (post.viewerReaction === kind) await removeReaction(post.id, kind);
-      else await setReaction(post.id, kind);
+    mutationFn: async () => {
+      if (post.viewerReaction === 'star') await removeReaction(post.id, 'star');
+      else await setReaction(post.id, 'star');
     },
     onSuccess: () => onMutated?.(),
   });
@@ -62,11 +62,6 @@ export function PostCard({
     },
   });
 
-  const kindLabels: Record<ReactionKind, string> = {
-    star: t('post.react.star'),
-    moon: t('post.react.moon'),
-    sun: t('post.react.sun'),
-  };
   const menuItems: MenuItem[] = isOwn
     ? [{ key: 'delete', label: t('post.delete'), icon: <IconTrash />, onClick: () => setConfirmDelete(true), danger: true }]
     : [];
@@ -104,11 +99,11 @@ export function PostCard({
 
         <div className="osia-post__actions">
           <ReactionBar
-            viewerReaction={post.viewerReaction}
-            reactionCount={post.reactionCount}
-            onReact={(k) => react.mutate(k)}
+            reacted={post.viewerReaction === 'star'}
+            count={post.reactionCount}
+            onToggle={() => react.mutate()}
             onShowReactors={() => setShowReactors(true)}
-            kindLabels={kindLabels}
+            label={t('post.like')}
             countLabel={t('post.reactions', { count: post.reactionCount })}
             pending={react.isPending}
           />

@@ -37,11 +37,11 @@ import { POST_BODY_MAX, COMMENT_BODY_MAX } from './rest/dto/social';
 const UUID_V7 = '0190b8e0-7c1e-7b3a-8a4e-3f2b1c0d9e8f';
 
 // --- Enums (espejo de los CHECK del ER §7) ---
-test('social enums: reacciones dentro del gamut house-celestial (star|moon|sun)', () => {
-  assert.deepEqual([...REACTION_KIND_VALUES], ['star', 'moon', 'sun']);
-  assert.ok(isReactionKind('moon'));
-  assert.ok(!isReactionKind('glow')); // valor de ejemplo del backlog, NO del ER
-  assert.ok(!isReactionKind('like'));
+test('social enums: reacción ÚNICA (estrella=like); luna/sol descartadas (Carlos 2026-07-01)', () => {
+  assert.deepEqual([...REACTION_KIND_VALUES], ['star']);
+  assert.ok(isReactionKind('star'));
+  assert.ok(!isReactionKind('moon') && !isReactionKind('sun')); // ya no existen
+  assert.ok(!isReactionKind('glow') && !isReactionKind('like'));
 });
 
 test('social enums: post kind/visibility y feed/follow guards', () => {

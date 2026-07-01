@@ -21,6 +21,6 @@ test('quita la reacción pasando (post, cuenta, kind) al repo', async () => {
     listReactors: async () => null,
   };
   const uc = new RemoveReactionUseCase(repo);
-  await uc.execute(POST, READER, 'moon');
-  assert.deepEqual(calls, [[POST, READER, 'moon']]);
+  await uc.execute(POST, READER, 'star');
+  assert.deepEqual(calls, [[POST, READER, 'star']]);
 });

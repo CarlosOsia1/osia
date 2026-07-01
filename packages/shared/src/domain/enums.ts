@@ -61,10 +61,11 @@ export const isPostVisibility = makeGuard(POST_VISIBILITY_VALUES);
 
 // --- social.reactions ---
 /**
- * Reacciones dentro del gamut house-celestial (ER `reactions.kind` = `star|moon|sun`).
- * Sin emojis saturados: la marca es prestigio curado, no métricas de vanidad (backlog S3.3-H2).
+ * Reacción única: la ESTRELLA (un "me gusta" de marca). Decisión de Carlos (2026-07-01): luna/sol se
+ * descartaron por no significar nada y por acumularse (una por tipo). Una sola reacción por post: dar la
+ * estrella o quitarla. Sin emojis saturados: la marca es prestigio curado, no métricas de vanidad.
  */
-export const REACTION_KIND_VALUES = ['star', 'moon', 'sun'] as const;
+export const REACTION_KIND_VALUES = ['star'] as const;
 export type ReactionKind = (typeof REACTION_KIND_VALUES)[number];
 export const isReactionKind = makeGuard(REACTION_KIND_VALUES);
 

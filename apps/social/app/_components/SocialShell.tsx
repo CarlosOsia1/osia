@@ -110,7 +110,7 @@ export function SocialShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShell
-      brand={{ href: '/', label: 'OSIA' }}
+      brand={{ href: '/', label: 'OSIA', logoSrc: '/brand/osia-horizontal.svg' }}
       nav={nav}
       mobileNav={mobileNav}
       activeKey={activeKey}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Avatar, Button, Divider, PopularityMeter, Skeleton, Text, IconLock } from '@osia/ui';
+import { Avatar, Button, Divider, Skeleton, Text, IconLock } from '@osia/ui';
 import type { PostDto } from '@osia/shared';
 import {
   followAccount,
@@ -142,10 +142,6 @@ export function ProfileView({ handle }: { handle: string }) {
             {t('profile.followingLabel')}
           </Text>
         </span>
-      </div>
-
-      <div style={{ paddingInline: 'var(--space-4)' }}>
-        <PopularityMeter points={p.popularityPoints} label={t('profile.popularity')} />
       </div>
 
       <Divider />

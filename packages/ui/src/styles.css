@@ -1097,6 +1097,11 @@
   letter-spacing: var(--tracking-wide);
   color: var(--color-accent);
 }
+.osia-appheader__logo {
+  display: block;
+  block-size: 1.75rem;
+  inline-size: auto;
+}
 .osia-appheader__search {
   flex: 1 1 auto;
   max-inline-size: 28rem;
@@ -1330,6 +1335,14 @@
   position: absolute;
   inset-block-start: 2px;
   inset-inline-end: 2px;
+}
+.osia-iconbtn--sm {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+.osia-iconbtn--sm svg {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
 }
 
 /* Badge / conteo */
@@ -1909,12 +1922,12 @@
 .osia-comment__meta {
   display: flex;
   gap: var(--space-2);
-  align-items: baseline;
+  align-items: center;
 }
 .osia-comment__composer {
   display: flex;
   gap: var(--space-2);
-  align-items: flex-start;
+  align-items: center;
 }
 .osia-comment__composer .osia-field {
   flex: 1 1 auto;

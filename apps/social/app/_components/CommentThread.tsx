@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { Avatar, Button, ConfirmDialog, Field, Text, IconTrash } from '@osia/ui';
+import { Avatar, Button, ConfirmDialog, Field, Menu, Text, IconMore, IconTrash, type MenuItem } from '@osia/ui';
 import { COMMENT_BODY_MAX, type CommentDto, type Page } from '@osia/shared';
 import { createComment, deleteComment, getPostComments } from '../../lib/social-api';
 import { relativeTime } from '../../lib/time';
@@ -100,15 +100,25 @@ export function CommentThread({
                   {relativeTime(c.createdAt, locale)}
                 </Text>
                 {viewerHandle === c.author.handle && (
-                  <button
-                    type="button"
-                    className="osia-reactbtn"
-                    style={{ marginInlineStart: 'auto', padding: '2px' }}
-                    aria-label={t('post.deleteComment')}
-                    onClick={() => setToDelete(c.id)}
-                  >
-                    <IconTrash />
-                  </button>
+                  <span style={{ marginInlineStart: 'auto' }}>
+                    <Menu
+                      label={t('post.more')}
+                      triggerClassName="osia-iconbtn osia-iconbtn--sm"
+                      items={
+                        [
+                          {
+                            key: 'delete',
+                            label: t('post.deleteComment'),
+                            icon: <IconTrash />,
+                            onClick: () => setToDelete(c.id),
+                            danger: true,
+                          },
+                        ] satisfies MenuItem[]
+                      }
+                    >
+                      <IconMore />
+                    </Menu>
+                  </span>
                 )}
               </div>
               <Text variant="read">{c.body}</Text>
