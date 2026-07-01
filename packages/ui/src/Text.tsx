@@ -1,6 +1,20 @@
 import { createElement, type ElementType, type HTMLAttributes } from 'react';
 
-export type TextVariant = 'display' | 'title' | 'body' | 'label' | 'overline' | 'value';
+export type TextVariant =
+  | 'display'
+  | 'title'
+  | 'body'
+  | 'label'
+  | 'overline'
+  | 'value'
+  // Variantes editoriales (app-documento, p.ej. La Red Social — escala rem generosa, §Fase 3.5).
+  // `hero` = Italiana ceremonial; el resto = Jost, como manda §2.5.
+  | 'hero'
+  | 'heading'
+  | 'subheading'
+  | 'read'
+  | 'meta'
+  | 'caption';
 export type TextTone = 'default' | 'subtle' | 'muted' | 'accent';
 
 export type TextProps = HTMLAttributes<HTMLElement> & {
@@ -19,6 +33,12 @@ const DEFAULT_TAG: Record<TextVariant, ElementType> = {
   label: 'span',
   overline: 'span',
   value: 'span',
+  hero: 'h1',
+  heading: 'h2',
+  subheading: 'h3',
+  read: 'p',
+  meta: 'span',
+  caption: 'span',
 };
 
 /**

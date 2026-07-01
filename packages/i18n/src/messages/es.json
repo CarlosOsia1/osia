@@ -210,6 +210,28 @@
     "welcome": "Hola de nuevo, {name}.",
     "tagline": "Aquí vivirán tu feed, tu red y tu estatus.",
     "loading": "Tejiendo tu red…",
+    "nav": {
+      "home": "Inicio",
+      "profile": "Mi perfil",
+      "discover": "Descubrir",
+      "friends": "Amigos",
+      "notifications": "Notificaciones"
+    },
+    "menu": {
+      "label": "Tu cuenta",
+      "myProfile": "Mi perfil",
+      "vestibule": "Vestíbulo",
+      "world": "Viajar al mundo",
+      "logout": "Cerrar sesión"
+    },
+    "discover": {
+      "soonTitle": "Nuevas voces, muy pronto",
+      "soonBody": "Estamos preparando a quién seguir, elegido por reputación — nunca por un algoritmo. Mientras tanto, invita a alguien o comparte una publicación."
+    },
+    "friends": {
+      "soonTitle": "Tu círculo toma forma",
+      "soonBody": "Aquí vivirán tus seguidores, seguidos y solicitudes pendientes."
+    },
     "feed": {
       "loading": "Cargando el feed…",
       "empty": "Tu feed está en silencio. Sigue a alguien o publica algo.",

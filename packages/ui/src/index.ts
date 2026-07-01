@@ -30,6 +30,19 @@ export { Nameplate, type NameplateProps } from './Nameplate';
 export { Dot } from './Dot';
 export { PopularityMeter, type PopularityMeterProps } from './PopularityMeter';
 
+// --- Fase 3.5 · La Red Social: primitivos + shell de lujo ---
+export { Avatar, type AvatarProps, type AvatarPresence } from './Avatar';
+export { Badge, type BadgeProps } from './Badge';
+export { IconButton, type IconButtonProps } from './IconButton';
+export { SearchInput, type SearchInputProps } from './SearchInput';
+export { Skeleton, type SkeletonProps } from './Skeleton';
+export { Tabs, type TabsProps, type TabItem } from './Tabs';
+export { Divider } from './Divider';
+export { EmptyState, type EmptyStateProps } from './EmptyState';
+export { Menu, type MenuProps, type MenuItem } from './Menu';
+export { AppShell, type AppShellProps, type ShellNavItem } from './AppShell';
+export * from './icons';
+
 // --- Vestíbulo (S1.7): pasaporte, puertas, cruce de umbral ---
 export {
   PassportCard,

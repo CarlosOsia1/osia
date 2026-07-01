@@ -4,6 +4,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider, OSIA_COLORS } from '@osia/ui';
 import { OSIA } from '@osia/shared';
 import { Providers } from './providers';
+import { AppFrame } from './_components/AppFrame';
 import '@osia/ui/styles.css'; // tokens de marca + fuentes + clases de componentes (fuente única)
 import './globals.css';
 
@@ -26,7 +27,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
-            <ThemeProvider>{children}</ThemeProvider>
+            <ThemeProvider>
+              <AppFrame>{children}</AppFrame>
+            </ThemeProvider>
           </Providers>
         </NextIntlClientProvider>
       </body>

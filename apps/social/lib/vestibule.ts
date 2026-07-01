@@ -12,6 +12,11 @@ export function socialBaseUrl(): string {
   return process.env.NEXT_PUBLIC_SOCIAL_URL ?? 'http://localhost:3002';
 }
 
+/** URL de El Mundo (world-client) para "Viajar al mundo" desde el menú de perfil. */
+export function worldBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_WORLD_URL ?? 'http://localhost:3000';
+}
+
 /** URL del login del Vestíbulo con `returnTo` (default: la propia app social). */
 export function vestibuleLoginUrl(returnTo?: string): string {
   const url = new URL('/login', vestibuleBaseUrl());

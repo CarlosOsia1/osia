@@ -210,6 +210,28 @@
     "welcome": "Welcome back, {name}.",
     "tagline": "Your feed, your network and your status will live here.",
     "loading": "Weaving your network…",
+    "nav": {
+      "home": "Home",
+      "profile": "My profile",
+      "discover": "Discover",
+      "friends": "Friends",
+      "notifications": "Notifications"
+    },
+    "menu": {
+      "label": "Your account",
+      "myProfile": "My profile",
+      "vestibule": "Vestibule",
+      "world": "Travel to the World",
+      "logout": "Sign out"
+    },
+    "discover": {
+      "soonTitle": "New voices, coming soon",
+      "soonBody": "We're preparing who to follow, chosen by reputation — never by an algorithm. In the meantime, invite someone or share a post."
+    },
+    "friends": {
+      "soonTitle": "Your circle is taking shape",
+      "soonBody": "Your followers, following and pending requests will live here."
+    },
     "feed": {
       "loading": "Loading your feed…",
       "empty": "Your feed is quiet. Follow someone or post something.",

@@ -47,7 +47,7 @@ export function Feed() {
       {items.map((item) => (
         <Card key={item.id} pad>
           <article style={{ display: 'grid', gap: 'var(--space-2)' }}>
-            <Link href={`/${item.post.author.handle}`} style={{ textDecoration: 'none', justifySelf: 'start' }}>
+            <Link href={`/profile/${item.post.author.handle}`} style={{ textDecoration: 'none', justifySelf: 'start' }}>
               <Text variant="label" tone="accent">
                 {item.post.author.displayName}
               </Text>

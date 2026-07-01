@@ -954,3 +954,682 @@
     animation: none;
   }
 }
+
+/* ==========================================================================
+   FASE 3.5 · LA RED SOCIAL — capa de experiencia de lujo
+   Añade el secundario ÍNDIGO CELESTIAL + superficies frost + una escala
+   tipográfica EDITORIAL (rem, generosa) para una app-documento, sin tocar la
+   escala compacta del HUD 3D. El oro sigue escaso (champán ya existe como
+   --color-accent); el marfil ya es --color-text. Solo sumamos, no redefinimos.
+   ========================================================================== */
+:root {
+  /* -- Capa 1: primitivos índigo (cielo nocturno) -- */
+  --osia-indigo-950: #101026;
+  --osia-indigo-900: #16162a;
+  --osia-indigo-800: #1e1d38;
+  --osia-indigo-700: #2a2a4a;
+  --osia-indigo-600: #383768;
+  --osia-indigo-500: #4b4a7d;
+  --osia-indigo-400: #6462a0;
+
+  /* -- Capa 2: semánticos del social -- */
+  --color-indigo: var(--osia-indigo-500);
+  --color-indigo-deep: var(--osia-indigo-700);
+  --color-indigo-glow: rgba(100, 98, 160, 0.26);
+  /* Superficies "frosted glass" (header, menús, rail): translúcidas sobre ónix. */
+  --color-frost: rgba(20, 20, 27, 0.72);
+  --color-frost-strong: rgba(12, 12, 18, 0.9);
+  /* Hairline de oro al ~14% — el divisor de lujo por excelencia (no gris). */
+  --hairline: rgba(203, 184, 154, 0.14);
+  --hairline-strong: rgba(203, 184, 154, 0.24);
+  --shadow-lux: 0 24px 60px -28px rgba(0, 0, 0, 0.72), 0 0 0 1px var(--hairline);
+  --glow-indigo: 0 0 42px -10px var(--color-indigo-glow);
+
+  /* -- Escala tipográfica EDITORIAL (rem: respeta el zoom del usuario) -- */
+  --text-ed-2xs: 0.6875rem; /* 11px */
+  --text-ed-xs: 0.75rem; /* 12px */
+  --text-ed-sm: 0.8125rem; /* 13px */
+  --text-ed-base: 0.9375rem; /* 15px — lectura del feed */
+  --text-ed-md: 1rem; /* 16px */
+  --text-ed-lg: 1.125rem; /* 18px */
+  --text-ed-xl: 1.375rem; /* 22px */
+  --text-ed-2xl: 1.75rem; /* 28px */
+  --text-ed-hero: clamp(2rem, 4vw, 3rem);
+
+  /* -- Métricas del shell -- */
+  --shell-header-h: 4rem;
+  --shell-sidebar-w: 16rem;
+  --shell-rail-w: 20rem;
+  --shell-max-w: 100rem;
+  --shell-tabbar-h: 3.75rem;
+}
+
+/* ============================ Texto editorial ============================ */
+/* Variantes generosas para la app-documento (Text sigue siendo la única puerta
+   tipográfica §2.5: Italiana solo en `hero`; el resto Jost). */
+.osia-text--hero {
+  font-family: var(--font-display);
+  font-size: var(--text-ed-hero);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-strong);
+}
+.osia-text--heading {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-ed-xl);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-strong);
+}
+.osia-text--subheading {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-ed-lg);
+  line-height: var(--leading-snug);
+  color: var(--color-text-strong);
+}
+.osia-text--read {
+  font-family: var(--font-ui);
+  font-size: var(--text-ed-base);
+  line-height: var(--leading-loose);
+  color: var(--color-text);
+}
+.osia-text--meta {
+  font-family: var(--font-ui);
+  font-size: var(--text-ed-sm);
+  color: var(--color-text-muted);
+}
+.osia-text--caption {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: var(--text-ed-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-overline);
+  color: var(--color-text-subtle);
+}
+
+/* ============================ Shell (a todo el ancho) ============================ */
+.osia-shell {
+  min-block-size: 100vh;
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(75, 74, 125, 0.14), transparent 60%),
+    var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+/* Textura de "papel fino": ruido tenue reservado a la sensación de lujo. */
+.osia-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Header fijo, frosted */
+.osia-appheader {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  block-size: var(--shell-header-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-inline: var(--space-5);
+  background: var(--color-frost);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-block-end: 1px solid var(--hairline);
+}
+.osia-appheader__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  text-decoration: none;
+  color: var(--color-text-strong);
+}
+.osia-appheader__wordmark {
+  font-family: var(--font-display);
+  font-size: var(--text-ed-lg);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-accent);
+}
+.osia-appheader__search {
+  flex: 1 1 auto;
+  max-inline-size: 28rem;
+}
+.osia-appheader__actions {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Cuerpo: grid de hasta 3 columnas, centrado en un ancho máximo amplio */
+.osia-shell__body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: var(--shell-sidebar-w) minmax(0, 1fr) var(--shell-rail-w);
+  gap: var(--space-6);
+  inline-size: min(100% - 2 * var(--space-6), var(--shell-max-w));
+  margin-inline: auto;
+  padding-block: var(--space-6);
+  align-items: start;
+}
+.osia-shell__sidebar {
+  position: sticky;
+  top: calc(var(--shell-header-h) + var(--space-6));
+}
+.osia-shell__main {
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--space-5);
+}
+.osia-shell__rail {
+  position: sticky;
+  top: calc(var(--shell-header-h) + var(--space-6));
+  display: grid;
+  gap: var(--space-5);
+}
+/* Sin rail (aún no hay contenido de presencia/sugeridos): 2 columnas amplias, sin hueco. */
+.osia-shell__body:not([data-rail]) {
+  grid-template-columns: var(--shell-sidebar-w) minmax(0, 1fr);
+  max-inline-size: 68rem;
+}
+/* Rail se pliega en < 1200px; sidebar → tab bar en < 880px */
+@media (max-width: 1200px) {
+  .osia-shell__body {
+    grid-template-columns: var(--shell-sidebar-w) minmax(0, 1fr);
+  }
+  .osia-shell__rail {
+    display: none;
+  }
+}
+@media (max-width: 880px) {
+  .osia-shell__body {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block-end: calc(var(--shell-tabbar-h) + var(--space-6));
+  }
+  .osia-shell__sidebar {
+    display: none;
+  }
+  .osia-appheader__search {
+    display: none;
+  }
+}
+
+/* Sidebar de navegación */
+.osia-sidebar {
+  display: grid;
+  gap: var(--space-1);
+}
+.osia-navitem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: var(--text-ed-md);
+  line-height: 1;
+  transition:
+    background var(--dur-fast) var(--ease-out-soft),
+    color var(--dur-fast) var(--ease-out-soft),
+    border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-navitem:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.osia-navitem:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+.osia-navitem[data-active] {
+  color: var(--color-text-strong);
+  background: color-mix(in oklab, var(--color-indigo-deep) 40%, var(--color-surface));
+  border-color: var(--hairline);
+}
+.osia-navitem[data-active] .osia-navitem__icon {
+  color: var(--color-accent);
+}
+.osia-navitem__icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  display: grid;
+  place-items: center;
+  color: currentColor;
+}
+.osia-navitem__icon svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+.osia-navitem__badge {
+  margin-inline-start: auto;
+}
+
+/* Tab bar (móvil) */
+.osia-tabbar {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 40;
+  block-size: var(--shell-tabbar-h);
+  display: none;
+  align-items: stretch;
+  justify-content: space-around;
+  background: var(--color-frost-strong);
+  backdrop-filter: blur(14px);
+  border-block-start: 1px solid var(--hairline);
+}
+@media (max-width: 880px) {
+  .osia-tabbar {
+    display: flex;
+  }
+}
+.osia-tabbar__item {
+  flex: 1 1 0;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: var(--space-1);
+  color: var(--color-text-subtle);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.osia-tabbar__item[data-active] {
+  color: var(--color-accent);
+}
+.osia-tabbar__item svg {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+}
+
+/* ============================ Avatar ============================ */
+.osia-avatar {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  overflow: visible;
+  background: var(--color-surface-2);
+  color: var(--color-text-subtle);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  user-select: none;
+}
+.osia-avatar__img,
+.osia-avatar__fallback {
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+}
+.osia-avatar--ring {
+  box-shadow:
+    0 0 0 1px var(--hairline-strong),
+    var(--glow-indigo);
+}
+.osia-avatar__presence {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  inline-size: 28%;
+  block-size: 28%;
+  min-inline-size: 8px;
+  min-block-size: 8px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg);
+  background: var(--color-text-subtle);
+}
+.osia-avatar__presence[data-online] {
+  background: var(--color-success);
+}
+
+/* ============================ IconButton ============================ */
+.osia-iconbtn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out-soft),
+    color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-iconbtn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.osia-iconbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+.osia-iconbtn svg {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+}
+.osia-iconbtn__badge {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: 2px;
+}
+
+/* Badge / conteo */
+.osia-badge {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 1.1rem;
+  block-size: 1.1rem;
+  padding-inline: 0.35rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--text-ed-2xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.osia-badge--dot {
+  min-inline-size: 0.55rem;
+  inline-size: 0.55rem;
+  block-size: 0.55rem;
+  padding: 0;
+}
+
+/* ============================ SearchInput ============================ */
+.osia-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.osia-search__icon {
+  position: absolute;
+  inset-inline-start: var(--space-3);
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  color: var(--color-text-subtle);
+  pointer-events: none;
+}
+.osia-search__input {
+  inline-size: 100%;
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-6) + var(--space-1));
+  border-radius: var(--radius-full);
+  border: 1px solid var(--hairline);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 400 var(--text-ed-sm) / 1.2 var(--font-ui);
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-search__input::placeholder {
+  color: var(--color-text-subtle);
+}
+.osia-search__input:focus-visible {
+  border-color: var(--hairline-strong);
+  box-shadow: var(--glow-accent);
+}
+
+/* ============================ Menu / Dropdown ============================ */
+.osia-menu {
+  position: relative;
+  display: inline-flex;
+}
+.osia-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--hairline);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-menu__trigger:hover {
+  border-color: var(--hairline-strong);
+}
+.osia-menu__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+.osia-menu__name {
+  font-size: var(--text-ed-sm);
+  max-inline-size: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.osia-menu__trigger svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-text-subtle);
+}
+.osia-menu__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 50;
+  min-inline-size: 14rem;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-frost-strong);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-lux);
+  animation: osia-rise var(--dur-fast) var(--ease-out-soft);
+}
+.osia-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: 400 var(--text-ed-sm) / 1 var(--font-ui);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out-soft);
+}
+.osia-menu__item:hover,
+.osia-menu__item:focus-visible {
+  outline: none;
+  background: var(--color-surface);
+}
+.osia-menu__item[data-danger] {
+  color: var(--color-danger);
+}
+.osia-menu__item svg {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  color: var(--color-text-subtle);
+}
+.osia-menu__sep {
+  block-size: 1px;
+  margin-block: var(--space-1);
+  background: var(--hairline);
+}
+
+/* ============================ Divider / EmptyState ============================ */
+.osia-divider {
+  block-size: 1px;
+  border: none;
+  margin: 0;
+  background: var(--hairline);
+}
+.osia-emptystate {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--hairline);
+  background:
+    radial-gradient(90% 120% at 50% -10%, rgba(75, 74, 125, 0.12), transparent 60%),
+    var(--color-surface);
+}
+.osia-emptystate__stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 22% 28%, rgba(245, 241, 232, 0.45), transparent),
+    radial-gradient(1px 1px at 68% 58%, rgba(203, 184, 154, 0.4), transparent),
+    radial-gradient(1px 1px at 44% 78%, rgba(245, 241, 232, 0.3), transparent),
+    radial-gradient(1px 1px at 82% 30%, rgba(245, 241, 232, 0.28), transparent);
+}
+.osia-emptystate__body {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  max-inline-size: 32ch;
+}
+
+/* ============================ Skeleton (shimmer) ============================ */
+.osia-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+.osia-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(100, 98, 160, 0.16) 45%,
+    rgba(203, 184, 154, 0.1) 55%,
+    transparent
+  );
+  animation: osia-shimmer 1.6s var(--ease-in-out-cine) infinite;
+}
+.osia-skeleton--text {
+  block-size: 0.8em;
+  border-radius: var(--radius-sm);
+}
+.osia-skeleton--circle {
+  border-radius: var(--radius-full);
+}
+@keyframes osia-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ============================ Composer entry ("Publica algo") ============================ */
+.osia-composer-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-1);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.osia-composer-entry__prompt {
+  flex: 1 1 auto;
+  text-align: start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--hairline);
+  background: var(--color-surface-2);
+  color: var(--color-text-subtle);
+  font: 400 var(--text-ed-base) / 1 var(--font-ui);
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-composer-entry:hover .osia-composer-entry__prompt {
+  border-color: var(--hairline-strong);
+  color: var(--color-text-muted);
+}
+.osia-composer-entry:focus-visible {
+  outline: none;
+}
+.osia-composer-entry:focus-visible .osia-composer-entry__prompt {
+  box-shadow: var(--glow-accent);
+}
+
+/* ============================ Tabs ============================ */
+.osia-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-block-end: 1px solid var(--hairline);
+}
+.osia-tabs__tab {
+  position: relative;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font: 500 var(--text-ed-sm) / 1 var(--font-ui);
+  letter-spacing: var(--tracking-wide);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-tabs__tab:hover {
+  color: var(--color-text);
+}
+.osia-tabs__tab:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+  border-radius: var(--radius-sm);
+}
+.osia-tabs__tab[data-active] {
+  color: var(--color-text-strong);
+}
+.osia-tabs__tab[data-active]::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--space-3);
+  inset-block-end: -1px;
+  block-size: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+.osia-tabs__count {
+  margin-inline-start: var(--space-2);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-subtle);
+}
+
+/* Accesibilidad: sin shimmer/animaciones si el usuario pide menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .osia-skeleton::after {
+    animation: none;
+  }
+  .osia-menu__panel {
+    animation: none;
+  }
+}
