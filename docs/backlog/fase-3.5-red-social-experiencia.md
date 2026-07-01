@@ -5,7 +5,12 @@
 > **experiencia de producto de lujo** que hace a La Red Social *lanzable* y que pasa su gate 3→4 ("el
 > estatus se vuelve visible y deseado; una notificación trae de vuelta al jugador"). **Se cierra ANTES de S4.**
 >
-> **Estado:** DISEÑO aprobado en lo esencial (decisiones de Carlos abajo) — pendiente su OK para arrancar `S3.7`.
+> **Estado:** ✅ **FUNCIONALMENTE CERRADA (2026-07-01).** Los 5 sprints (S3.7–S3.11) construidos y
+> commiteados en `main` local (gates typecheck/lint/test 16/16; migraciones aplicadas+verificadas en cloud)
+> + **QA exhaustivo multi-agente** de la matriz de autorización (§8) con sus huecos corregidos y verificados
+> (destacó: el gating de cuenta privada faltaba en los caminos por id — unificado en un predicado; listas
+> privadas gateadas; fan-out/feed respetan visibilidad; email-verificado en todas las escrituras). Detalle
+> vivo por sprint en [`CLAUDE.md`](../../CLAUDE.md) §Estado actual.
 > **Fecha:** 2026-07-01. Vinculante junto a [`CLAUDE.md`](../../CLAUDE.md) y el [backlog de Fase 3](./fase-3-tejido-social.md).
 
 ---

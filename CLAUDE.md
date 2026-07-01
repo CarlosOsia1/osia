@@ -50,7 +50,7 @@
   **moderación**: resolución (soft-delete) del reporte es manual fuera de banda · **ritual de lanzamiento**
   (anuncio Discord/GTM, manual).
 
-- **Fase 3.5 — La Red Social: Capa de Experiencia (UX de lujo): ▶️ EN CIERRE (2026-07-01).** Sub-fase pedida
+- **Fase 3.5 — La Red Social: Capa de Experiencia (UX de lujo): ✅ FUNCIONALMENTE CERRADA (2026-07-01).** Sub-fase pedida
   por Carlos para volver *lanzable* la red social (el backend de Fase 3 estaba completo pero la UI era
   «delgada»: sin navegación, sin comentarios, sin descubrimiento). Diseño en
   [`docs/backlog/fase-3.5-red-social-experiencia.md`](./docs/backlog/fase-3.5-red-social-experiencia.md).
@@ -67,10 +67,19 @@
     presencia **direccional** (ves online solo si esa persona te sigue).
   - `S3.10` (a64ae31) Feed de lujo: **foto/video** (media tipada `{url,kind}` + bucket `post-video`), reacciones
     ★☾☀ con **lista de quién reaccionó**, **comentarios inline**, **detalle** `/post/[id]` + borrar propio.
-  - `S3.11` (f8fcd4a) **Descubrir** + **Buscar personas** + **notificaciones con deep-link**; **QA exhaustivo
-    multi-agente** de la matriz de autorización (§8 del diseño) como cierre.
+  - `S3.11` (f8fcd4a) **Descubrir** + **Buscar personas** + **notificaciones con deep-link**.
+  - **QA exhaustivo multi-agente** (85ec153): 8 dimensiones × 25 agentes auditaron la matriz de autorización
+    (§8 del diseño) y verificaron cada hallazgo adversarialmente. **Encontró y se corrigieron huecos reales:**
+    (1) CRÍTICO — el gating de cuenta privada solo estaba en `listProfilePosts`; un post público de cuenta
+    privada era visible/reaccionable/comentable por deep-link → **predicado de visibilidad unificado**
+    (`post-visibility.ts`, visibilidad + privacidad) reusado en getById/listReactors/setReaction/
+    createComment/listComments; (2) listas de seguidores/seguidos gatean privado; (3) fan-out no reparte
+    posts `private` + `getFeed` reimpone visibilidad al leer; (4) `EmailVerifiedGuard` en todas las
+    escrituras (DELETE + reports). Verificado contra cloud.
   **Diferidos de la sub-fase:** reportar-perfil (solo post/comentario), post-detalle como modal-desktop (hoy
-  página en todos), 2º grado en descubrir (hoy por reputación), thumbnails de video con poster.
+  página en todos), 2º grado en descubrir (hoy por reputación), thumbnails de video con poster, y **RLS de
+  `social.posts`/`comments` al nivel del predicado unificado** (hoy la verdad la impone el API service_role;
+  la RLS es defensa en profundidad secundaria — alinear cuando convenga).
 
   **Progreso (avanza HU por HU, en orden; todo verde y en cloud):**
   - `S3.1` Cimientos ✅ — H4 contratos `@osia/shared` · H3 schema `social` + RLS · H2 contexto hexagonal
