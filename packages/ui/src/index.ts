@@ -43,6 +43,9 @@ export { Menu, type MenuProps, type MenuItem } from './Menu';
 export { AppShell, type AppShellProps, type ShellNavItem } from './AppShell';
 export { ImageUploadField, type ImageUploadFieldProps } from './ImageUploadField';
 export { UserRow, type UserRowProps } from './UserRow';
+export { MediaGallery } from './MediaGallery';
+export { ReactionBar, type ReactionBarProps } from './ReactionBar';
+export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog';
 export * from './icons';
 
 // --- Vestíbulo (S1.7): pasaporte, puertas, cruce de umbral ---

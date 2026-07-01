@@ -20,15 +20,17 @@ export type MenuItem = {
 };
 
 export type MenuProps = {
-  /** Contenido del disparador (avatar + nombre + chevron). */
+  /** Contenido del disparador (avatar + nombre + chevron, o un icono). */
   children: ReactNode;
   items: MenuItem[];
   /** Nombre accesible del disparador. */
   label: string;
   className?: string;
+  /** Clase del disparador (default: píldora `osia-menu__trigger`; usa `osia-iconbtn` para solo-icono). */
+  triggerClassName?: string;
 };
 
-export function Menu({ children, items, label, className }: MenuProps) {
+export function Menu({ children, items, label, className, triggerClassName = 'osia-menu__trigger' }: MenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +54,7 @@ export function Menu({ children, items, label, className }: MenuProps) {
     <div ref={rootRef} className={['osia-menu', className].filter(Boolean).join(' ')}>
       <button
         type="button"
-        className="osia-menu__trigger"
+        className={triggerClassName}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}

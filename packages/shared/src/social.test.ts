@@ -45,19 +45,23 @@ test('social enums: reacciones dentro del gamut house-celestial (star|moon|sun)'
 });
 
 test('social enums: post kind/visibility y feed/follow guards', () => {
-  assert.ok(isPostKind('text') && isPostKind('image') && isPostKind('moment'));
-  assert.ok(!isPostKind('video'));
+  assert.ok(isPostKind('text') && isPostKind('image') && isPostKind('video') && isPostKind('moment'));
+  assert.ok(!isPostKind('gif'));
   assert.ok(isPostVisibility('followers'));
   assert.ok(!isPostVisibility('friends'));
-  assert.ok(isFollowStatus('active') && isFollowStatus('blocked'));
-  assert.ok(!isFollowStatus('pending'));
+  // S3.9: `pending` (solicitud a cuenta privada) es un estado válido.
+  assert.ok(isFollowStatus('active') && isFollowStatus('pending') && isFollowStatus('blocked'));
+  assert.ok(!isFollowStatus('muted'));
   assert.ok(isFeedReason('follow') && isFeedReason('trending') && isFeedReason('event'));
   assert.ok(!isFeedReason('ad'));
 });
 
-test('social enums: NotificationType NO incluye gossip (IA descartada 100%)', () => {
-  assert.deepEqual([...NOTIFICATION_TYPE_VALUES], ['follow', 'reaction', 'comment', 'mention']);
-  assert.ok(isNotificationType('mention'));
+test('social enums: NotificationType incluye solicitudes (S3.9), NO gossip (IA descartada 100%)', () => {
+  assert.deepEqual(
+    [...NOTIFICATION_TYPE_VALUES],
+    ['follow', 'reaction', 'comment', 'mention', 'follow_request', 'follow_accepted'],
+  );
+  assert.ok(isNotificationType('mention') && isNotificationType('follow_request'));
   assert.ok(!isNotificationType('gossip')); // ❌ IA
 });
 
@@ -83,9 +87,10 @@ test('social events: nombres canónicos presentes; gossip ausente (IA)', () => {
   assert.ok(isSocialEvent('social.post.published'));
   assert.ok(isSocialEvent('social.follow.removed'));
   assert.ok(isSocialEvent('social.notification.created'));
+  assert.ok(isSocialEvent('social.follow.requested') && isSocialEvent('social.follow.accepted')); // S3.9
   assert.ok(!isSocialEvent('social.gossip.published')); // ❌ IA
   assert.ok(!isSocialEvent('social.unknown'));
-  assert.equal(SOCIAL_EVENTS.length, 6);
+  assert.equal(SOCIAL_EVENTS.length, 8);
 });
 
 // --- createPostSchema ---
@@ -94,9 +99,19 @@ test('createPost: aplica defaults (text/public) y exige texto o media', () => {
   assert.equal(ok.kind, 'text');
   assert.equal(ok.visibility, 'public');
 
-  // post solo-media válido
+  // post solo-media válido (media tipada {url, kind}, S3.10)
   assert.ok(
-    createPostSchema.safeParse({ kind: 'image', media: ['https://r2.osia.com/a.jpg'] }).success,
+    createPostSchema.safeParse({
+      kind: 'image',
+      media: [{ url: 'https://r2.osia.com/a.jpg', kind: 'image' }],
+    }).success,
+  );
+  // video también es válido
+  assert.ok(
+    createPostSchema.safeParse({
+      kind: 'video',
+      media: [{ url: 'https://r2.osia.com/a.mp4', kind: 'video' }],
+    }).success,
   );
   // vacío (sin texto ni media) → rechazado por refine
   assert.ok(!createPostSchema.safeParse({}).success);
@@ -107,10 +122,13 @@ test('createPost: límites de body y media, url válida y strict', () => {
   assert.ok(createPostSchema.safeParse({ body: 'a'.repeat(POST_BODY_MAX) }).success);
   // más de 4 adjuntos
   assert.ok(
-    !createPostSchema.safeParse({ body: 'x', media: Array(5).fill('https://a.co/x.png') }).success,
+    !createPostSchema.safeParse({
+      body: 'x',
+      media: Array(5).fill({ url: 'https://a.co/x.png', kind: 'image' }),
+    }).success,
   );
   // url inválida
-  assert.ok(!createPostSchema.safeParse({ body: 'x', media: ['no-es-url'] }).success);
+  assert.ok(!createPostSchema.safeParse({ body: 'x', media: [{ url: 'no-es-url', kind: 'image' }] }).success);
   // strict: clave desconocida
   assert.ok(!createPostSchema.safeParse({ body: 'x', foo: 1 }).success);
 });

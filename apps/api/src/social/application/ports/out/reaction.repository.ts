@@ -1,4 +1,4 @@
-import type { ReactionDto, ReactionKind } from '@osia/shared';
+import type { Cursor, Page, ReactionActorDto, ReactionDto, ReactionKind } from '@osia/shared';
 
 export const REACTION_REPOSITORY = Symbol('REACTION_REPOSITORY');
 
@@ -17,4 +17,13 @@ export interface ReactionRepository {
   setReaction(postId: string, accountId: string, kind: ReactionKind): Promise<SetReactionResult | null>;
   /** Borra la reacción (idempotente; sin error si no existía). El trigger ajusta `reaction_count`. */
   removeReaction(postId: string, accountId: string, kind: ReactionKind): Promise<void>;
+  /** Quién reaccionó a un post (opcionalmente filtrado por `kind`), keyset. `null` si el post no es
+   *  visible para el lector o no existe (→ 404/oculto). */
+  listReactors(
+    postId: string,
+    viewerAccountId: string,
+    kind: ReactionKind | null,
+    limit: number,
+    cursor: Cursor | null,
+  ): Promise<Page<ReactionActorDto> | null>;
 }

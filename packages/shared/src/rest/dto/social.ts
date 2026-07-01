@@ -40,8 +40,26 @@ export const POST_MEDIA_MAX = 4;
  */
 export const POST_MEDIA_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const;
 export type PostMediaMime = (typeof POST_MEDIA_MIME_TYPES)[number];
-/** Tope de tamaño de un adjunto (bytes). Espejo del `file_size_limit` del bucket. */
+/** Tope de tamaño de una IMAGEN de post (bytes). Espejo del `file_size_limit` del bucket `post-media`. */
 export const POST_MEDIA_SIZE_MAX = 10 * 1024 * 1024;
+
+/**
+ * Video de post (S3.10). Sin transcodificar: se guarda y reproduce el original con topes para cuidar el
+ * runway (decisión de Carlos). Solo contenedores no ejecutables reproducibles en `<video>`.
+ */
+export const POST_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm'] as const;
+export type PostVideoMime = (typeof POST_VIDEO_MIME_TYPES)[number];
+/** Tope de tamaño de un video (bytes). Espejo del `file_size_limit` del bucket `post-video`. */
+export const POST_VIDEO_SIZE_MAX = 50 * 1024 * 1024;
+/** Todos los MIME subibles para un post (imagen o video). */
+export const POST_UPLOAD_MIME_TYPES = [...POST_MEDIA_MIME_TYPES, ...POST_VIDEO_MIME_TYPES] as const;
+export type PostUploadMime = (typeof POST_UPLOAD_MIME_TYPES)[number];
+
+/** Tipo de un adjunto de post: imagen o video. */
+export const MEDIA_ITEM_KINDS = ['image', 'video'] as const;
+export type MediaItemKind = (typeof MEDIA_ITEM_KINDS)[number];
+/** Un adjunto de un post: URL pública de nuestro Storage + su tipo (para render `<img>`/`<video>`). */
+export type MediaItem = { url: string; kind: MediaItemKind };
 
 /** Media del PERFIL (S3.8): foto y portada. Misma allowlist no-ejecutable que los posts (sin gif/svg). */
 export const PROFILE_MEDIA_KINDS = ['photo', 'cover'] as const;
@@ -81,8 +99,8 @@ export type PostDto = {
   kind: PostKind;
   /** Cuerpo del post; `null` si es un post solo-media. */
   body: string | null;
-  /** URLs de media (R2), 0..`POST_MEDIA_MAX`. */
-  media: string[];
+  /** Adjuntos (imagen/video), 0..`POST_MEDIA_MAX`; cada uno con su URL de Storage y tipo. */
+  media: MediaItem[];
   visibility: PostVisibility;
   /** Contador desnormalizado (trigger sobre `reactions`). */
   reactionCount: number;
@@ -118,6 +136,12 @@ export type ReactionDto = {
 export type ReactionResult = {
   reaction: ReactionDto;
   reactionCount: number;
+};
+
+/** Quién reaccionó a un post (`GET /v1/posts/{id}/reactions`, S3.10): brief + tipo de reacción + cuándo. */
+export type ReactionActorDto = ProfileBrief & {
+  kind: ReactionKind;
+  reactedAt: string;
 };
 
 /**

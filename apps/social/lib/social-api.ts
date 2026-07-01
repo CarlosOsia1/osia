@@ -1,4 +1,6 @@
 import type {
+  CommentDto,
+  CreateCommentInput,
   CreatePostInput,
   CreateProfileMediaUploadUrlInput,
   CreateUploadUrlInput,
@@ -7,12 +9,13 @@ import type {
   FollowRequestDto,
   Page,
   PostDto,
-  PostMediaMime,
+  PostUploadMime,
   PresenceEntryDto,
   ProfileBrief,
   ProfileMediaKind,
   ProfileMediaMime,
   PublicProfileDto,
+  ReactionActorDto,
   ReactionKind,
   ReactionResult,
   UpdateProfileCardInput,
@@ -34,8 +37,8 @@ export class MediaUploadError extends Error {
   }
 }
 
-/** Pide un destino prefirmado para subir un adjunto (`POST /v1/media/upload-url`). */
-export function requestUploadTarget(contentType: PostMediaMime): Promise<UploadTargetDto> {
+/** Pide un destino prefirmado para subir un adjunto (`POST /v1/media/upload-url`), imagen o video. */
+export function requestUploadTarget(contentType: PostUploadMime): Promise<UploadTargetDto> {
   const input: CreateUploadUrlInput = { contentType };
   return identity.authedFetch<UploadTargetDto>('/v1/media/upload-url', {
     method: 'POST',
@@ -43,16 +46,16 @@ export function requestUploadTarget(contentType: PostMediaMime): Promise<UploadT
   });
 }
 
-/** Sube el archivo DIRECTO a Storage (PUT a la URL prefirmada) y devuelve su URL pública final. */
-export async function uploadImage(file: File): Promise<string> {
-  const target = await requestUploadTarget(file.type as PostMediaMime);
+/** Sube un adjunto (imagen o video) DIRECTO a Storage (PUT prefirmado) y devuelve el `MediaItem` tipado. */
+export async function uploadPostMedia(file: File): Promise<{ url: string; kind: 'image' | 'video' }> {
+  const target = await requestUploadTarget(file.type as PostUploadMime);
   const res = await fetch(target.uploadUrl, {
     method: 'PUT',
     headers: { 'content-type': file.type },
     body: file,
   });
   if (!res.ok) throw new MediaUploadError(res.status);
-  return target.publicUrl;
+  return { url: target.publicUrl, kind: file.type.startsWith('video/') ? 'video' : 'image' };
 }
 
 /** Pide destino prefirmado para subir foto o portada de perfil (`POST /v1/profiles/me/media/upload-url`). */
@@ -212,4 +215,45 @@ export function getPresence(accountIds: string[]): Promise<PresenceEntryDto[]> {
   if (accountIds.length === 0) return Promise.resolve([]);
   const qs = `?accountIds=${encodeURIComponent(accountIds.join(','))}`;
   return identity.authedFetch<PresenceEntryDto[]>(`/v1/presence${qs}`, { method: 'GET' });
+}
+
+/** Detalle de un post (`GET /v1/posts/{id}`), respeta visibilidad. */
+export async function getPost(id: string): Promise<PostDto> {
+  const { post } = await identity.authedFetch<{ post: PostDto }>(`/v1/posts/${id}`, { method: 'GET' });
+  return post;
+}
+
+/** Borra un post propio (`DELETE /v1/posts/{id}`), soft-delete. */
+export function deletePost(id: string): Promise<void> {
+  return identity.authedFetch<void>(`/v1/posts/${id}`, { method: 'DELETE' });
+}
+
+/** Quién reaccionó a un post (`GET /v1/posts/{id}/reactions`), keyset. */
+export function getReactions(postId: string, cursor?: string): Promise<Page<ReactionActorDto>> {
+  return identity.authedFetch<Page<ReactionActorDto>>(
+    `/v1/posts/${postId}/reactions${pageQs(cursor)}`,
+    { method: 'GET' },
+  );
+}
+
+/** Comentarios de un post (`GET /v1/posts/{id}/comments`), keyset cronológico. */
+export function getPostComments(postId: string, cursor?: string): Promise<Page<CommentDto>> {
+  return identity.authedFetch<Page<CommentDto>>(
+    `/v1/posts/${postId}/comments${pageQs(cursor)}`,
+    { method: 'GET' },
+  );
+}
+
+/** Comentar un post (`POST /v1/posts/{id}/comments`). */
+export async function createComment(postId: string, input: CreateCommentInput): Promise<CommentDto> {
+  const { comment } = await identity.authedFetch<{ comment: CommentDto }>(
+    `/v1/posts/${postId}/comments`,
+    { method: 'POST', body: JSON.stringify(input) },
+  );
+  return comment;
+}
+
+/** Borrar un comentario propio (`DELETE /v1/comments/{id}`). */
+export function deleteComment(commentId: string): Promise<void> {
+  return identity.authedFetch<void>(`/v1/comments/${commentId}`, { method: 'DELETE' });
 }

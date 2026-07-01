@@ -35,6 +35,7 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260701000002_storage_profile_media.sql` | **Perfil de lujo (S3.8):** bucket público `profile-media` (imágenes ≤5 MiB) para foto/portada por URL prefirmada. |
 | `20260701000003_social_follow_pending.sql` | **Solicitudes (S3.9):** `follows.status` += `pending` + rama UPDATE en el trigger de conteos (aceptar suma) + índice de solicitudes entrantes. |
 | `20260701000004_social_notification_kinds.sql` | **Solicitudes (S3.9):** `notifications.kind` += `follow_request`/`follow_accepted`. |
+| `20260701000005_social_post_video.sql` | **Feed de lujo (S3.10):** bucket `post-video` (mp4/webm ≤50 MiB) + `posts.kind` += `video` + `posts.media` migrada a `[{url,kind}]`. |
 
 ## Convención de nombres (nota importante)
 

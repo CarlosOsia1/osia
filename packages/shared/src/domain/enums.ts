@@ -50,7 +50,7 @@ export const isWorldInstanceStatus = makeGuard(WORLD_INSTANCE_STATUS_VALUES);
 
 // --- social.posts (Fase 3 — S3.1-H4; espejo ER §7.1) ---
 /** Tipo de contenido del post (ER `posts.kind`). */
-export const POST_KIND_VALUES = ['text', 'image', 'moment'] as const;
+export const POST_KIND_VALUES = ['text', 'image', 'video', 'moment'] as const;
 export type PostKind = (typeof POST_KIND_VALUES)[number];
 export const isPostKind = makeGuard(POST_KIND_VALUES);
 

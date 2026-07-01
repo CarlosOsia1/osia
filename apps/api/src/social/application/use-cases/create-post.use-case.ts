@@ -22,8 +22,8 @@ export class CreatePostUseCase {
   ) {}
 
   async execute(authorAccountId: string, input: CreatePostInput): Promise<PostDto> {
-    for (const url of input.media ?? []) {
-      if (!this.storage.ownsPublicUrl(url)) {
+    for (const item of input.media ?? []) {
+      if (!this.storage.ownsPublicUrl(item.url)) {
         throw new AppException(ErrorCode.VALIDATION_FAILED, 422, 'Un adjunto no pertenece a OSIA.', {
           details: [{ field: 'media', code: 'FOREIGN_MEDIA_URL', message: 'Adjunto externo no permitido.' }],
         });

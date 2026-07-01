@@ -12,6 +12,7 @@ import {
   type FeedReason,
   type FollowDto,
   type FollowStatus,
+  type MediaItem,
   type NotificationDto,
   type NotificationType,
   type PostDto,
@@ -53,7 +54,7 @@ export type PostRow = {
   author_account_id: string;
   kind: PostKind;
   body: string | null;
-  media: string[];
+  media: MediaItem[];
   visibility: PostVisibility;
   reaction_count: number;
   comment_count: number;
@@ -237,7 +238,7 @@ export type FeedItemRow = AuthorBriefAliasedRow & {
   post_author_account_id: string;
   post_kind: PostKind;
   post_body: string | null;
-  post_media: string[];
+  post_media: MediaItem[];
   post_visibility: PostVisibility;
   post_reaction_count: number;
   post_comment_count: number;

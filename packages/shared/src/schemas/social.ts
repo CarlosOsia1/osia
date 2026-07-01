@@ -19,7 +19,8 @@ import {
   POST_BODY_MAX,
   COMMENT_BODY_MAX,
   POST_MEDIA_MAX,
-  POST_MEDIA_MIME_TYPES,
+  POST_UPLOAD_MIME_TYPES,
+  MEDIA_ITEM_KINDS,
   PROFILE_MEDIA_KINDS,
   PROFILE_MEDIA_MIME_TYPES,
 } from '../rest/dto/social';
@@ -29,7 +30,10 @@ export const createPostSchema = z
   .object({
     kind: z.enum(POST_KIND_VALUES).default('text'),
     body: z.string().trim().min(1).max(POST_BODY_MAX).optional(),
-    media: z.array(z.string().url()).max(POST_MEDIA_MAX).optional(),
+    media: z
+      .array(z.object({ url: z.string().url(), kind: z.enum(MEDIA_ITEM_KINDS) }).strict())
+      .max(POST_MEDIA_MAX)
+      .optional(),
     visibility: z.enum(POST_VISIBILITY_VALUES).default('public'),
   })
   .strict()
@@ -41,10 +45,10 @@ export const createPostSchema = z
   );
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 
-/** `POST /v1/media/upload-url` — pedir destino prefirmado para subir un adjunto (solo imágenes). */
+/** `POST /v1/media/upload-url` — pedir destino prefirmado para subir un adjunto (imagen o video). */
 export const createUploadUrlSchema = z
   .object({
-    contentType: z.enum(POST_MEDIA_MIME_TYPES),
+    contentType: z.enum(POST_UPLOAD_MIME_TYPES),
   })
   .strict();
 export type CreateUploadUrlInput = z.infer<typeof createUploadUrlSchema>;
@@ -125,6 +129,12 @@ export const listQuerySchema = z
   })
   .strict();
 export type ListQueryInput = z.infer<typeof listQuerySchema>;
+
+/** Query de `GET /v1/posts/{id}/reactions` (S3.10) — keyset + filtro opcional por `kind`. */
+export const reactionsQuerySchema = listQuerySchema.extend({
+  kind: z.enum(REACTION_KIND_VALUES).optional(),
+});
+export type ReactionsQueryInput = z.infer<typeof reactionsQuerySchema>;
 
 /** Query de `GET /v1/notifications` — listado paginado + filtro de no-leídas (`unread=true`). */
 export const notificationsQuerySchema = listQuerySchema.extend({

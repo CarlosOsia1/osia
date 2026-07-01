@@ -16,6 +16,9 @@ import { MediaController } from './web/media.controller';
 import { PostController } from './web/post.controller';
 import { CreateUploadUrlUseCase } from './application/use-cases/create-upload-url.use-case';
 import { CreatePostUseCase } from './application/use-cases/create-post.use-case';
+import { GetPostUseCase } from './application/use-cases/get-post.use-case';
+import { DeletePostUseCase } from './application/use-cases/delete-post.use-case';
+import { ListReactionsUseCase } from './application/use-cases/list-reactions.use-case';
 import { STORAGE_PORT } from './application/ports/out/storage.port';
 import { SupabaseStorageAdapter } from './infrastructure/storage/supabase-storage.adapter';
 import { POST_REPOSITORY } from './application/ports/out/post.repository';
@@ -109,8 +112,11 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     FollowGraphService,
     CreateUploadUrlUseCase,
     CreatePostUseCase,
+    GetPostUseCase,
+    DeletePostUseCase,
     SetReactionUseCase,
     RemoveReactionUseCase,
+    ListReactionsUseCase,
     CreateCommentUseCase,
     ListCommentsUseCase,
     DeleteCommentUseCase,

@@ -1719,9 +1719,182 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-}
-.osia-profile__tile img {
   border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-profile__tile:hover {
+  border-color: var(--hairline-strong);
+}
+.osia-profile__tile:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+
+/* ============================ MediaGallery (foto/video del post) ============================ */
+.osia-media {
+  display: grid;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-sunken);
+}
+.osia-media__item {
+  inline-size: 100%;
+  display: block;
+  object-fit: cover;
+  background: var(--color-bg-sunken);
+  max-block-size: 34rem;
+}
+.osia-media[data-count='1'] .osia-media__item {
+  max-block-size: 40rem;
+}
+.osia-media[data-count='2'] {
+  grid-template-columns: 1fr 1fr;
+}
+.osia-media[data-count='2'] .osia-media__item {
+  aspect-ratio: 1;
+}
+.osia-media[data-count='3'],
+.osia-media[data-count='4'] {
+  grid-template-columns: 1fr 1fr;
+}
+.osia-media[data-count='3'] .osia-media__item,
+.osia-media[data-count='4'] .osia-media__item {
+  aspect-ratio: 1;
+}
+.osia-media[data-count='3'] .osia-media__item:first-child {
+  grid-column: span 2;
+  aspect-ratio: 2;
+}
+
+/* ============================ ReactionBar (★☾☀) ============================ */
+.osia-reactbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.osia-reactbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: 600 var(--text-ed-sm) / 1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--dur-fast) var(--ease-out-soft),
+    color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-reactbtn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.osia-reactbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+.osia-reactbtn[data-active] {
+  color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-indigo-deep) 40%, transparent);
+  border-color: var(--hairline);
+}
+.osia-reactbtn svg {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+.osia-reactbar__count {
+  margin-inline-start: auto;
+  background: none;
+  border: none;
+  color: var(--color-text-subtle);
+  font: 500 var(--text-ed-sm) / 1 var(--font-ui);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+}
+.osia-reactbar__count:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+/* ============================ PostCard ============================ */
+.osia-post {
+  display: grid;
+  gap: var(--space-3);
+}
+.osia-post__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.osia-post__author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: inherit;
+  min-inline-size: 0;
+}
+.osia-post__names {
+  display: grid;
+  gap: 1px;
+  min-inline-size: 0;
+}
+.osia-post__menu {
+  margin-inline-start: auto;
+}
+.osia-post__body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.osia-post__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.osia-post__comments {
+  display: grid;
+  gap: var(--space-3);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--hairline);
+}
+
+/* ============================ Comentarios ============================ */
+.osia-comment {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.osia-comment__bubble {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+.osia-comment__meta {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+.osia-comment__composer {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.osia-comment__composer .osia-field {
+  flex: 1 1 auto;
 }
 
 /* ============================ UserRow (fila de persona) ============================ */

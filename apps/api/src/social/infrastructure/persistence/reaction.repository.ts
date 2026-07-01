@@ -1,12 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import type { ReactionKind } from '@osia/shared';
+import {
+  encodeCursor,
+  type Cursor,
+  type Page,
+  type ReactionActorDto,
+  type ReactionKind,
+} from '@osia/shared';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type {
   ReactionRepository,
   SetReactionResult,
 } from '../../application/ports/out/reaction.repository';
-import { toReactionDto } from './mappers';
+import { PROFILE_BRIEF_COLS, toProfileBrief, toReactionDto, type ProfileBriefRow } from './mappers';
 
 /** Fila combinada del CTE de `setReaction`: autor del post + reacción (nueva o vigente) + flag `created`. */
 type SetReactionQueryRow = {
@@ -96,5 +102,54 @@ export class PgReactionRepository implements ReactionRepository {
       `DELETE FROM social.reactions WHERE post_id = $1 AND account_id = $2 AND kind = $3`,
       [postId, accountId, kind],
     );
+  }
+
+  async listReactors(
+    postId: string,
+    viewerAccountId: string,
+    kind: ReactionKind | null,
+    limit: number,
+    cursor: Cursor | null,
+  ): Promise<Page<ReactionActorDto> | null> {
+    // Reimpone la visibilidad: no puedes listar las reacciones de un post que no puedes ver.
+    const vis = await this.pool.query(
+      `SELECT 1 FROM social.posts WHERE id = $1 AND deleted_at IS NULL AND (
+         author_account_id = $2 OR visibility = 'public'
+         OR (visibility = 'followers' AND EXISTS (
+           SELECT 1 FROM social.follows f
+           WHERE f.follower_account_id = $2 AND f.followee_account_id = social.posts.author_account_id
+             AND f.status = 'active'
+         )))`,
+      [postId, viewerAccountId],
+    );
+    if (vis.rowCount === 0) return null;
+
+    const params: unknown[] = [postId, kind];
+    let cursorClause = '';
+    if (cursor) {
+      params.push(cursor.sortKey, cursor.id);
+      cursorClause = `AND (r.created_at, r.id) < ($3::timestamptz, $4::uuid)`;
+    }
+    params.push(limit + 1);
+    const res = await this.pool.query<
+      ProfileBriefRow & { kind: ReactionKind; reacted_at: Date; reaction_id: string }
+    >(
+      `SELECT ${PROFILE_BRIEF_COLS}, r.kind, r.created_at AS reacted_at, r.id AS reaction_id
+       FROM social.reactions r
+       JOIN identity.profiles p ON p.account_id = r.account_id AND p.deleted_at IS NULL
+       WHERE r.post_id = $1 AND ($2::text IS NULL OR r.kind = $2) ${cursorClause}
+       ORDER BY r.created_at DESC, r.id DESC
+       LIMIT $${params.length}`,
+      params,
+    );
+    const hasMore = res.rows.length > limit;
+    const slice = hasMore ? res.rows.slice(0, limit) : res.rows;
+    const last = slice[slice.length - 1];
+    const nextCursor =
+      hasMore && last ? encodeCursor({ sortKey: last.reacted_at.toISOString(), id: last.reaction_id }) : null;
+    return {
+      data: slice.map((r) => ({ ...toProfileBrief(r), kind: r.kind, reactedAt: r.reacted_at.toISOString() })),
+      page: { nextCursor, hasMore, limit },
+    };
   }
 }

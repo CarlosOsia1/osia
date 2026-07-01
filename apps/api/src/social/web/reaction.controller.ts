@@ -1,9 +1,13 @@
-import { Body, Controller, Delete, HttpCode, Param, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import {
   REACTION_KIND_VALUES,
+  reactionsQuerySchema,
   setReactionSchema,
+  type Page,
+  type ReactionActorDto,
   type ReactionResult,
+  type ReactionsQueryInput,
   type SetReactionInput,
 } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
@@ -11,6 +15,7 @@ import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/aut
 import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { SetReactionUseCase } from '../application/use-cases/set-reaction.use-case';
 import { RemoveReactionUseCase } from '../application/use-cases/remove-reaction.use-case';
+import { ListReactionsUseCase } from '../application/use-cases/list-reactions.use-case';
 
 /** Valida los params de ruta en el borde (evita 22P02/valores inválidos en SQL). */
 const postIdParam = new ZodValidationPipe(z.string().uuid());
@@ -27,7 +32,17 @@ export class ReactionController {
   constructor(
     private readonly setReaction: SetReactionUseCase,
     private readonly removeReaction: RemoveReactionUseCase,
+    private readonly listReactions: ListReactionsUseCase,
   ) {}
+
+  @Get()
+  list(
+    @CurrentAccount() account: AccountContext,
+    @Param('postId', postIdParam) postId: string,
+    @Query(new ZodValidationPipe(reactionsQuerySchema)) query: ReactionsQueryInput,
+  ): Promise<Page<ReactionActorDto>> {
+    return this.listReactions.execute(postId, account.accountId, query.kind ?? null, query);
+  }
 
   @Put()
   @UseGuards(EmailVerifiedGuard)

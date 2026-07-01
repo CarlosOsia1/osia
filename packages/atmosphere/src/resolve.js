@@ -1,0 +1,77 @@
+/**
+ * resolveAtmosphere — función PURA: dado timeOfDay (0..1) y un ciclo de keyframes,
+ * devuelve los AtmosphereParams interpolados. Idéntica en cliente y servidor →
+ * casi no hay que transmitir nada (determinismo). (S0.7-H1)
+ */
+import { lerp, smoothstep } from './math';
+import { lerpRGB } from './color';
+const norm = (v) => {
+    const m = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / m, v[1] / m, v[2] / m];
+};
+/** Dirección hacia el sol según la hora: sale por el este, cenit a mediodía, se pone al oeste. */
+export function sunDirFor(t) {
+    const angle = (t - 0.25) * Math.PI * 2; // 0 al amanecer, π/2 mediodía, π atardecer
+    return norm([Math.cos(angle), Math.sin(angle), 0.35]);
+}
+/** La luna, opuesta al sol (arriba de noche). */
+export function moonDirFor(t) {
+    const angle = (t - 0.25) * Math.PI * 2;
+    return norm([-Math.cos(angle), -Math.sin(angle), -0.35]);
+}
+/**
+ * Interpola los params interpolables entre dos keyframes. NO toca sunDir/moonDir (no son
+ * suyas: las compone resolveAtmosphere por hora). Función correcta por sí sola (sin parche externo).
+ */
+export function lerpParams(a, b, k) {
+    return {
+        skyTop: lerpRGB(a.skyTop, b.skyTop, k),
+        skyHorizon: lerpRGB(a.skyHorizon, b.skyHorizon, k),
+        fogColor: lerpRGB(a.fogColor, b.fogColor, k),
+        fogDensity: lerp(a.fogDensity, b.fogDensity, k),
+        sunColor: lerpRGB(a.sunColor, b.sunColor, k),
+        sunIntensity: lerp(a.sunIntensity, b.sunIntensity, k),
+        moonColor: lerpRGB(a.moonColor, b.moonColor, k),
+        moonIntensity: lerp(a.moonIntensity, b.moonIntensity, k),
+        ambientColor: lerpRGB(a.ambientColor, b.ambientColor, k),
+        ambientIntensity: lerp(a.ambientIntensity, b.ambientIntensity, k),
+        exposure: lerp(a.exposure, b.exposure, k),
+        bloom: lerp(a.bloom, b.bloom, k),
+        starsIntensity: lerp(a.starsIntensity, b.starsIntensity, k),
+    };
+}
+export function resolveAtmosphere(t, cycle) {
+    const tt = ((t % 1) + 1) % 1;
+    const n = cycle.length;
+    const first = cycle[0];
+    const last = cycle[n - 1];
+    let a;
+    let b;
+    let k;
+    if (tt >= last.t || tt < first.t) {
+        // segmento que envuelve (último → primero)
+        a = last;
+        b = first;
+        const span = 1 - last.t + first.t;
+        const local = tt >= last.t ? tt - last.t : 1 - last.t + tt;
+        k = span > 0 ? local / span : 0;
+    }
+    else {
+        a = first;
+        b = first;
+        k = 0;
+        for (let i = 0; i < n - 1; i++) {
+            const cur = cycle[i];
+            const nxt = cycle[i + 1];
+            if (tt >= cur.t && tt < nxt.t) {
+                a = cur;
+                b = nxt;
+                k = (tt - cur.t) / (nxt.t - cur.t);
+                break;
+            }
+        }
+    }
+    const params = lerpParams(a.params, b.params, smoothstep(k));
+    return { ...params, sunDir: sunDirFor(tt), moonDir: moonDirFor(tt) };
+}
+//# sourceMappingURL=resolve.js.map

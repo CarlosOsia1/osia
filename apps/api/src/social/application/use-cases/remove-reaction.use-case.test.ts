@@ -18,6 +18,7 @@ test('quita la reacción pasando (post, cuenta, kind) al repo', async () => {
     removeReaction: async (postId, accountId, kind) => {
       calls.push([postId, accountId, kind]);
     },
+    listReactors: async () => null,
   };
   const uc = new RemoveReactionUseCase(repo);
   await uc.execute(POST, READER, 'moon');

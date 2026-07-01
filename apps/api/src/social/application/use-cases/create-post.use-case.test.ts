@@ -19,8 +19,8 @@ import type { SocialEventPublisher } from '../ports/out/social-event-publisher.p
 import { AppException } from '../../../common/app-exception';
 
 const ACCOUNT = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
-const OWN = 'https://ref.supabase.co/storage/v1/object/public/post-media/posts/x/y.png';
-const FOREIGN = 'https://evil.example.com/x.png';
+const OWN = { url: 'https://ref.supabase.co/storage/v1/object/public/post-media/posts/x/y.png', kind: 'image' } as const;
+const FOREIGN = { url: 'https://evil.example.com/x.png', kind: 'image' } as const;
 
 const author: ProfileBrief = {
   profileId: asProfileId('0190b8e0-7c1e-7b3a-8a4e-0000000000aa'),
@@ -56,6 +56,8 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
       created.push(input);
       return makePost(input);
     },
+    getById: async () => null,
+    softDelete: async () => false,
   };
   const storage: StoragePort = {
     createUploadTarget: async () => {

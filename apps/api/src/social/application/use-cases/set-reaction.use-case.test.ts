@@ -48,6 +48,7 @@ const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialPostReacted
 const repo = (result: SetReactionResult | null): ReactionRepository => ({
   setReaction: async () => result,
   removeReaction: async () => {},
+  listReactors: async () => null,
 });
 
 test('reacción nueva: devuelve resultado y emite social.post.reacted', async () => {

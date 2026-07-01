@@ -1,18 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import {
-  Avatar,
-  Button,
-  Card,
-  Divider,
-  PopularityMeter,
-  Skeleton,
-  Text,
-  IconLock,
-} from '@osia/ui';
+import { Avatar, Button, Divider, PopularityMeter, Skeleton, Text, IconLock } from '@osia/ui';
 import type { PostDto } from '@osia/shared';
 import {
   followAccount,
@@ -205,21 +197,24 @@ function ProfilePosts({
   }
   return (
     <div className="osia-profile__grid">
-      {posts.map((post) => (
-        <Card key={post.id} className="osia-profile__tile">
-          {post.media[0] ? (
-            <img
-              src={post.media[0]}
-              alt=""
-              style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <Text variant="read" tone="muted">
-              {post.body}
-            </Text>
-          )}
-        </Card>
-      ))}
+      {posts.map((post) => {
+        const first = post.media[0];
+        return (
+          <Link key={post.id} href={`/post/${post.id}`} className="osia-profile__tile">
+            {first ? (
+              first.kind === 'video' ? (
+                <video src={first.url} muted preload="metadata" style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }} />
+              ) : (
+                <img src={first.url} alt="" style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }} />
+              )
+            ) : (
+              <Text variant="read" tone="muted">
+                {post.body}
+              </Text>
+            )}
+          </Link>
+        );
+      })}
     </div>
   );
 }
