@@ -27,11 +27,12 @@ export class PgPresenceQuery implements PresenceQueryPort {
     const res = await this.pool.query<PresenceRow>(
       `WITH requested AS (SELECT DISTINCT unnest($2::uuid[]) AS account_id),
        allowed AS (
+         -- Regla direccional (S3.9, decisión de Carlos): ves "en línea" de X SOLO si X TE SIGUE
+         -- (X es el follower, el viewer es el followee). Seguir a X no basta para ver su presencia.
          SELECT r.account_id FROM requested r
          WHERE EXISTS (
            SELECT 1 FROM social.follows f WHERE f.status = 'active'
-             AND ((f.follower_account_id = $1 AND f.followee_account_id = r.account_id)
-               OR (f.followee_account_id = $1 AND f.follower_account_id = r.account_id))
+             AND f.follower_account_id = r.account_id AND f.followee_account_id = $1
          )
        ),
        latest AS (

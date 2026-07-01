@@ -65,6 +65,8 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
   };
   const events: SocialEventPublisher = {
     followCreated: () => {},
+    followRequested: () => {},
+    followAccepted: () => {},
     postReacted: () => {},
     postCommented: () => {},
     postPublished: (p) => published.push({ postId: p.postId, authorAccountId: p.authorAccountId }),

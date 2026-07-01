@@ -27,6 +27,7 @@ type PublicProfileRow = {
   followers_count: number;
   following_count: number;
   is_following: boolean;
+  is_requested: boolean;
   is_self: boolean;
   is_private: boolean;
   photo_url: string | null;
@@ -50,7 +51,12 @@ export class PgProfileQuery implements ProfileQueryPort {
                 SELECT 1 FROM social.follows f
                 WHERE f.follower_account_id = $2 AND f.followee_account_id = p.account_id
                   AND f.status = 'active'
-              ) AS is_following
+              ) AS is_following,
+              EXISTS (
+                SELECT 1 FROM social.follows f
+                WHERE f.follower_account_id = $2 AND f.followee_account_id = p.account_id
+                  AND f.status = 'pending'
+              ) AS is_requested
        FROM identity.profiles p
        LEFT JOIN social.profile_cards pc ON pc.account_id = p.account_id
        WHERE p.handle = $1 AND p.deleted_at IS NULL`,
@@ -60,8 +66,15 @@ export class PgProfileQuery implements ProfileQueryPort {
     if (!row) return null;
     // Gating estricto (S3.8, decisión de Carlos): en cuenta privada, quien no es dueño ni seguidor
     // activo solo ve la cabecera; el contenido (posts/listas) va oculto hasta seguir/ser aprobado.
+    // Una solicitud PENDIENTE (S3.9) NO concede visibilidad.
     const canViewContent = !row.is_private || row.is_self || row.is_following;
-    const viewerState = row.is_self ? 'self' : row.is_following ? 'following' : 'none';
+    const viewerState = row.is_self
+      ? 'self'
+      : row.is_following
+        ? 'following'
+        : row.is_requested
+          ? 'requested'
+          : 'none';
     return {
       profileId: asProfileId(row.id),
       accountId: asAccountId(row.account_id),

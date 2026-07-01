@@ -1,5 +1,7 @@
 import type {
+  SocialFollowAcceptedPayload,
   SocialFollowCreatedPayload,
+  SocialFollowRequestedPayload,
   SocialPostCommentedPayload,
   SocialPostPublishedPayload,
   SocialPostReactedPayload,
@@ -15,8 +17,12 @@ export const SOCIAL_EVENT_PUBLISHER = Symbol('SOCIAL_EVENT_PUBLISHER');
  * S3.4 los reusará para notificaciones).
  */
 export interface SocialEventPublisher {
-  /** Anuncia una arista de seguimiento NUEVA (no el re-follow idempotente). */
+  /** Anuncia una arista de seguimiento ACTIVA nueva (follow público directo; no el re-follow). */
   followCreated(payload: SocialFollowCreatedPayload): void;
+  /** Anuncia una SOLICITUD de seguir nueva (cuenta privada); notifica al seguido, sin reputación. */
+  followRequested(payload: SocialFollowRequestedPayload): void;
+  /** Anuncia una solicitud ACEPTADA (pasa a activa); acredita reputación y notifica al solicitante. */
+  followAccepted(payload: SocialFollowAcceptedPayload): void;
   /** Anuncia un post recién publicado (dispara el fan-out al feed). */
   postPublished(payload: SocialPostPublishedPayload): void;
   /** Anuncia una reacción NUEVA (no el re-PUT idempotente del mismo kind). */

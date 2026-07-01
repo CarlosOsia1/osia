@@ -69,6 +69,9 @@ import { PROFILE_CARD_REPOSITORY } from './application/ports/out/profile-card.re
 import { PgProfileCardRepository } from './infrastructure/persistence/profile-card.repository';
 import { PROFILE_MEDIA_STORAGE } from './application/ports/out/profile-media.storage.port';
 import { SupabaseProfileMediaAdapter } from './infrastructure/storage/supabase-profile-media.adapter';
+import { FollowRequestsController } from './web/follow-requests.controller';
+import { AcceptFollowRequestUseCase } from './application/use-cases/accept-follow-request.use-case';
+import { RejectFollowRequestUseCase } from './application/use-cases/reject-follow-request.use-case';
 
 /**
  * Bounded context `social` (Fase 3 — NestJS hexagonal, espejo de `identity`): web (controllers) →
@@ -97,6 +100,7 @@ import { SupabaseProfileMediaAdapter } from './infrastructure/storage/supabase-p
     ReportController,
     MetricsController,
     ProfileMeController,
+    FollowRequestsController,
   ],
   providers: [
     SocialHealthService,
@@ -138,6 +142,8 @@ import { SupabaseProfileMediaAdapter } from './infrastructure/storage/supabase-p
     { provide: METRICS_QUERY, useClass: PgMetricsQuery },
     UpdateProfileCardUseCase,
     CreateProfileMediaUploadUrlUseCase,
+    AcceptFollowRequestUseCase,
+    RejectFollowRequestUseCase,
     { provide: PROFILE_CARD_REPOSITORY, useClass: PgProfileCardRepository },
     { provide: PROFILE_MEDIA_STORAGE, useClass: SupabaseProfileMediaAdapter },
   ],

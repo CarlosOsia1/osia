@@ -4,6 +4,7 @@ import {
   decodeCursor,
   ErrorCode,
   type Cursor,
+  type FollowRequestDto,
   type ListQueryInput,
   type Page,
   type ProfileBrief,
@@ -27,6 +28,11 @@ export class FollowGraphService {
   async listFollowing(handle: string, query: ListQueryInput): Promise<Page<ProfileBrief>> {
     const accountId = await this.resolveHandle(handle);
     return this.follows.listFollowing(accountId, clampLimit(query.limit), this.cursor(query.cursor));
+  }
+
+  /** Solicitudes ENTRANTES pendientes hacia el propio usuario (S3.9). Por accountId autenticado (no handle). */
+  listMyRequests(accountId: string, query: ListQueryInput): Promise<Page<FollowRequestDto>> {
+    return this.follows.listPendingRequests(accountId, clampLimit(query.limit), this.cursor(query.cursor));
   }
 
   private async resolveHandle(handle: string): Promise<string> {

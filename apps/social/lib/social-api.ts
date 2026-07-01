@@ -4,9 +4,12 @@ import type {
   CreateUploadUrlInput,
   FeedItemDto,
   NotificationsPageDto,
+  FollowRequestDto,
   Page,
   PostDto,
   PostMediaMime,
+  PresenceEntryDto,
+  ProfileBrief,
   ProfileMediaKind,
   ProfileMediaMime,
   PublicProfileDto,
@@ -156,7 +159,57 @@ export async function followAccount(followeeAccountId: string): Promise<void> {
   });
 }
 
-/** Dejar de seguir (`DELETE /v1/follows/{id}`), idempotente. */
+/** Dejar de seguir (`DELETE /v1/follows/{id}`), idempotente. También cancela una solicitud pendiente. */
 export function unfollowAccount(followeeAccountId: string): Promise<void> {
   return identity.authedFetch<void>(`/v1/follows/${followeeAccountId}`, { method: 'DELETE' });
+}
+
+function pageQs(cursor?: string): string {
+  return cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+}
+
+/** Seguidores de un perfil (`GET /v1/profiles/{handle}/followers`), keyset. */
+export function getFollowers(handle: string, cursor?: string): Promise<Page<ProfileBrief>> {
+  return identity.authedFetch<Page<ProfileBrief>>(
+    `/v1/profiles/${encodeURIComponent(handle)}/followers${pageQs(cursor)}`,
+    { method: 'GET' },
+  );
+}
+
+/** Seguidos de un perfil (`GET /v1/profiles/{handle}/following`), keyset. */
+export function getFollowing(handle: string, cursor?: string): Promise<Page<ProfileBrief>> {
+  return identity.authedFetch<Page<ProfileBrief>>(
+    `/v1/profiles/${encodeURIComponent(handle)}/following${pageQs(cursor)}`,
+    { method: 'GET' },
+  );
+}
+
+/** Solicitudes de seguimiento ENTRANTES pendientes (`GET /v1/follows/requests`), keyset. */
+export function getFollowRequests(cursor?: string): Promise<Page<FollowRequestDto>> {
+  return identity.authedFetch<Page<FollowRequestDto>>(`/v1/follows/requests${pageQs(cursor)}`, {
+    method: 'GET',
+  });
+}
+
+/** Aceptar una solicitud (`POST /v1/follows/requests/{requesterId}/accept`). */
+export function acceptFollowRequest(requesterId: string): Promise<void> {
+  return identity.authedFetch<void>(`/v1/follows/requests/${requesterId}/accept`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+/** Rechazar una solicitud (`POST /v1/follows/requests/{requesterId}/reject`). */
+export function rejectFollowRequest(requesterId: string): Promise<void> {
+  return identity.authedFetch<void>(`/v1/follows/requests/${requesterId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+/** Presencia de cuentas (`GET /v1/presence?accountIds=…`); solo devuelve las que te siguen (regla S3.9). */
+export function getPresence(accountIds: string[]): Promise<PresenceEntryDto[]> {
+  if (accountIds.length === 0) return Promise.resolve([]);
+  const qs = `?accountIds=${encodeURIComponent(accountIds.join(','))}`;
+  return identity.authedFetch<PresenceEntryDto[]>(`/v1/presence${qs}`, { method: 'GET' });
 }

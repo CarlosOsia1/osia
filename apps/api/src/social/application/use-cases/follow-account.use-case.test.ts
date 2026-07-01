@@ -11,6 +11,7 @@ import {
   asFollowId,
   ErrorCode,
   type FollowDto,
+  type FollowStatus,
   type SocialFollowCreatedPayload,
 } from '@osia/shared';
 import { FollowAccountUseCase } from './follow-account.use-case';
@@ -21,19 +22,23 @@ import { AppException } from '../../../common/app-exception';
 const A = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const B = '0190b8e0-7c1e-7b3a-8a4e-000000000002';
 
-const makeFollow = (follower: string, followee: string, created: string): FollowDto => ({
+const makeFollow = (follower: string, followee: string, status: FollowStatus, created: string): FollowDto => ({
   id: asFollowId('0190b8e0-7c1e-7b3a-8a4e-0000000000ff'),
   followerAccountId: asAccountId(follower),
   followeeAccountId: asAccountId(follower === followee ? follower : followee),
-  status: 'active',
+  status,
   createdAt: created,
 });
 
 const emptyPage = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
 
 const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
-  follow: async (f, t) => ({ follow: makeFollow(f, t, '2026-06-28T00:00:00.000Z'), created: true }),
+  follow: async (f, t, status) => ({ follow: makeFollow(f, t, status, '2026-06-28T00:00:00.000Z'), created: true }),
   unfollow: async () => true,
+  isAccountPrivate: async () => false,
+  acceptRequest: async () => true,
+  rejectRequest: async () => true,
+  listPendingRequests: async () => emptyPage,
   accountExists: async () => true,
   accountIdByHandle: async () => null,
   listFollowers: async () => emptyPage,
@@ -41,59 +46,77 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
   ...over,
 });
 
-/** Publicador espía: registra cada `social.follow.created` emitido. */
-const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialFollowCreatedPayload[] } => {
-  const emitted: SocialFollowCreatedPayload[] = [];
+/** Publicador espía: registra los eventos de follow emitidos. */
+const spyPublisher = (): {
+  pub: SocialEventPublisher;
+  created: SocialFollowCreatedPayload[];
+  requested: SocialFollowCreatedPayload[];
+} => {
+  const created: SocialFollowCreatedPayload[] = [];
+  const requested: SocialFollowCreatedPayload[] = [];
   return {
     pub: {
-      followCreated: (p) => emitted.push(p),
+      followCreated: (p) => created.push(p),
+      followRequested: (p) => requested.push(p),
+      followAccepted: () => {},
       postReacted: () => {},
       postPublished: () => {},
       postCommented: () => {},
     },
-    emitted,
+    created,
+    requested,
   };
 };
 
-test('follow: nuevo follow devuelve la arista activa y emite social.follow.created', async () => {
-  const { pub, emitted } = spyPublisher();
+test('follow público: arista activa y emite social.follow.created (no requested)', async () => {
+  const { pub, created, requested } = spyPublisher();
   const uc = new FollowAccountUseCase(repo(), pub);
   const follow = await uc.execute(A, B);
   assert.equal(follow.followerAccountId, A);
   assert.equal(follow.followeeAccountId, B);
   assert.equal(follow.status, 'active');
-  assert.deepEqual(emitted, [{ followerAccountId: A, followeeAccountId: B }]);
+  assert.deepEqual(created, [{ followerAccountId: A, followeeAccountId: B }]);
+  assert.equal(requested.length, 0);
+});
+
+test('follow privado: arista PENDING y emite social.follow.requested (no created)', async () => {
+  const { pub, created, requested } = spyPublisher();
+  const uc = new FollowAccountUseCase(repo({ isAccountPrivate: async () => true }), pub);
+  const follow = await uc.execute(A, B);
+  assert.equal(follow.status, 'pending');
+  assert.deepEqual(requested, [{ followerAccountId: A, followeeAccountId: B }]);
+  assert.equal(created.length, 0);
 });
 
 test('follow: idempotente — re-seguir devuelve el vigente SIN re-emitir evento', async () => {
-  const { pub, emitted } = spyPublisher();
+  const { pub, created } = spyPublisher();
   const uc = new FollowAccountUseCase(
     repo({
-      follow: async (f, t) => ({ follow: makeFollow(f, t, '2026-06-01T00:00:00.000Z'), created: false }),
+      follow: async (f, t, status) => ({ follow: makeFollow(f, t, status, '2026-06-01T00:00:00.000Z'), created: false }),
     }),
     pub,
   );
   const follow = await uc.execute(A, B);
   assert.equal(follow.followeeAccountId, B);
-  assert.equal(emitted.length, 0);
+  assert.equal(created.length, 0);
 });
 
 test('follow: anti-self → CANNOT_FOLLOW_SELF (422) y no emite evento', async () => {
-  const { pub, emitted } = spyPublisher();
+  const { pub, created, requested } = spyPublisher();
   const uc = new FollowAccountUseCase(repo(), pub);
   await assert.rejects(
     () => uc.execute(A, A),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.CANNOT_FOLLOW_SELF && e.status === 422,
   );
-  assert.equal(emitted.length, 0);
+  assert.equal(created.length + requested.length, 0);
 });
 
 test('follow: destino inexistente → NOT_FOUND (404) y no emite evento', async () => {
-  const { pub, emitted } = spyPublisher();
+  const { pub, created, requested } = spyPublisher();
   const uc = new FollowAccountUseCase(repo({ accountExists: async () => false }), pub);
   await assert.rejects(
     () => uc.execute(A, B),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,
   );
-  assert.equal(emitted.length, 0);
+  assert.equal(created.length + requested.length, 0);
 });

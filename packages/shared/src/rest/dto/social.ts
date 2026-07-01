@@ -164,6 +164,14 @@ export type FollowDto = {
   createdAt: string;
 };
 
+/**
+ * Una solicitud de seguimiento ENTRANTE pendiente (`GET /v1/follows/requests`, S3.9): la vista breve del
+ * solicitante + su `accountId` (necesario para aceptar/rechazar por la ruta `requests/{accountId}/…`).
+ */
+export type FollowRequestDto = ProfileBrief & {
+  accountId: AccountId;
+};
+
 /** Un ítem materializado del feed (`social.feed_items`) — embebe el post completo para render directo. */
 export type FeedItemDto = {
   /** `feed_items.id` (la PK real es `(account_id, id)`; aquí basta el id como string opaco). */

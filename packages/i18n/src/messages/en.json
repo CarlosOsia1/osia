@@ -229,8 +229,16 @@
       "soonBody": "We're preparing who to follow, chosen by reputation — never by an algorithm. In the meantime, invite someone or share a post."
     },
     "friends": {
-      "soonTitle": "Your circle is taking shape",
-      "soonBody": "Your followers, following and pending requests will live here."
+      "tabs": {
+        "followers": "Followers",
+        "following": "Following",
+        "requests": "Requests"
+      },
+      "accept": "Accept",
+      "reject": "Reject",
+      "emptyFollowers": "No followers yet.",
+      "emptyFollowing": "Not following anyone yet.",
+      "emptyRequests": "No pending requests."
     },
     "feed": {
       "loading": "Loading your feed…",
@@ -248,7 +256,9 @@
       "follow": "{name} started following you.",
       "reaction": "{name} reacted to your post.",
       "comment": "{name} commented on your post.",
-      "mention": "{name} mentioned you."
+      "mention": "{name} mentioned you.",
+      "follow_request": "{name} requested to follow you.",
+      "follow_accepted": "{name} accepted your follow request."
     },
     "profile": {
       "loading": "Loading profile…",

@@ -33,6 +33,8 @@ son espejo de [`@osia/shared` `domain/enums.ts`](../packages/shared/src/domain/e
 | `20260628000009_social_reports.sql` | **Moderación (S3.6-H2):** `social.reports` (cola de reportes post/comment) + índice de cola abierta + RLS deny-all (service-only). |
 | `20260701000001_social_profile_cards.sql` | **Perfil de lujo (S3.8):** `social.profile_cards` (privacidad de cuenta + foto/portada) + trigger `updated_at` + RLS deny-all. |
 | `20260701000002_storage_profile_media.sql` | **Perfil de lujo (S3.8):** bucket público `profile-media` (imágenes ≤5 MiB) para foto/portada por URL prefirmada. |
+| `20260701000003_social_follow_pending.sql` | **Solicitudes (S3.9):** `follows.status` += `pending` + rama UPDATE en el trigger de conteos (aceptar suma) + índice de solicitudes entrantes. |
+| `20260701000004_social_notification_kinds.sql` | **Solicitudes (S3.9):** `notifications.kind` += `follow_request`/`follow_accepted`. |
 
 ## Convención de nombres (nota importante)
 

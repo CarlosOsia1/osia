@@ -19,6 +19,10 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
     throw new Error('no usado');
   },
   unfollow: async () => false,
+  isAccountPrivate: async () => false,
+  acceptRequest: async () => false,
+  rejectRequest: async () => false,
+  listPendingRequests: async () => ({ data: [], page: { nextCursor: null, hasMore: false, limit: 20 } }),
   accountExists: async () => true,
   accountIdByHandle: async () => 'acc-1',
   listFollowers: async () => emptyPage(),

@@ -1,6 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import { encodeCursor, type Cursor, type FollowDto, type Page, type ProfileBrief } from '@osia/shared';
+import {
+  asAccountId,
+  encodeCursor,
+  type Cursor,
+  type FollowDto,
+  type FollowRequestDto,
+  type FollowStatus,
+  type Page,
+  type ProfileBrief,
+} from '@osia/shared';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { FollowRepository } from '../../application/ports/out/follow.repository';
 import {
@@ -23,19 +32,20 @@ export class PgFollowRepository implements FollowRepository {
   async follow(
     followerAccountId: string,
     followeeAccountId: string,
+    status: FollowStatus,
   ): Promise<{ follow: FollowDto; created: boolean }> {
     // Idempotente por par: si ya existe, ON CONFLICT no inserta y no devuelve fila.
     const inserted = await this.pool.query<FollowRow>(
-      `INSERT INTO social.follows (follower_account_id, followee_account_id)
-       VALUES ($1, $2)
+      `INSERT INTO social.follows (follower_account_id, followee_account_id, status)
+       VALUES ($1, $2, $3)
        ON CONFLICT (follower_account_id, followee_account_id) DO NOTHING
        RETURNING ${FOLLOW_COLS}`,
-      [followerAccountId, followeeAccountId],
+      [followerAccountId, followeeAccountId, status],
     );
     const created = inserted.rows[0];
     if (created) return { follow: toFollowDto(created), created: true };
 
-    // Ya existía → devolver el vigente.
+    // Ya existía → devolver el vigente (con su estado real: active o pending).
     const existing = await this.pool.query<FollowRow>(
       `SELECT ${FOLLOW_COLS} FROM social.follows
        WHERE follower_account_id = $1 AND followee_account_id = $2`,
@@ -52,6 +62,68 @@ export class PgFollowRepository implements FollowRepository {
       [followerAccountId, followeeAccountId],
     );
     return (res.rowCount ?? 0) > 0;
+  }
+
+  async isAccountPrivate(accountId: string): Promise<boolean> {
+    const res = await this.pool.query<{ is_private: boolean }>(
+      `SELECT COALESCE(is_private, false) AS is_private FROM social.profile_cards WHERE account_id = $1`,
+      [accountId],
+    );
+    return res.rows[0]?.is_private ?? false;
+  }
+
+  async acceptRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean> {
+    const res = await this.pool.query(
+      `UPDATE social.follows SET status = 'active'
+       WHERE followee_account_id = $1 AND follower_account_id = $2 AND status = 'pending'`,
+      [ownerAccountId, requesterAccountId],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  async rejectRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean> {
+    const res = await this.pool.query(
+      `DELETE FROM social.follows
+       WHERE followee_account_id = $1 AND follower_account_id = $2 AND status = 'pending'`,
+      [ownerAccountId, requesterAccountId],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  async listPendingRequests(
+    accountId: string,
+    limit: number,
+    cursor: Cursor | null,
+  ): Promise<Page<FollowRequestDto>> {
+    // Solicitudes ENTRANTES pendientes: perfil del solicitante + su account_id (para aceptar/rechazar).
+    const params: unknown[] = [accountId];
+    let cursorClause = '';
+    if (cursor) {
+      params.push(cursor.sortKey, cursor.id);
+      cursorClause = `AND (f.created_at, f.id) < ($2::timestamptz, $3::uuid)`;
+    }
+    params.push(limit + 1);
+    const res = await this.pool.query<GraphRow & { req_account_id: string }>(
+      `SELECT ${PROFILE_BRIEF_COLS}, p.account_id AS req_account_id,
+              f.created_at AS follow_created_at, f.id AS follow_id
+       FROM social.follows f
+       JOIN identity.profiles p ON p.account_id = f.follower_account_id AND p.deleted_at IS NULL
+       WHERE f.followee_account_id = $1 AND f.status = 'pending' ${cursorClause}
+       ORDER BY f.created_at DESC, f.id DESC
+       LIMIT $${params.length}`,
+      params,
+    );
+    const hasMore = res.rows.length > limit;
+    const slice = hasMore ? res.rows.slice(0, limit) : res.rows;
+    const last = slice[slice.length - 1];
+    const nextCursor =
+      hasMore && last
+        ? encodeCursor({ sortKey: last.follow_created_at.toISOString(), id: last.follow_id })
+        : null;
+    return {
+      data: slice.map((r) => ({ ...toProfileBrief(r), accountId: asAccountId(r.req_account_id) })),
+      page: { nextCursor, hasMore, limit },
+    };
   }
 
   async accountExists(accountId: string): Promise<boolean> {
@@ -88,19 +160,20 @@ export class PgFollowRepository implements FollowRepository {
     accountId: string,
     limit: number,
     cursor: Cursor | null,
+    status: FollowStatus = 'active',
   ): Promise<Page<ProfileBrief>> {
-    const params: unknown[] = [accountId];
+    const params: unknown[] = [accountId, status];
     let cursorClause = '';
     if (cursor) {
       params.push(cursor.sortKey, cursor.id);
-      cursorClause = `AND (f.created_at, f.id) < ($2::timestamptz, $3::uuid)`;
+      cursorClause = `AND (f.created_at, f.id) < ($3::timestamptz, $4::uuid)`;
     }
     params.push(limit + 1);
     const res = await this.pool.query<GraphRow>(
       `SELECT ${PROFILE_BRIEF_COLS}, f.created_at AS follow_created_at, f.id AS follow_id
        FROM social.follows f
        JOIN identity.profiles p ON p.account_id = f.${joinCol} AND p.deleted_at IS NULL
-       WHERE f.${whereCol} = $1 AND f.status = 'active' ${cursorClause}
+       WHERE f.${whereCol} = $1 AND f.status = $2 ${cursorClause}
        ORDER BY f.created_at DESC, f.id DESC
        LIMIT $${params.length}`,
       params,

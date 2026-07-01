@@ -1,10 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
+  SOCIAL_FOLLOW_ACCEPTED,
   SOCIAL_FOLLOW_CREATED,
+  SOCIAL_FOLLOW_REQUESTED,
   SOCIAL_POST_COMMENTED,
   SOCIAL_POST_REACTED,
+  type SocialFollowAcceptedPayload,
   type SocialFollowCreatedPayload,
+  type SocialFollowRequestedPayload,
   type SocialPostCommentedPayload,
   type SocialPostReactedPayload,
 } from '@osia/shared';
@@ -26,6 +30,22 @@ export class NotificationListener {
     // El follow ya es anti-self (no puede seguirse a sí mismo), así que nunca es auto-notificación.
     await this.safe(() =>
       this.createNotification.execute(p.followeeAccountId, 'follow', p.followerAccountId, {}),
+    );
+  }
+
+  @OnEvent(SOCIAL_FOLLOW_REQUESTED)
+  async onFollowRequested(p: SocialFollowRequestedPayload): Promise<void> {
+    // Cuenta privada: avisa al seguido que hay una solicitud (el actor es quien la pide).
+    await this.safe(() =>
+      this.createNotification.execute(p.followeeAccountId, 'follow_request', p.followerAccountId, {}),
+    );
+  }
+
+  @OnEvent(SOCIAL_FOLLOW_ACCEPTED)
+  async onFollowAccepted(p: SocialFollowAcceptedPayload): Promise<void> {
+    // Al aceptar, se avisa al SOLICITANTE (follower); el actor es el dueño que aceptó (followee).
+    await this.safe(() =>
+      this.createNotification.execute(p.followerAccountId, 'follow_accepted', p.followeeAccountId, {}),
     );
   }
 

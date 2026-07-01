@@ -45,6 +45,8 @@ const spyPublisher = () => {
   const emitted: SocialPostCommentedPayload[] = [];
   const pub: SocialEventPublisher = {
     followCreated: () => {},
+    followRequested: () => {},
+    followAccepted: () => {},
     postReacted: () => {},
     postPublished: () => {},
     postCommented: (p) => emitted.push(p),

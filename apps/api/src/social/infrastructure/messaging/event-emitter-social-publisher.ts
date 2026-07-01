@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
+  SOCIAL_FOLLOW_ACCEPTED,
   SOCIAL_FOLLOW_CREATED,
+  SOCIAL_FOLLOW_REQUESTED,
   SOCIAL_POST_COMMENTED,
   SOCIAL_POST_PUBLISHED,
   SOCIAL_POST_REACTED,
+  type SocialFollowAcceptedPayload,
   type SocialFollowCreatedPayload,
+  type SocialFollowRequestedPayload,
   type SocialPostCommentedPayload,
   type SocialPostPublishedPayload,
   type SocialPostReactedPayload,
@@ -23,6 +27,14 @@ export class EventEmitterSocialPublisher implements SocialEventPublisher {
 
   followCreated(payload: SocialFollowCreatedPayload): void {
     this.emitter.emit(SOCIAL_FOLLOW_CREATED, payload);
+  }
+
+  followRequested(payload: SocialFollowRequestedPayload): void {
+    this.emitter.emit(SOCIAL_FOLLOW_REQUESTED, payload);
+  }
+
+  followAccepted(payload: SocialFollowAcceptedPayload): void {
+    this.emitter.emit(SOCIAL_FOLLOW_ACCEPTED, payload);
   }
 
   postPublished(payload: SocialPostPublishedPayload): void {

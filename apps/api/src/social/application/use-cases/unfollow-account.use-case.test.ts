@@ -16,6 +16,10 @@ const repo = (existed: boolean): FollowRepository => ({
     throw new Error('no usado');
   },
   unfollow: async () => existed,
+  isAccountPrivate: async () => false,
+  acceptRequest: async () => false,
+  rejectRequest: async () => false,
+  listPendingRequests: async () => emptyPage,
   accountExists: async () => true,
   accountIdByHandle: async () => null,
   listFollowers: async () => emptyPage,

@@ -69,8 +69,9 @@ export type ReactionKind = (typeof REACTION_KIND_VALUES)[number];
 export const isReactionKind = makeGuard(REACTION_KIND_VALUES);
 
 // --- social.follows ---
-/** Estado de una arista de seguimiento (ER `follows.status`). */
-export const FOLLOW_STATUS_VALUES = ['active', 'blocked'] as const;
+/** Estado de una arista de seguimiento (ER `follows.status`). `pending` = solicitud a cuenta privada
+ *  aún sin aprobar (S3.9); no cuenta para conteos ni concede visibilidad hasta pasar a `active`. */
+export const FOLLOW_STATUS_VALUES = ['active', 'pending', 'blocked'] as const;
 export type FollowStatus = (typeof FOLLOW_STATUS_VALUES)[number];
 export const isFollowStatus = makeGuard(FOLLOW_STATUS_VALUES);
 
@@ -85,7 +86,14 @@ export const isFeedReason = makeGuard(FEED_REASON_VALUES);
  * Tipos de notificación social (espejo ER `notifications.kind`). `gossip` queda DESCARTADO
  * (IA en Habitantes descartada al 100%, CLAUDE.md): sin Habitantes no hay chisme que notificar.
  */
-export const NOTIFICATION_TYPE_VALUES = ['follow', 'reaction', 'comment', 'mention'] as const;
+export const NOTIFICATION_TYPE_VALUES = [
+  'follow',
+  'reaction',
+  'comment',
+  'mention',
+  'follow_request', // solicitud de seguir a tu cuenta privada (S3.9)
+  'follow_accepted', // aceptaron tu solicitud (S3.9)
+] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number];
 export const isNotificationType = makeGuard(NOTIFICATION_TYPE_VALUES);
 

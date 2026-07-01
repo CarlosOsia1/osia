@@ -17,6 +17,8 @@ export const SOCIAL_EVENTS = [
   'social.post.reacted',
   'social.post.commented',
   'social.follow.created',
+  'social.follow.requested',
+  'social.follow.accepted',
   'social.follow.removed',
   'social.notification.created',
 ] as const;
@@ -40,6 +42,22 @@ export const SOCIAL_FOLLOW_CREATED = 'social.follow.created' satisfies SocialEve
  * la reputación es `followeeAccountId`; el origen para la dedup anti-grind es `followerAccountId`.
  */
 export interface SocialFollowCreatedPayload {
+  followerAccountId: string;
+  followeeAccountId: string;
+}
+
+/** Nombre del evento de SOLICITUD de seguir (cuenta privada, S3.9). Lo consume la notificación
+ *  (`follow_request` al seguido); NO acredita reputación (la arista aún no es activa). */
+export const SOCIAL_FOLLOW_REQUESTED = 'social.follow.requested' satisfies SocialEventName;
+export interface SocialFollowRequestedPayload {
+  followerAccountId: string;
+  followeeAccountId: string;
+}
+
+/** Nombre del evento de solicitud ACEPTADA (S3.9). La arista pasa a activa: lo consume la reputación
+ *  (acredita al seguido, dedup por par) y la notificación (`follow_accepted` al solicitante). */
+export const SOCIAL_FOLLOW_ACCEPTED = 'social.follow.accepted' satisfies SocialEventName;
+export interface SocialFollowAcceptedPayload {
   followerAccountId: string;
   followeeAccountId: string;
 }

@@ -1724,6 +1724,43 @@
   border-radius: var(--radius-md);
 }
 
+/* ============================ UserRow (fila de persona) ============================ */
+.osia-userrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease-out-soft);
+}
+.osia-userrow:hover {
+  background: var(--color-surface);
+}
+.osia-userrow__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.osia-userrow__link:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+  border-radius: var(--radius-md);
+}
+.osia-userrow__id {
+  display: grid;
+  gap: 1px;
+  min-inline-size: 0;
+}
+.osia-userrow__action {
+  margin-inline-start: auto;
+  display: inline-flex;
+  gap: var(--space-2);
+  flex: none;
+}
+
 /* ============================ Campo de subida de imagen ============================ */
 .osia-mediafield {
   display: grid;

@@ -14,9 +14,13 @@ import {
   IconLock,
 } from '@osia/ui';
 import type { PostDto } from '@osia/shared';
-import { useOsiaSession } from '@osia/identity';
-import { identity } from '../../lib/identity';
-import { followAccount, getProfilePosts, getPublicProfile, unfollowAccount } from '../../lib/social-api';
+import {
+  followAccount,
+  getPresence,
+  getProfilePosts,
+  getPublicProfile,
+  unfollowAccount,
+} from '../../lib/social-api';
 import { ProfileEditModal } from './ProfileEditModal';
 
 const profileKey = (handle: string) => ['social', 'profile', handle] as const;
@@ -37,6 +41,16 @@ export function ProfileView({ handle }: { handle: string }) {
     queryKey: [...profileKey(handle), 'posts'],
     queryFn: () => getProfilePosts(handle),
     enabled: profileQ.isSuccess && canView,
+  });
+
+  // Presencia direccional (S3.9): el backend solo devuelve el estado si ESTE perfil te sigue; para tu
+  // propio perfil no consultamos. `en línea` = alguna sesión abierta.
+  const accountId = profileQ.data?.accountId;
+  const presenceQ = useQuery({
+    queryKey: ['social', 'presence', accountId],
+    queryFn: () => getPresence(accountId ? [accountId] : []),
+    enabled: !!accountId && profileQ.data?.viewerState !== 'self',
+    refetchInterval: 60_000,
   });
 
   const follow = useMutation({
@@ -62,6 +76,7 @@ export function ProfileView({ handle }: { handle: string }) {
   const isSelf = p.viewerState === 'self';
   const photo = p.photoUrl ?? p.avatarUrl;
   const posts = postsQ.data?.data ?? [];
+  const online = presenceQ.data?.some((e) => e.online) ?? false;
 
   const followLabel =
     p.viewerState === 'following'
@@ -78,7 +93,13 @@ export function ProfileView({ handle }: { handle: string }) {
 
       <div className="osia-profile__id">
         <span className="osia-profile__photo">
-          <Avatar src={photo} name={p.displayName} size={112} ring />
+          <Avatar
+            src={photo}
+            name={p.displayName}
+            size={112}
+            ring
+            presence={online ? 'online' : undefined}
+          />
         </span>
         <div className="osia-profile__names">
           <Text variant="hero" as="h1">

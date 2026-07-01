@@ -8,10 +8,13 @@ import {
 } from '../ports/out/social-event-publisher.port';
 
 /**
- * Seguir a otra cuenta (S3.2-H1). Idempotente (re-seguir devuelve el follow vigente, sin error),
- * con anti-self (`CANNOT_FOLLOW_SELF`, respaldado por `ck_follows_no_self`) y 404 si el destino no
- * existe. Al nacer una arista NUEVA (no en el re-follow) emite `social.follow.created`, que la
- * reputación consume para acreditar al seguido (S3.2-H3) y, más adelante, la notificación (S3.4).
+ * Seguir a otra cuenta (S3.2-H1, extendido en S3.9). Idempotente (re-seguir devuelve el vigente),
+ * anti-self (`CANNOT_FOLLOW_SELF`) y 404 si el destino no existe. Según la privacidad del destino:
+ * - cuenta PÚBLICA → arista `active` inmediata; al nacer emite `social.follow.created` (reputación +
+ *   notificación "te empezó a seguir").
+ * - cuenta PRIVADA → arista `pending` (solicitud); al nacer emite `social.follow.requested`
+ *   (notificación "solicitó seguirte", SIN reputación hasta que se acepte).
+ * El re-follow idempotente no re-dispara nada.
  */
 @Injectable()
 export class FollowAccountUseCase {
@@ -27,10 +30,15 @@ export class FollowAccountUseCase {
     if (!(await this.follows.accountExists(followeeAccountId))) {
       throw new AppException(ErrorCode.NOT_FOUND, 404, 'La cuenta a seguir no existe.');
     }
-    const { follow, created } = await this.follows.follow(followerAccountId, followeeAccountId);
-    // Solo la arista nueva acredita/notifica: el re-follow idempotente no debe re-disparar nada.
+    const isPrivate = await this.follows.isAccountPrivate(followeeAccountId);
+    const { follow, created } = await this.follows.follow(
+      followerAccountId,
+      followeeAccountId,
+      isPrivate ? 'pending' : 'active',
+    );
     if (created) {
-      this.events.followCreated({ followerAccountId, followeeAccountId });
+      if (isPrivate) this.events.followRequested({ followerAccountId, followeeAccountId });
+      else this.events.followCreated({ followerAccountId, followeeAccountId });
     }
     return follow;
   }
