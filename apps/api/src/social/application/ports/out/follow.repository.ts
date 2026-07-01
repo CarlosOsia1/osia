@@ -21,6 +21,8 @@ export interface FollowRepository {
   unfollow(followerAccountId: string, followeeAccountId: string): Promise<boolean>;
   /** ¿La cuenta destino es privada? (S3.9 — decide si el follow nace `pending`). */
   isAccountPrivate(accountId: string): Promise<boolean>;
+  /** ¿`followerAccountId` sigue ACTIVAMENTE a `followeeAccountId`? (para gatear listas de cuenta privada). */
+  isActiveFollower(followerAccountId: string, followeeAccountId: string): Promise<boolean>;
   /** Aprueba una solicitud entrante (pending→active) del `requester` hacia `owner`; `true` si había una. */
   acceptRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean>;
   /** Rechaza/cancela una solicitud entrante (borra la fila pending); `true` si había una (idempotente). */

@@ -72,6 +72,15 @@ export class PgFollowRepository implements FollowRepository {
     return res.rows[0]?.is_private ?? false;
   }
 
+  async isActiveFollower(followerAccountId: string, followeeAccountId: string): Promise<boolean> {
+    const res = await this.pool.query(
+      `SELECT 1 FROM social.follows
+       WHERE follower_account_id = $1 AND followee_account_id = $2 AND status = 'active'`,
+      [followerAccountId, followeeAccountId],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
   async acceptRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean> {
     const res = await this.pool.query(
       `UPDATE social.follows SET status = 'active'

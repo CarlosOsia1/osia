@@ -22,6 +22,7 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
   },
   unfollow: async () => false,
   isAccountPrivate: async () => true,
+  isActiveFollower: async () => false,
   acceptRequest: async () => true,
   rejectRequest: async () => true,
   listPendingRequests: async () => emptyPage,

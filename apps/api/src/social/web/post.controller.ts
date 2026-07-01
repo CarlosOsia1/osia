@@ -43,6 +43,7 @@ export class PostController {
 
   @Delete(':id')
   @HttpCode(204)
+  @UseGuards(EmailVerifiedGuard)
   async remove(
     @CurrentAccount() account: AccountContext,
     @Param('id', postIdParam) id: string,

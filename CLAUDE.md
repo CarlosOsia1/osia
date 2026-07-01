@@ -50,6 +50,28 @@
   **moderación**: resolución (soft-delete) del reporte es manual fuera de banda · **ritual de lanzamiento**
   (anuncio Discord/GTM, manual).
 
+- **Fase 3.5 — La Red Social: Capa de Experiencia (UX de lujo): ▶️ EN CIERRE (2026-07-01).** Sub-fase pedida
+  por Carlos para volver *lanzable* la red social (el backend de Fase 3 estaba completo pero la UI era
+  «delgada»: sin navegación, sin comentarios, sin descubrimiento). Diseño en
+  [`docs/backlog/fase-3.5-red-social-experiencia.md`](./docs/backlog/fase-3.5-red-social-experiencia.md).
+  Decisiones de Carlos: PC-first responsive **a todo el ancho**; oscuro + **oro (champán) + índigo celestial**;
+  sensación «perfume caro/VIP»; posts **foto/video**; perfiles Instagram con **privados + solicitudes**; foto/
+  portada reales; componentes centralizados en `@osia/ui`; QA exhaustivo de TODAS las interacciones usuario×usuario.
+  **5 sprints construidos y commiteados en `main` LOCAL** (gates typecheck/lint/test 16/16, migraciones
+  aplicadas+verificadas en cloud):
+  - `S3.7` (5a59992) Sistema visual índigo + shell de lujo a todo el ancho (header/sidebar/rail/tab bar) +
+    primitivos `@osia/ui` (Avatar, Menu, Tabs, Skeleton, EmptyState, iconos…).
+  - `S3.8` (bc60082) Perfiles de lujo: foto/portada (bucket `profile-media`), privacidad (`social.profile_cards`),
+    edición, **gating estricto del privado** (verificado en cloud).
+  - `S3.9` (22a22fe) Grafo con **solicitudes** (pending/accept/reject, `social.follow.*`), Amigos (tabs),
+    presencia **direccional** (ves online solo si esa persona te sigue).
+  - `S3.10` (a64ae31) Feed de lujo: **foto/video** (media tipada `{url,kind}` + bucket `post-video`), reacciones
+    ★☾☀ con **lista de quién reaccionó**, **comentarios inline**, **detalle** `/post/[id]` + borrar propio.
+  - `S3.11` (f8fcd4a) **Descubrir** + **Buscar personas** + **notificaciones con deep-link**; **QA exhaustivo
+    multi-agente** de la matriz de autorización (§8 del diseño) como cierre.
+  **Diferidos de la sub-fase:** reportar-perfil (solo post/comentario), post-detalle como modal-desktop (hoy
+  página en todos), 2º grado en descubrir (hoy por reputación), thumbnails de video con poster.
+
   **Progreso (avanza HU por HU, en orden; todo verde y en cloud):**
   - `S3.1` Cimientos ✅ — H4 contratos `@osia/shared` · H3 schema `social` + RLS · H2 contexto hexagonal
     en `apps/api` + `GET /v1/social/health` · H1 scaffold `apps/social` + SSO (redirect 307 al Vestíbulo

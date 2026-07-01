@@ -72,6 +72,7 @@ export class CommentsController {
 
   @Delete(':commentId')
   @HttpCode(204)
+  @UseGuards(EmailVerifiedGuard)
   async remove(
     @CurrentAccount() account: AccountContext,
     @Param('commentId', uuidParam) commentId: string,

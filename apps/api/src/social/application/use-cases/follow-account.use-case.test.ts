@@ -36,6 +36,7 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
   follow: async (f, t, status) => ({ follow: makeFollow(f, t, status, '2026-06-28T00:00:00.000Z'), created: true }),
   unfollow: async () => true,
   isAccountPrivate: async () => false,
+  isActiveFollower: async () => false,
   acceptRequest: async () => true,
   rejectRequest: async () => true,
   listPendingRequests: async () => emptyPage,

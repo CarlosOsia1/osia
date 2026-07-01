@@ -34,6 +34,7 @@ export class FollowController {
 
   @Delete(':followeeAccountId')
   @HttpCode(204)
+  @UseGuards(EmailVerifiedGuard)
   async unfollow(
     @CurrentAccount() account: AccountContext,
     @Param('followeeAccountId', followeeIdParam) followeeAccountId: string,

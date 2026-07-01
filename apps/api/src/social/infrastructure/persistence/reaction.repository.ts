@@ -13,6 +13,7 @@ import type {
   SetReactionResult,
 } from '../../application/ports/out/reaction.repository';
 import { PROFILE_BRIEF_COLS, toProfileBrief, toReactionDto, type ProfileBriefRow } from './mappers';
+import { postVisiblePredicate } from './post-visibility';
 
 /** Fila combinada del CTE de `setReaction`: autor del post + reacción (nueva o vigente) + flag `created`. */
 type SetReactionQueryRow = {
@@ -45,16 +46,7 @@ export class PgReactionRepository implements ReactionRepository {
       `WITH visible AS (
          SELECT id, author_account_id
          FROM social.posts
-         WHERE id = $1 AND deleted_at IS NULL AND (
-           author_account_id = $2
-           OR visibility = 'public'
-           OR (visibility = 'followers' AND EXISTS (
-             SELECT 1 FROM social.follows f
-             WHERE f.follower_account_id = $2
-               AND f.followee_account_id = social.posts.author_account_id
-               AND f.status = 'active'
-           ))
-         )
+         WHERE id = $1 AND ${postVisiblePredicate('social.posts', '$2')}
        ),
        ins AS (
          INSERT INTO social.reactions (post_id, account_id, kind)
@@ -111,15 +103,9 @@ export class PgReactionRepository implements ReactionRepository {
     limit: number,
     cursor: Cursor | null,
   ): Promise<Page<ReactionActorDto> | null> {
-    // Reimpone la visibilidad: no puedes listar las reacciones de un post que no puedes ver.
+    // Reimpone la visibilidad (incl. privacidad de cuenta): no listas reacciones de lo que no puedes ver.
     const vis = await this.pool.query(
-      `SELECT 1 FROM social.posts WHERE id = $1 AND deleted_at IS NULL AND (
-         author_account_id = $2 OR visibility = 'public'
-         OR (visibility = 'followers' AND EXISTS (
-           SELECT 1 FROM social.follows f
-           WHERE f.follower_account_id = $2 AND f.followee_account_id = social.posts.author_account_id
-             AND f.status = 'active'
-         )))`,
+      `SELECT 1 FROM social.posts WHERE id = $1 AND ${postVisiblePredicate('social.posts', '$2')}`,
       [postId, viewerAccountId],
     );
     if (vis.rowCount === 0) return null;

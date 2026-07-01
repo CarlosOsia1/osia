@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { createReportSchema, type CreateReportInput } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
+import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { CreateReportUseCase } from '../application/use-cases/create-report.use-case';
 
 /**
@@ -16,6 +17,7 @@ export class ReportController {
 
   @Post()
   @HttpCode(204)
+  @UseGuards(EmailVerifiedGuard)
   async report(
     @CurrentAccount() account: AccountContext,
     @Body(new ZodValidationPipe(createReportSchema)) body: CreateReportInput,

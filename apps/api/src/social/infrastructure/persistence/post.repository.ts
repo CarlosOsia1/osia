@@ -11,6 +11,7 @@ import {
   type AuthorBriefAliasedRow,
   type PostRow,
 } from './mappers';
+import { postVisiblePredicate } from './post-visibility';
 
 /** Adapter Postgres de posts (S3.3-H1). SQL directo (el schema `social` no se expone por PostgREST). */
 @Injectable()
@@ -49,13 +50,7 @@ export class PgPostRepository implements PostRepository {
                  WHERE r.post_id = po.id AND r.account_id = $2 ORDER BY r.created_at LIMIT 1) AS viewer_reaction
        FROM social.posts po
        JOIN identity.profiles p ON p.account_id = po.author_account_id AND p.deleted_at IS NULL
-       WHERE po.id = $1 AND po.deleted_at IS NULL AND (
-         po.author_account_id = $2 OR po.visibility = 'public'
-         OR (po.visibility = 'followers' AND EXISTS (
-           SELECT 1 FROM social.follows f
-           WHERE f.follower_account_id = $2 AND f.followee_account_id = po.author_account_id
-             AND f.status = 'active'
-         )))`,
+       WHERE po.id = $1 AND ${postVisiblePredicate('po', '$2')}`,
       [postId, viewerAccountId],
     );
     const row = res.rows[0];

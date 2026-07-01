@@ -56,6 +56,7 @@ export class ReactionController {
 
   @Delete(':kind')
   @HttpCode(204)
+  @UseGuards(EmailVerifiedGuard)
   async unreact(
     @CurrentAccount() account: AccountContext,
     @Param('postId', postIdParam) postId: string,

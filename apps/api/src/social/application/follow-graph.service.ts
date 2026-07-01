@@ -20,14 +20,35 @@ import { FOLLOW_REPOSITORY, type FollowRepository } from './ports/out/follow.rep
 export class FollowGraphService {
   constructor(@Inject(FOLLOW_REPOSITORY) private readonly follows: FollowRepository) {}
 
-  async listFollowers(handle: string, query: ListQueryInput): Promise<Page<ProfileBrief>> {
+  async listFollowers(
+    handle: string,
+    viewerAccountId: string,
+    query: ListQueryInput,
+  ): Promise<Page<ProfileBrief>> {
     const accountId = await this.resolveHandle(handle);
+    if (!(await this.canViewGraph(accountId, viewerAccountId))) return this.emptyPage(query);
     return this.follows.listFollowers(accountId, clampLimit(query.limit), this.cursor(query.cursor));
   }
 
-  async listFollowing(handle: string, query: ListQueryInput): Promise<Page<ProfileBrief>> {
+  async listFollowing(
+    handle: string,
+    viewerAccountId: string,
+    query: ListQueryInput,
+  ): Promise<Page<ProfileBrief>> {
     const accountId = await this.resolveHandle(handle);
+    if (!(await this.canViewGraph(accountId, viewerAccountId))) return this.emptyPage(query);
     return this.follows.listFollowing(accountId, clampLimit(query.limit), this.cursor(query.cursor));
+  }
+
+  /** Gating de privado (S3.8): las listas de una cuenta privada solo se ven si eres el dueño o su seguidor. */
+  private async canViewGraph(targetAccountId: string, viewerAccountId: string): Promise<boolean> {
+    if (targetAccountId === viewerAccountId) return true;
+    if (!(await this.follows.isAccountPrivate(targetAccountId))) return true;
+    return this.follows.isActiveFollower(viewerAccountId, targetAccountId);
+  }
+
+  private emptyPage(query: ListQueryInput): Page<ProfileBrief> {
+    return { data: [], page: { nextCursor: null, hasMore: false, limit: clampLimit(query.limit) } };
   }
 
   /** Solicitudes ENTRANTES pendientes hacia el propio usuario (S3.9). Por accountId autenticado (no handle). */

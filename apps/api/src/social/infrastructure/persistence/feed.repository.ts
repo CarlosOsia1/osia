@@ -4,6 +4,7 @@ import { encodeCursor, type Cursor, type FeedItemDto, type Page } from '@osia/sh
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { FeedRepository } from '../../application/ports/out/feed.repository';
 import { AUTHOR_BRIEF_ALIASED_COLS, toFeedItemDto, type FeedItemRow } from './mappers';
+import { postVisiblePredicate } from './post-visibility';
 
 /** Adapter Postgres del feed (S3.3-H4). Fan-out-on-write + lectura keyset + poda. SQL directo. */
 @Injectable()
@@ -15,11 +16,15 @@ export class PgFeedRepository implements FeedRepository {
     // para que el orden del feed coincida con la cronología real. UNION dedup (no hay auto-follow).
     // Casts `::uuid` explícitos: en INSERT…SELECT (con UNION) Postgres no infiere el tipo del parámetro
     // desde la columna destino y lo trataría como text → mismatch con post_id/account_id (uuid).
+    // Un post `private` (solo-autor) NO se reparte a seguidores: solo entra al feed del propio autor.
+    // `public`/`followers` sí van a los seguidores activos (que están autorizados a verlos).
     const res = await this.pool.query(
       `INSERT INTO social.feed_items (account_id, post_id, reason, created_at)
-       SELECT follower_account_id, $1::uuid, 'follow', $3::timestamptz
-         FROM social.follows
-        WHERE followee_account_id = $2::uuid AND status = 'active'
+       SELECT fo.follower_account_id, $1::uuid, 'follow', $3::timestamptz
+         FROM social.follows fo
+         JOIN social.posts po ON po.id = $1::uuid
+        WHERE fo.followee_account_id = $2::uuid AND fo.status = 'active'
+          AND po.visibility <> 'private'
        UNION
        SELECT $2::uuid, $1::uuid, 'follow', $3::timestamptz`,
       [postId, authorAccountId, createdAt],
@@ -49,7 +54,7 @@ export class PgFeedRepository implements FeedRepository {
        FROM social.feed_items fi
        JOIN social.posts po ON po.id = fi.post_id AND po.deleted_at IS NULL
        JOIN identity.profiles p ON p.account_id = po.author_account_id AND p.deleted_at IS NULL
-       WHERE fi.account_id = $1 ${cursorClause}
+       WHERE fi.account_id = $1 AND ${postVisiblePredicate('po', '$1')} ${cursorClause}
        ORDER BY fi.created_at DESC, fi.id DESC
        LIMIT $${params.length}`,
       params,

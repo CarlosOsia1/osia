@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { listQuerySchema, type ListQueryInput, type Page, type ProfileBrief } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
-import { AuthGuard } from '../../common/auth.guard';
+import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
 import { FollowGraphService } from '../application/follow-graph.service';
 
 /**
@@ -16,17 +16,19 @@ export class FollowGraphController {
 
   @Get(':handle/followers')
   followers(
+    @CurrentAccount() account: AccountContext,
     @Param('handle') handle: string,
     @Query(new ZodValidationPipe(listQuerySchema)) query: ListQueryInput,
   ): Promise<Page<ProfileBrief>> {
-    return this.graph.listFollowers(handle, query);
+    return this.graph.listFollowers(handle, account.accountId, query);
   }
 
   @Get(':handle/following')
   following(
+    @CurrentAccount() account: AccountContext,
     @Param('handle') handle: string,
     @Query(new ZodValidationPipe(listQuerySchema)) query: ListQueryInput,
   ): Promise<Page<ProfileBrief>> {
-    return this.graph.listFollowing(handle, query);
+    return this.graph.listFollowing(handle, account.accountId, query);
   }
 }

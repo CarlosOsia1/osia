@@ -20,6 +20,7 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
   },
   unfollow: async () => false,
   isAccountPrivate: async () => false,
+  isActiveFollower: async () => false,
   acceptRequest: async () => false,
   rejectRequest: async () => false,
   listPendingRequests: async () => ({ data: [], page: { nextCursor: null, hasMore: false, limit: 20 } }),
@@ -33,7 +34,7 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
 test('listFollowers: handle inexistente → NOT_FOUND (404)', async () => {
   const svc = new FollowGraphService(repo({ accountIdByHandle: async () => null }));
   await assert.rejects(
-    () => svc.listFollowers('nadie', {}),
+    () => svc.listFollowers('nadie', 'viewer-1', {}),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,
   );
 });
@@ -50,11 +51,44 @@ test('listFollowers: resuelve handle y devuelve la página del repo', async () =
       },
     }),
   );
-  const result = await svc.listFollowers('carlos', { limit: 5 });
+  const result = await svc.listFollowers('carlos', 'viewer-1', { limit: 5 });
   assert.equal(calledWith.accountId, 'acc-xyz');
   assert.equal(calledWith.limit, 5);
   assert.equal(calledWith.cursor, null);
   assert.deepEqual(result, page);
+});
+
+test('listFollowers: cuenta PRIVADA oculta la lista a un no-seguidor (gating S3.8, QA)', async () => {
+  let listed = false;
+  const svc = new FollowGraphService(
+    repo({
+      isAccountPrivate: async () => true,
+      isActiveFollower: async () => false,
+      listFollowers: async () => {
+        listed = true;
+        return emptyPage();
+      },
+    }),
+  );
+  const res = await svc.listFollowers('privada', 'viewer-1', {});
+  assert.deepEqual(res.data, []);
+  assert.equal(listed, false); // ni siquiera consulta la lista real
+});
+
+test('listFollowers: cuenta PRIVADA visible para un seguidor activo', async () => {
+  let listed = false;
+  const svc = new FollowGraphService(
+    repo({
+      isAccountPrivate: async () => true,
+      isActiveFollower: async () => true,
+      listFollowers: async () => {
+        listed = true;
+        return emptyPage();
+      },
+    }),
+  );
+  await svc.listFollowers('privada', 'viewer-1', {});
+  assert.equal(listed, true);
 });
 
 test('listFollowing: decodifica el cursor opaco y lo pasa al repo', async () => {
@@ -68,7 +102,7 @@ test('listFollowing: decodifica el cursor opaco y lo pasa al repo', async () => 
       },
     }),
   );
-  await svc.listFollowing('carlos', { cursor: encodeCursor(cur) });
+  await svc.listFollowing('carlos', 'viewer-1', { cursor: encodeCursor(cur) });
   assert.deepEqual(received, cur);
 });
 
@@ -82,6 +116,6 @@ test('listFollowers: limit ausente usa el default (clamp a 20)', async () => {
       },
     }),
   );
-  await svc.listFollowers('carlos', {});
+  await svc.listFollowers('carlos', 'viewer-1', {});
   assert.equal(limitSeen, 20);
 });

@@ -17,6 +17,7 @@ const repo = (existed: boolean): FollowRepository => ({
   },
   unfollow: async () => existed,
   isAccountPrivate: async () => false,
+  isActiveFollower: async () => false,
   acceptRequest: async () => false,
   rejectRequest: async () => false,
   listPendingRequests: async () => emptyPage,

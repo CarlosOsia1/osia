@@ -10,19 +10,10 @@ import {
   type AuthorBriefAliasedRow,
   type CommentRow,
 } from './mappers';
+import { postVisiblePredicate } from './post-visibility';
 
-/** Predicado de visibilidad de un post para `$2` (espejo de RLS posts_select_visible). Reusado en
- *  create/list para que la regla viva en un solo lugar. */
-const POST_VISIBLE_PREDICATE = `deleted_at IS NULL AND (
-  author_account_id = $2
-  OR visibility = 'public'
-  OR (visibility = 'followers' AND EXISTS (
-    SELECT 1 FROM social.follows f
-    WHERE f.follower_account_id = $2
-      AND f.followee_account_id = social.posts.author_account_id
-      AND f.status = 'active'
-  ))
-)`;
+/** Visibilidad del post para el lector `$2` (incluye privacidad de cuenta, S3.8). Fuente única (DRY). */
+const POST_VISIBLE_PREDICATE = postVisiblePredicate('social.posts', '$2');
 
 type CommentJoinRow = CommentRow & AuthorBriefAliasedRow;
 type CreateCommentRow = CommentJoinRow & { post_author_account_id: string };
