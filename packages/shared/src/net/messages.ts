@@ -4,6 +4,7 @@
  */
 
 import { C2S, S2C } from './opcodes';
+import type { WireErrorCodeValue } from './opcodes';
 import type { WeatherState } from '@osia/atmosphere';
 import type { EntityId } from '../domain/ids';
 import type { EntityState, DeltaEntity } from './entities';
@@ -50,7 +51,7 @@ export type ChatBroadcastMsg = { op: typeof S2C.CHAT_MSG; id: EntityId; handle: 
 export type VoiceSignalRelayMsg = { op: typeof S2C.VOICE_SIGNAL; srcId: EntityId; kind: VoiceSignalKind; payload: string };
 /** Estado de voz de otro par (id) difundido al roster. */
 export type VoiceStateRelayMsg = { op: typeof S2C.VOICE_STATE; id: EntityId; flags: number };
-export type ErrorMsg = { op: typeof S2C.ERROR; code: number; message: string };
+export type ErrorMsg = { op: typeof S2C.ERROR; code: WireErrorCodeValue; message: string };
 
 export type S2CMessage =
   | WelcomeMsg

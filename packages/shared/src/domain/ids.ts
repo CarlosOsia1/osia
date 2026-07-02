@@ -45,3 +45,12 @@ export const asReactionId = (s: string): ReactionId => s as ReactionId;
 export const asFollowId = (s: string): FollowId => s as FollowId;
 /** Construye un `NotificationId` (el `social.notifications.id`). */
 export const asNotificationId = (s: string): NotificationId => s as NotificationId;
+
+/** IDs de mensajería directa (R5). */
+export type ConversationId = Brand<string, 'ConversationId'>;
+export type MessageId = Brand<string, 'MessageId'>;
+
+/** Construye un `ConversationId` (el `social.dm_conversations.id`). */
+export const asConversationId = (s: string): ConversationId => s as ConversationId;
+/** Construye un `MessageId` (el `social.dm_messages.id`). */
+export const asMessageId = (s: string): MessageId => s as MessageId;

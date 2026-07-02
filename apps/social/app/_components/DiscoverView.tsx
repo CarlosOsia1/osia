@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { EmptyState, Skeleton, Text, UserRow, IconCompass } from '@osia/ui';
-import { getSuggestions } from '../../lib/social-api';
+import { getSuggestions } from '../../lib/api';
+import { routes } from '../../lib/routes';
 import { FollowButton } from './FollowButton';
 
 /**
@@ -42,7 +43,7 @@ export function DiscoverView() {
               name={u.displayName}
               handle={u.handle}
               avatarUrl={u.avatarUrl}
-              href={`/profile/${u.handle}`}
+              href={routes.perfil(u.handle)}
               LinkComponent={Link}
             >
               <FollowButton accountId={u.accountId} viewerState={u.viewerState} onChanged={invalidate} />

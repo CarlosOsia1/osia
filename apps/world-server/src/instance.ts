@@ -11,6 +11,7 @@ import {
   INSTANCE_CAPACITY,
   AOI_ENTER_M,
   AOI_EXIT_M,
+  MAX_SIM_DT_PER_TICK_S,
   type EntityId,
   type EntityState,
   type DeltaEntity,
@@ -86,9 +87,16 @@ export class Instance {
       rt.inputs.sort((a, b) => a.seq - b.seq);
       this.scratch.x = rt.state.x;
       this.scratch.z = rt.state.z;
-      // Drena TODOS los inputs encolados con su propio dt (igual que el replay del cliente).
+      // Drena los inputs encolados con su propio dt (igual que el replay del cliente), pero acotando
+      // el tiempo SIMULADO por tick (anti speed-hack): un cliente honesto suma ~TICK_MS de dt por
+      // tick; un flood con dt inflado (120 inputs × 100 ms = 12 s) queda topado. El excedente igual
+      // actualiza yaw/ackSeq (para no trabar la reconciliación) pero NO desplaza — el tramposo se
+      // reconcilia de vuelta a la posición autoritativa. Se drena TODA la cola cada tick.
+      let simBudget = MAX_SIM_DT_PER_TICK_S;
       for (const inp of rt.inputs) {
-        applyMovement(this.scratch, inp, inp.dt);
+        const dt = Math.min(inp.dt, Math.max(0, simBudget));
+        applyMovement(this.scratch, inp, dt);
+        simBudget -= inp.dt;
         rt.lastSeq = inp.seq; // ackSeq = último seq procesado
         rt.state.yaw = inp.yaw;
       }

@@ -35,4 +35,10 @@ export interface CommentRepository {
   /** Soft-delete del comentario PROPIO. `true` si lo borró; `false` si no existe, no es del autor o ya
    *  estaba borrado (→ 404, sin revelar existencia ajena). */
   softDeleteOwnComment(commentId: string, accountId: string): Promise<boolean>;
+
+  /**
+   * Edita el cuerpo de un comentario PROPIO (R4): marca `edited_at` y devuelve el DTO actualizado.
+   * `null` si no existe, está borrado o no es suyo (→ 404, sin revelar existencia ajena).
+   */
+  updateOwnComment(commentId: string, accountId: string, body: string): Promise<CommentDto | null>;
 }

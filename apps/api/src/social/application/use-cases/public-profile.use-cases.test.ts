@@ -36,6 +36,8 @@ const profile: PublicProfileDto = {
   coverUrl: null,
   viewerState: 'following',
   canViewContent: true,
+  blockedByViewer: false,
+  mutedByViewer: false,
 };
 const emptyPage: Page<PostDto> = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
 

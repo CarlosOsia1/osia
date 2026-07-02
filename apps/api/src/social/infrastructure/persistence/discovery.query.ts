@@ -35,6 +35,9 @@ export class PgDiscoveryQuery implements DiscoveryQueryPort {
        FROM identity.profiles p
        WHERE p.deleted_at IS NULL AND p.account_id <> $1
          AND (p.handle ILIKE $2 ESCAPE '\\' OR p.display_name ILIKE $2 ESCAPE '\\')
+         AND NOT EXISTS (SELECT 1 FROM social.follows b WHERE b.status = 'blocked'
+           AND ((b.follower_account_id = $1 AND b.followee_account_id = p.account_id)
+             OR (b.follower_account_id = p.account_id AND b.followee_account_id = $1)))
        ORDER BY p.popularity_points DESC, p.handle ASC
        LIMIT $3`,
       [viewerAccountId, likePrefix(q), limit],
@@ -49,6 +52,9 @@ export class PgDiscoveryQuery implements DiscoveryQueryPort {
        WHERE p.deleted_at IS NULL AND p.account_id <> $1
          AND NOT EXISTS (SELECT 1 FROM social.follows f
            WHERE f.follower_account_id = $1 AND f.followee_account_id = p.account_id)
+         AND NOT EXISTS (SELECT 1 FROM social.follows b WHERE b.status = 'blocked'
+           AND ((b.follower_account_id = $1 AND b.followee_account_id = p.account_id)
+             OR (b.follower_account_id = p.account_id AND b.followee_account_id = $1)))
        ORDER BY p.popularity_points DESC, p.id DESC
        LIMIT $2`,
       [viewerAccountId, limit],

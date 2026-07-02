@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { Button, Field, FormError } from '@osia/ui';
+import { Button, Field, FormError, Text } from '@osia/ui';
 import { OsiaApiError } from '@osia/identity';
 import { identity } from '../../lib/identity';
 
@@ -17,12 +17,9 @@ export function WaitlistForm() {
 
   if (mutation.isSuccess) {
     return (
-      <p
-        role="status"
-        style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-ui)', margin: 0 }}
-      >
+      <Text as="p" role="status" variant="read" tone="accent">
         {t('success')}
-      </p>
+      </Text>
     );
   }
 

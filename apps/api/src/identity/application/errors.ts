@@ -11,6 +11,14 @@ export class HandleTakenError extends Error {
   }
 }
 
+/** El email ya está registrado en Auth (reintento de signup / invitación nueva con email viejo). */
+export class EmailTakenError extends Error {
+  constructor() {
+    super('email ya registrado');
+    this.name = 'EmailTakenError';
+  }
+}
+
 /** La invitación dejó de estar disponible entre la validación y el canje (carrera). */
 export class InvitationConflictError extends Error {
   constructor() {
@@ -48,5 +56,13 @@ export class InvalidOtpError extends Error {
   constructor() {
     super('código inválido o expirado');
     this.name = 'InvalidOtpError';
+  }
+}
+
+/** La contraseña nueva es igual a la anterior (el proveedor la rechaza en el reset). */
+export class PasswordUnchangedError extends Error {
+  constructor() {
+    super('la contraseña nueva es igual a la anterior');
+    this.name = 'PasswordUnchangedError';
   }
 }

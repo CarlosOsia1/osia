@@ -85,6 +85,12 @@ function clearHelloTimer(conn: Conn): void {
 }
 
 async function onMessage(world: World, conn: Conn, raw: Uint8Array): Promise<void> {
+  // El cliente solo puede mandar C2S (opcodes <0x80). Un frame con el bit alto (0x8X) es un
+  // mensaje S2C spoofeado: rechazarlo por el PRIMER byte evita decodificarlo entero y cierra el
+  // narrowing inseguro de `decode<C2SMessage>` (que confía en el genérico sin re-verificar op).
+  if (raw.length === 0 || raw[0]! >= 0x80) {
+    return void send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_MESSAGE, message: 'opcode no permitido' });
+  }
   const msg = decode<C2SMessage>(raw);
   if (!msg)
     return void send(conn.ws, { op: S2C.ERROR, code: WireErrorCode.BAD_MESSAGE, message: 'mensaje inválido' });
@@ -233,7 +239,7 @@ function onInput(world: World, conn: Conn, msg: InputMsg): void {
   if (conn.entityId === null) return;
   const rt = world.hub.entities.get(conn.entityId);
   if (!rt) return;
-  if (msg.seq <= rt.lastSeq || rt.inputs.length > MAX_QUEUED_INPUTS) return; // viejo/duplicado o flood
+  if (msg.seq <= rt.lastSeq || rt.inputs.length >= MAX_QUEUED_INPUTS) return; // viejo/duplicado o flood (cola llena)
   const inputDt = Math.min(MAX_INPUT_DT_S, Math.max(0, msg.dtMs / 1000)); // clamp anti-cheat
   rt.inputs.push({ seq: msg.seq, f: msg.f, r: msg.r, yaw: msg.yaw, dt: inputDt });
 }

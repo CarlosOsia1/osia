@@ -2,6 +2,10 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
   "globalDependencies": [".env", "tsconfig.base.json"],
+  // Env que entra al hash de caché: Next inlinea NEXT_PUBLIC_* en el bundle EN BUILD-TIME, así que
+  // un build cacheado con env distinto serviría un bundle apuntando al WS/API equivocado. Incluir
+  // los prefijos del ecosistema hace que un cambio de entorno invalide la caché (correctitud > hit-rate).
+  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_*", "WORLD_*", "SUPABASE_*"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

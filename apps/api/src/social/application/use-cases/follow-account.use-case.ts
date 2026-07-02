@@ -30,14 +30,16 @@ export class FollowAccountUseCase {
     if (!(await this.follows.accountExists(followeeAccountId))) {
       throw new AppException(ErrorCode.NOT_FOUND, 404, 'La cuenta a seguir no existe.');
     }
-    const isPrivate = await this.follows.isAccountPrivate(followeeAccountId);
-    const { follow, created } = await this.follows.follow(
-      followerAccountId,
-      followeeAccountId,
-      isPrivate ? 'pending' : 'active',
-    );
+    // El repo decide `pending`/`active` atómicamente (según la privacidad del destino en la misma
+    // sentencia); el evento a emitir se deriva del estado REAL de la arista creada. `null` = par
+    // bloqueado (R4.4): 403 sin revelar la dirección del bloqueo.
+    const result = await this.follows.follow(followerAccountId, followeeAccountId);
+    if (!result) {
+      throw new AppException(ErrorCode.BLOCKED, 403, 'No puedes seguir a esta cuenta.');
+    }
+    const { follow, created } = result;
     if (created) {
-      if (isPrivate) this.events.followRequested({ followerAccountId, followeeAccountId });
+      if (follow.status === 'pending') this.events.followRequested({ followerAccountId, followeeAccountId });
       else this.events.followCreated({ followerAccountId, followeeAccountId });
     }
     return follow;

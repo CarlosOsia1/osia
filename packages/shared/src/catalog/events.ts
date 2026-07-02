@@ -16,6 +16,7 @@ export const SOCIAL_EVENTS = [
   'social.post.published',
   'social.post.reacted',
   'social.post.commented',
+  'social.post.echoed',
   'social.follow.created',
   'social.follow.requested',
   'social.follow.accepted',
@@ -73,6 +74,18 @@ export interface SocialPostPublishedPayload {
   postId: string;
   authorAccountId: string;
   createdAt: string;
+}
+
+/** Nombre del evento de eco (R4.3): alguien amplificó un post. Lo consume la notificación
+ *  (`echo` al autor del ORIGINAL). SIN reputación (anti-grind, decisión de Carlos). */
+export const SOCIAL_POST_ECHOED = 'social.post.echoed' satisfies SocialEventName;
+export interface SocialPostEchoedPayload {
+  /** El eco recién creado. */
+  echoPostId: string;
+  /** El post ORIGINAL amplificado y su autor (receptor de la notificación). */
+  originalPostId: string;
+  originalAuthorAccountId: string;
+  echoAuthorAccountId: string;
 }
 
 /** Nombre del evento de comentario nuevo (handle tipado para publicador y suscriptor). */

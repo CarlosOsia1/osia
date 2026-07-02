@@ -73,6 +73,12 @@ export function createHttpServer(world: World): Server {
     }
 
     if (req.method === 'POST' && req.url === '/world/tickets') {
+      // Emisión ANÓNIMA (remanente de F0): apagada en prod (config.allowAnonTickets). Con SSO,
+      // los tickets los emite apps/api autenticado; dejar este endpoint vivo permitiría entrar y
+      // suplantar un handle sin cuenta. Deshabilitado → 404 (como si la ruta no existiera).
+      if (!config.allowAnonTickets) {
+        return void res.writeHead(404).end();
+      }
       if (!originAllowed(req.headers.origin)) {
         return void res
           .writeHead(403, { 'content-type': 'application/json' })

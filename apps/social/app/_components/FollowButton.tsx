@@ -1,34 +1,31 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button, type ButtonSize } from '@osia/ui';
-import { followAccount, unfollowAccount } from '../../lib/social-api';
+import { useToggleFollow } from '../../lib/mutations/follows';
 
 /**
  * FollowButton (S3.11) — seguir/solicitar/dejar de seguir por `accountId`, reutilizable (Descubrir,
- * Buscar). El estado lo trae el DTO (`viewerState`); tras la acción avisa (`onChanged`) para refrescar.
- * El backend decide si el follow nace activo (pública) o pendiente (privada); el refetch pinta el estado.
+ * Buscar, Perfil). El estado lo trae el DTO (`viewerState`); desde R1 la acción es OPTIMISTA: el
+ * botón cambia al instante (con `isPrivate` acierta si nace `requested`), con rollback + toast si
+ * falla y reconciliación de fondo. `onChanged` avisa al caller que aún refresque listas propias.
  */
 export function FollowButton({
   accountId,
   viewerState,
+  isPrivate,
   onChanged,
   size = 'sm',
 }: {
   accountId: string;
   viewerState: 'following' | 'requested' | 'none';
+  /** Si el caller lo sabe (el perfil lo trae), el optimista pinta `requested` desde el primer frame. */
+  isPrivate?: boolean;
   onChanged?: () => void;
   size?: ButtonSize;
 }) {
   const t = useTranslations('social');
-  const m = useMutation({
-    mutationFn: async () => {
-      if (viewerState === 'none') await followAccount(accountId);
-      else await unfollowAccount(accountId); // dejar de seguir o cancelar solicitud
-    },
-    onSuccess: () => onChanged?.(),
-  });
+  const m = useToggleFollow({ accountId, viewerState, isPrivate });
   const label =
     viewerState === 'following'
       ? t('profile.followingState')
@@ -41,7 +38,7 @@ export function FollowButton({
       variant={viewerState === 'none' ? 'primary' : 'ghost'}
       active={viewerState !== 'none'}
       loading={m.isPending}
-      onClick={() => m.mutate()}
+      onClick={() => m.mutate(undefined, { onSuccess: onChanged })}
     >
       {label}
     </Button>

@@ -3,12 +3,10 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, CodeInput, FormError } from '@osia/ui';
+import { Button, CodeInput, FormError, Text } from '@osia/ui';
+import { EMAIL_OTP_LENGTH } from '@osia/shared';
 import { OSIA_SESSION_KEY, OsiaApiError } from '@osia/identity';
 import { identity } from '../../lib/identity';
-
-// Largo del OTP que envía Supabase (Auth → Email OTP length). El proyecto está en 8.
-const OTP_LENGTH = 8;
 
 /** Verificación de email con code-input (S1.5-H1). Auto-login al confirmar. */
 export function VerifyForm({ email }: { email: string }) {
@@ -25,9 +23,9 @@ export function VerifyForm({ email }: { email: string }) {
   if (verify.isSuccess) {
     return (
       <div style={{ display: 'grid', gap: 'var(--space-4)', textAlign: 'center' }}>
-        <p role="status" style={{ color: 'var(--color-accent)', fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)' }}>
+        <Text as="p" role="status" variant="display">
           {t('success')}
-        </p>
+        </Text>
         <div>
           <a className="osia-btn osia-btn--primary osia-btn--lg" href="/">
             {t('enter')}
@@ -46,9 +44,11 @@ export function VerifyForm({ email }: { email: string }) {
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-5)', textAlign: 'center' }}>
-      <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>{t('sent', { email })}</p>
+      <Text as="p" variant="read" tone="muted">
+        {t('sent', { email })}
+      </Text>
       <CodeInput
-        length={OTP_LENGTH}
+        length={EMAIL_OTP_LENGTH}
         value={code}
         ariaLabel={t('codeLabel')}
         invalid={Boolean(errorMsg)}
@@ -61,7 +61,7 @@ export function VerifyForm({ email }: { email: string }) {
           variant="primary"
           size="lg"
           loading={verify.isPending}
-          disabled={code.length < OTP_LENGTH}
+          disabled={code.length < EMAIL_OTP_LENGTH}
           onClick={() => verify.mutate(code)}
         >
           {t('submit')}

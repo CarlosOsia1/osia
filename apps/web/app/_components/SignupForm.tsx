@@ -4,7 +4,7 @@ import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { Button, Field, FormError, PasswordField } from '@osia/ui';
+import { Button, Field, FormError, PasswordField, Text } from '@osia/ui';
 import { OsiaApiError } from '@osia/identity';
 import { HANDLE_PATTERN, type SignupInput } from '@osia/shared';
 import { identity } from '../../lib/identity';
@@ -163,12 +163,14 @@ function Labeled({
   const id = useId();
   return (
     <div style={{ display: 'grid', gap: 'var(--space-1)', textAlign: 'left' }}>
-      <label htmlFor={id} className="osia-overline">
+      <Text as="label" variant="caption" htmlFor={id}>
         {label}
-      </label>
+      </Text>
       {children(id)}
       {help && (
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-subtle)' }}>{help}</span>
+        <Text variant="body" tone="subtle">
+          {help}
+        </Text>
       )}
     </div>
   );

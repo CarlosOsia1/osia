@@ -40,6 +40,7 @@ const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialPostReacted
       postReacted: (p) => emitted.push(p),
       postPublished: () => {},
       postCommented: () => {},
+  postEchoed: () => {},
     },
     emitted,
   };

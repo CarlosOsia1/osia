@@ -48,6 +48,14 @@ export class PgNotificationRepository implements NotificationRepository {
        FROM social.notifications n
        LEFT JOIN identity.profiles pa ON pa.account_id = n.actor_account_id AND pa.deleted_at IS NULL
        WHERE ${where}
+         -- R4.4: la campana calla a bloqueados (cualquier dirección) y silenciados — también lo previo.
+         AND (n.actor_account_id IS NULL OR (
+           NOT EXISTS (SELECT 1 FROM social.follows b WHERE b.status = 'blocked'
+             AND ((b.follower_account_id = $1 AND b.followee_account_id = n.actor_account_id)
+               OR (b.follower_account_id = n.actor_account_id AND b.followee_account_id = $1)))
+           AND NOT EXISTS (SELECT 1 FROM social.mutes m
+             WHERE m.muter_account_id = $1 AND m.muted_account_id = n.actor_account_id)
+         ))
        ORDER BY n.created_at DESC, n.id DESC
        LIMIT $${params.length}`,
       params,
@@ -61,8 +69,19 @@ export class PgNotificationRepository implements NotificationRepository {
   }
 
   async unreadCount(accountId: string): Promise<number> {
+    // El contador DEBE aplicar el MISMO filtro que `list` (bloqueados en cualquier dirección +
+    // silenciados), o el badge muestra «no-leídos fantasma»: cuenta N y la campana abierta no
+    // enseña nada (QA R6). Mismo predicado que arriba, con `n` como alias de la notificación.
     const res = await this.pool.query<{ count: string }>(
-      `SELECT count(*)::int AS count FROM social.notifications WHERE account_id = $1 AND read_at IS NULL`,
+      `SELECT count(*)::int AS count FROM social.notifications n
+       WHERE n.account_id = $1 AND n.read_at IS NULL
+         AND (n.actor_account_id IS NULL OR (
+           NOT EXISTS (SELECT 1 FROM social.follows b WHERE b.status = 'blocked'
+             AND ((b.follower_account_id = $1 AND b.followee_account_id = n.actor_account_id)
+               OR (b.follower_account_id = n.actor_account_id AND b.followee_account_id = $1)))
+           AND NOT EXISTS (SELECT 1 FROM social.mutes m
+             WHERE m.muter_account_id = $1 AND m.muted_account_id = n.actor_account_id)
+         ))`,
       [accountId],
     );
     return Number(res.rows[0]?.count ?? 0);

@@ -13,6 +13,7 @@ test('delega (viewer, accountIds) al puerto de presencia', async () => {
       calls.push([viewer, ids]);
       return [];
     },
+    getNetworkPresence: () => Promise.resolve([]),
   };
   const res = await new GetPresenceUseCase(port).execute('viewer-1', { accountIds: ['a', 'b'] });
   assert.deepEqual(res, []);

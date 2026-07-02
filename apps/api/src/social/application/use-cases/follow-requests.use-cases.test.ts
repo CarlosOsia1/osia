@@ -30,6 +30,9 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
   accountIdByHandle: async () => null,
   listFollowers: async () => emptyPage,
   listFollowing: async () => emptyPage,
+  block: async () => {},
+  unblock: async () => false,
+  listBlocked: async () => ({ data: [], page: { nextCursor: null, hasMore: false, limit: 20 } }),
   ...over,
 });
 
@@ -43,6 +46,7 @@ const spy = (): { pub: SocialEventPublisher; accepted: SocialFollowAcceptedPaylo
       postReacted: () => {},
       postPublished: () => {},
       postCommented: () => {},
+  postEchoed: () => {},
     },
     accepted,
   };

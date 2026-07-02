@@ -5,7 +5,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button, Modal, Skeleton, Text, UserRow } from '@osia/ui';
 import type { Page, ReactionActorDto } from '@osia/shared';
-import { getReactions } from '../../lib/social-api';
+import { getReactions } from '../../lib/api';
+import { routes } from '../../lib/routes';
 
 /** ReactionListModal (S3.10) — quién reaccionó a un post, paginado, con el tipo de reacción por fila. */
 export function ReactionListModal({ postId, onClose }: { postId: string; onClose: () => void }) {
@@ -33,7 +34,7 @@ export function ReactionListModal({ postId, onClose }: { postId: string; onClose
               name={u.displayName}
               handle={u.handle}
               avatarUrl={u.avatarUrl}
-              href={`/profile/${u.handle}`}
+              href={routes.perfil(u.handle)}
               LinkComponent={Link}
             />
           ))

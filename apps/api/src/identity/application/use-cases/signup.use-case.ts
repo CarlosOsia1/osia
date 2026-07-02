@@ -8,7 +8,7 @@ import {
 import { ACCOUNT_REPOSITORY, type AccountRepository } from '../ports/out/account.repository';
 import { SUPABASE_AUTH_PORT, type SupabaseAuthPort } from '../ports/out/supabase-auth.port';
 import { AUTH_SESSION_PORT, type AuthSessionPort } from '../ports/out/auth-session.port';
-import { HandleTakenError, InvitationConflictError } from '../errors';
+import { EmailTakenError, HandleTakenError, InvitationConflictError } from '../errors';
 
 /**
  * Registro por invitación (S1.3-H2). El gate invite-only es 100% server-side: sin invitación
@@ -41,11 +41,20 @@ export class SignupUseCase {
     }
 
     // 3) Crear el usuario de auth (el trigger crea cuenta+perfil+avatar por defecto).
-    const user = await this.auth.createUser({
-      email: input.email,
-      password: input.password,
-      metadata: { handle: input.handle, displayName: input.displayName },
-    });
+    let user: { id: string };
+    try {
+      user = await this.auth.createUser({
+        email: input.email,
+        password: input.password,
+        metadata: { handle: input.handle, displayName: input.displayName },
+      });
+    } catch (e) {
+      // Email ya registrado → 409 (no 500): flujo esperable, el frontend lo distingue por `code`.
+      if (e instanceof EmailTakenError) {
+        throw new AppException(ErrorCode.EMAIL_TAKEN, 409, 'Ese correo ya está registrado.');
+      }
+      throw e;
+    }
 
     // 4) Cierre atómico o compensación.
     try {

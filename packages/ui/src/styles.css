@@ -136,6 +136,7 @@
 
   /* ---------- z-index (capas) ---------- */
   --z-hud: 20; /* overlays del HUD sobre el Canvas */
+  --z-toast: 1100; /* toasts SIEMPRE visibles, incluso sobre un modal (1000) */
 
   /* ---------- Tamaños ---------- */
   --size-dot: 8px;
@@ -206,9 +207,11 @@
   letter-spacing: var(--tracking-wide);
 }
 /* Tonos (sobrescriben el color de la variante). */
+.osia-text--strong { color: var(--color-text-strong); }
 .osia-text--subtle { color: var(--color-text-subtle); }
 .osia-text--muted { color: var(--color-text-muted); }
 .osia-text--accent { color: var(--color-accent); }
+.osia-text--success { color: var(--color-success); }
 /* Sobre la escena 3D: halo ónix para legibilidad de DÍA y de noche (no depende del cielo). */
 .osia-text--scrim {
   text-shadow:
@@ -1014,6 +1017,11 @@
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-strong);
 }
+/* Momento de MARCA (wordmark del landing): solo escala; `hero` pone familia/tono. */
+.osia-hero--wordmark {
+  font-size: clamp(3.5rem, 14vw, 7rem);
+  line-height: var(--leading-none);
+}
 .osia-text--heading {
   font-family: var(--font-ui);
   font-weight: 600;
@@ -1218,6 +1226,471 @@
 }
 .osia-navitem__badge {
   margin-inline-start: auto;
+}
+/* Pie de la sidebar (R2): el CTA de publicar respira aparte de la navegación. */
+.osia-sidebar__footer {
+  margin-block-start: var(--space-5);
+  display: grid;
+}
+
+/* ============================ El Salón · rail derecho (R2) ============================ */
+/* Tarjeta del rail: frost sutil + hairline champán; el rail es un vistazo, no una página. */
+.osia-railcard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--hairline);
+  background: var(--color-frost);
+  backdrop-filter: blur(10px);
+}
+.osia-railcard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.osia-railcard__list {
+  display: grid;
+  gap: var(--space-2);
+}
+/* Fila de presencia: quién de tu red está EN EL MUNDO ahora. */
+.osia-railpresence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--color-text);
+  transition: background var(--dur-fast) var(--ease-out-soft);
+}
+.osia-railpresence:hover,
+.osia-railpresence:focus-visible {
+  outline: none;
+  background: var(--color-surface);
+}
+.osia-railpresence__meta {
+  display: grid;
+  gap: 2px;
+  min-inline-size: 0;
+}
+.osia-railpresence__meta > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Fila de solicitud en el rail: brief + aceptar/rechazar inline. */
+.osia-railrequest {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.osia-railrequest__meta {
+  min-inline-size: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.osia-railrequest__meta > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.osia-railrequest__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ============================ El Salón · feed editorial (R2) ============================ */
+/* Pila del feed: los posts respiran como piezas, no como filas. */
+.osia-feed {
+  display: grid;
+  gap: var(--space-5);
+}
+/* Centinela del scroll infinito (IntersectionObserver): invisible, con altura para dispararse antes. */
+.osia-feed__sentinel {
+  block-size: 1px;
+}
+/* Interstitial de descubrimiento entre posts (cada N): una fila de personas, tono de rail. */
+.osia-interstitial {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--hairline);
+  background:
+    radial-gradient(90% 140% at 50% -20%, var(--color-indigo-glow), transparent 60%),
+    var(--color-surface);
+}
+.osia-interstitial__row {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-block-end: var(--space-1);
+}
+.osia-interstitial__person {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  inline-size: 7.5rem;
+  text-align: center;
+}
+.osia-interstitial__person > a {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+/* Enlace discreto de las cabeceras del rail («Ver todo», «Viajar»). */
+.osia-railcard__link {
+  text-decoration: none;
+}
+.osia-railcard__link:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--glow-accent);
+}
+
+/* Composer (R2): una sola máquina, tres pieles (inline / modal / página). */
+.osia-composer {
+  display: grid;
+  gap: var(--space-4);
+}
+.osia-composer__field {
+  display: grid;
+  gap: var(--space-2);
+}
+.osia-composer__row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.osia-composer__fieldset {
+  display: grid;
+  gap: var(--space-2);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.osia-composer__file {
+  display: none;
+}
+.osia-composer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.osia-composer-page {
+  display: grid;
+  gap: var(--space-4);
+}
+.osia-composer-page__back {
+  justify-self: start;
+  text-decoration: none;
+}
+.osia-composer-page__body {
+  display: grid;
+  gap: var(--space-4);
+}
+.osia-composer-modal {
+  inline-size: min(38rem, 92vw);
+}
+
+/* Vistazo de perfil (HoverCard del autor). */
+.osia-peek {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+.osia-peek__names {
+  display: grid;
+  gap: 2px;
+}
+
+/* Imagen de post como botón (abre el Lightbox): hereda el layout del item. */
+.osia-media__button {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+.osia-media__button:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+  border-radius: var(--radius-md);
+}
+.osia-media__button .osia-media__item {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* Composer inline (R2): colapsado invita («¿Qué contemplas…?»), expandido es el composer real. */
+.osia-composer-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--hairline);
+  background: var(--color-frost);
+  color: var(--color-text-muted);
+  font: 300 var(--text-ed-md) / 1.2 var(--font-ui);
+  text-align: start;
+  cursor: text;
+  transition:
+    border-color var(--dur-fast) var(--ease-out-soft),
+    background var(--dur-fast) var(--ease-out-soft);
+}
+.osia-composer-inline:hover,
+.osia-composer-inline:focus-visible {
+  outline: none;
+  border-color: var(--hairline-strong);
+  background: var(--color-surface);
+}
+
+/* Social proof del post: fila de avatares de reactores solapados + texto. */
+.osia-reactors {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: none;
+  background: none;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+.osia-reactors:hover,
+.osia-reactors:focus-visible {
+  outline: none;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.osia-reactors__stack {
+  display: inline-flex;
+}
+.osia-reactors__stack > * + * {
+  margin-inline-start: -8px;
+}
+.osia-reactors__stack .osia-avatar {
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+
+/* ============================ Mensajes directos (R5) ============================ */
+/* Master-detail: bandeja + hilo. En móvil, el hilo abierto tapa la bandeja (data-open). */
+.osia-dm {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  gap: var(--space-4);
+  min-block-size: 32rem;
+}
+.osia-dm__inbox {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+  border-inline-end: 1px solid var(--hairline);
+  padding-inline-end: var(--space-3);
+}
+.osia-dm__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  text-align: start;
+  transition: background var(--dur-fast) var(--ease-out-soft);
+}
+.osia-dm__row:hover,
+.osia-dm__row:focus-visible {
+  outline: none;
+  background: var(--color-surface);
+}
+.osia-dm__row[data-active] {
+  background: color-mix(in oklab, var(--color-indigo-deep) 40%, var(--color-surface));
+}
+.osia-dm__rowmeta {
+  min-inline-size: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.osia-dm__preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.osia-dm__idle {
+  display: grid;
+  place-items: center;
+}
+.osia-dm__thread {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  min-block-size: 32rem;
+}
+.osia-dm__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid var(--hairline);
+}
+.osia-dm__back {
+  display: none;
+}
+.osia-dm__scroll {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-inline: var(--space-1);
+}
+.osia-dm__msg {
+  max-inline-size: 72%;
+  align-self: flex-start;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+}
+.osia-dm__msg[data-mine] {
+  align-self: flex-end;
+  background: color-mix(in oklab, var(--color-indigo-deep) 46%, var(--color-surface));
+}
+.osia-dm__time {
+  justify-self: end;
+}
+.osia-dm__composer {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.osia-dm__composer .osia-field {
+  flex: 1 1 auto;
+}
+@media (max-width: 880px) {
+  .osia-dm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .osia-dm__inbox {
+    border-inline-end: none;
+    padding-inline-end: 0;
+  }
+  .osia-dm[data-open] .osia-dm__inbox,
+  .osia-dm[data-open] .osia-dm__idle {
+    display: none;
+  }
+  .osia-dm__back {
+    display: inline-flex;
+  }
+}
+
+/* ============================ HoverCard (R2) ============================ */
+.osia-hovercard {
+  position: relative;
+  display: inline-flex;
+}
+.osia-hovercard__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-start: 0;
+  z-index: 60;
+  min-inline-size: 18rem;
+  display: block;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-frost-strong);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-lux);
+  animation: osia-rise var(--dur-fast) var(--ease-out-soft);
+}
+
+/* ============================ Lightbox (R2) ============================ */
+.osia-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 13, 13, 0.94);
+  animation: osia-fade-in var(--dur-fast) var(--ease-out-soft);
+}
+.osia-lightbox__media {
+  max-inline-size: min(92vw, 90rem);
+  max-block-size: 88vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+.osia-lightbox__close {
+  position: absolute;
+  inset-block-start: var(--space-4);
+  inset-inline-end: var(--space-4);
+  display: grid;
+  place-items: center;
+  inline-size: 2.4rem;
+  block-size: 2.4rem;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  background: var(--color-frost);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.osia-lightbox__close:hover,
+.osia-lightbox__close:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+.osia-lightbox__close svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.osia-lightbox__nav {
+  position: absolute;
+  inset-block: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 4rem;
+  border: none;
+  background: none;
+  color: var(--color-text-subtle);
+  font: 300 2.4rem / 1 var(--font-ui);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-lightbox__nav:hover,
+.osia-lightbox__nav:focus-visible {
+  outline: none;
+  color: var(--color-text-strong);
+}
+.osia-lightbox__nav[data-dir='prev'] {
+  inset-inline-start: 0;
+}
+.osia-lightbox__nav[data-dir='next'] {
+  inset-inline-end: 0;
+}
+.osia-lightbox__counter {
+  position: absolute;
+  inset-block-end: var(--space-4);
+  inset-inline: 0;
+  text-align: center;
 }
 
 /* Tab bar (móvil) */
@@ -1550,7 +2023,117 @@
   max-inline-size: 32ch;
 }
 
+/* ============================ ErrorState (fallo con salida, R1) ============================ */
+.osia-errorstate {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-danger-soft);
+  background:
+    radial-gradient(90% 120% at 50% -10%, var(--color-danger-soft), transparent 60%),
+    var(--color-surface);
+}
+.osia-errorstate__body {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  max-inline-size: 36ch;
+}
+.osia-errorstate__body > svg {
+  inline-size: 1.6rem;
+  block-size: 1.6rem;
+  color: var(--color-danger);
+}
+
+/* ============================ Toast (avisos efímeros, R1) ============================ */
+.osia-toaster {
+  position: fixed;
+  inset-block-end: var(--space-5);
+  inset-inline-end: var(--space-5);
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: end;
+  pointer-events: none; /* la capa no bloquea; cada toast sí recibe puntero */
+  max-inline-size: min(24rem, calc(100vw - var(--space-5) * 2));
+}
+.osia-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-frost-strong);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-lux);
+  animation: osia-rise var(--dur-fast) var(--ease-out-soft);
+}
+.osia-toast__dot {
+  flex: none;
+  inline-size: var(--size-dot);
+  block-size: var(--size-dot);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+.osia-toast[data-kind='success'] .osia-toast__dot {
+  background: var(--color-success);
+}
+.osia-toast[data-kind='error'] {
+  border-color: var(--color-danger-soft);
+}
+.osia-toast[data-kind='error'] .osia-toast__dot {
+  background: var(--color-danger);
+}
+.osia-toast__message {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.osia-toast__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 1.6rem;
+  block-size: 1.6rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out-soft);
+}
+.osia-toast__close:hover,
+.osia-toast__close:focus-visible {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.osia-toast__close svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
 /* ============================ Skeleton (shimmer) ============================ */
+/* Pila de skeletons del loading de ruta (respaldo genérico de página). */
+.osia-route-loading {
+  display: grid;
+  gap: var(--space-4);
+}
+/* Texto solo para lectores de pantalla (anuncio de estados sin ruido visual). */
+.osia-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 .osia-skeleton {
   position: relative;
   overflow: hidden;
@@ -1582,39 +2165,6 @@
   to {
     transform: translateX(100%);
   }
-}
-
-/* ============================ Composer entry ("Publica algo") ============================ */
-.osia-composer-entry {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  inline-size: 100%;
-  padding: var(--space-1);
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-.osia-composer-entry__prompt {
-  flex: 1 1 auto;
-  text-align: start;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-full);
-  border: 1px solid var(--hairline);
-  background: var(--color-surface-2);
-  color: var(--color-text-subtle);
-  font: 400 var(--text-ed-base) / 1 var(--font-ui);
-  transition: border-color var(--dur-fast) var(--ease-out-soft);
-}
-.osia-composer-entry:hover .osia-composer-entry__prompt {
-  border-color: var(--hairline-strong);
-  color: var(--color-text-muted);
-}
-.osia-composer-entry:focus-visible {
-  outline: none;
-}
-.osia-composer-entry:focus-visible .osia-composer-entry__prompt {
-  box-shadow: var(--glow-accent);
 }
 
 /* ============================ Tabs ============================ */
@@ -1750,6 +2300,7 @@
   }
 }
 .osia-profile__tile {
+  position: relative;
   aspect-ratio: 1;
   padding: var(--space-3);
   overflow: hidden;
@@ -1768,6 +2319,44 @@
 .osia-profile__tile:focus-visible {
   outline: none;
   box-shadow: var(--glow-accent);
+}
+/* La media llena el tile (antes era style inline — §2.1). */
+.osia-profile__tilemedia {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+/* Velo de contadores al posar/enfocar (R3): la pieza habla sin abrirse. */
+.osia-profile__tileveil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: rgba(13, 13, 13, 0.55);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out-soft);
+}
+.osia-profile__tile:hover .osia-profile__tileveil,
+.osia-profile__tile:focus-visible .osia-profile__tileveil {
+  opacity: 1;
+}
+.osia-profile__tilestat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-strong);
+}
+.osia-profile__tilestat svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-accent);
+}
+.osia-profile__noposts {
+  padding-inline: var(--space-4);
 }
 
 /* ============================ MediaGallery (foto/video del post) ============================ */
@@ -1927,10 +2516,152 @@
 .osia-comment__composer {
   display: flex;
   gap: var(--space-2);
-  align-items: center;
+  align-items: flex-end;
 }
 .osia-comment__composer .osia-field {
   flex: 1 1 auto;
+}
+.osia-comment__author {
+  text-decoration: none;
+}
+.osia-comment__menu {
+  margin-inline-start: auto;
+}
+/* Hilos (R3): acciones sutiles bajo el comentario + respuestas indentadas bajo su raíz. */
+.osia-thread {
+  display: grid;
+  gap: var(--space-3);
+}
+.osia-thread__box {
+  flex: 1 1 auto;
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.osia-thread__replying {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.osia-comment__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+.osia-comment__action {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-subtle);
+  font: 500 var(--text-ed-2xs) / 1 var(--font-ui);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-comment__action:hover,
+.osia-comment__action:focus-visible {
+  outline: none;
+  color: var(--color-accent);
+}
+.osia-comment__replies {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 1px solid var(--hairline);
+}
+
+/* Embed del original dentro de un eco (R4.3): tarjeta sobria, clicable al detalle. */
+.osia-embed {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--hairline);
+  background: var(--color-surface-2);
+  text-decoration: none;
+  color: var(--color-text);
+  transition: border-color var(--dur-fast) var(--ease-out-soft);
+}
+.osia-embed:hover,
+.osia-embed:focus-visible {
+  outline: none;
+  border-color: var(--hairline-strong);
+}
+.osia-embed--gone {
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+.osia-embed__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.osia-embed__body {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.osia-embed__media {
+  inline-size: 100%;
+  max-block-size: 14rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+/* Mención navegable dentro de un cuerpo (RichBody). */
+.osia-mention {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.osia-mention:hover,
+.osia-mention:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+/* ============================ MentionTextarea (combobox @handle, R3) ============================ */
+.osia-mentionbox {
+  position: relative;
+  display: grid;
+}
+.osia-mentionbox__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-start: 0;
+  z-index: 60;
+  min-inline-size: 16rem;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-frost-strong);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-lux);
+}
+.osia-mentionbox__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  text-align: start;
+}
+.osia-mentionbox__option[data-active] {
+  background: var(--color-surface);
+}
+.osia-mentionbox__names {
+  display: grid;
+  gap: 1px;
+  min-inline-size: 0;
 }
 
 /* ============================ UserRow (fila de persona) ============================ */
@@ -2026,6 +2757,15 @@
     animation: none;
   }
   .osia-menu__panel {
+    animation: none;
+  }
+  .osia-toast {
+    animation: none;
+  }
+  .osia-hovercard__panel {
+    animation: none;
+  }
+  .osia-lightbox {
     animation: none;
   }
 }

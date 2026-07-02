@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { Text } from '@osia/ui';
 import { OSIA } from '@osia/shared';
 import { WaitlistForm } from './WaitlistForm';
 
@@ -20,45 +21,20 @@ export async function Landing() {
       }}
     >
       <div style={{ display: 'grid', gap: 'var(--space-6)', maxWidth: '44rem' }}>
-        <span className="osia-overline">{t('kicker')}</span>
-        <h1
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(3.5rem, 14vw, 7rem)',
-            lineHeight: 'var(--leading-none)',
-            letterSpacing: 'var(--tracking-wide)',
-            color: 'var(--color-text-strong)',
-            margin: 0,
-          }}
-        >
+        <Text variant="caption">{t('kicker')}</Text>
+        <Text variant="hero" className="osia-hero--wordmark">
           {OSIA.name}
-        </h1>
-        <p
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'var(--text-xl)',
-            color: 'var(--color-accent)',
-            letterSpacing: 'var(--tracking-wide)',
-            margin: 0,
-          }}
-        >
+        </Text>
+        <Text as="p" variant="display">
           {OSIA.tagline}
-        </p>
-        <p
-          style={{
-            color: 'var(--color-text-muted)',
-            lineHeight: 'var(--leading-loose)',
-            fontSize: 'var(--text-lg)',
-            margin: '0 auto',
-            maxWidth: '32rem',
-          }}
-        >
+        </Text>
+        <Text as="p" variant="read" tone="muted" style={{ margin: '0 auto', maxWidth: '32rem' }}>
           {t('manifesto')}
-        </p>
+        </Text>
         <section style={{ display: 'grid', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
-          <h2 className="osia-overline" style={{ margin: 0 }}>
+          <Text as="h2" variant="caption">
             {t('waitlistTitle')}
-          </h2>
+          </Text>
           <WaitlistForm />
         </section>
       </div>

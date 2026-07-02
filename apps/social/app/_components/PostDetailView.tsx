@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Skeleton, Text } from '@osia/ui';
 import { useOsiaSession } from '@osia/identity';
 import { identity } from '../../lib/identity';
-import { getPost } from '../../lib/social-api';
+import { getPost } from '../../lib/api';
 import { PostCard } from './PostCard';
 
 /**

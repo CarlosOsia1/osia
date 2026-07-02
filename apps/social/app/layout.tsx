@@ -9,7 +9,12 @@ import '@osia/ui/styles.css'; // tokens de marca + fuentes + clases de component
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: `La Red Social · ${OSIA.name}`,
+  // Metadata de MARCA, no de contenido (decisión R2): la red es por invitación y el API exige
+  // sesión — un preview público con contenido filtraría una red privada a los crawlers.
+  title: {
+    default: `La Red Social · ${OSIA.name}`,
+    template: `%s · La Red Social · ${OSIA.name}`,
+  },
   description: OSIA.tagline,
 };
 

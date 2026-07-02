@@ -4,9 +4,10 @@ import { useId, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, Field, FormError, PasswordField } from '@osia/ui';
-import { OSIA_SESSION_KEY, OsiaApiError } from '@osia/identity';
+import { Button, Field, FormError, PasswordField, Text } from '@osia/ui';
+import { OSIA_SESSION_KEY, OsiaApiError, resolvePostLoginUrl } from '@osia/identity';
 import { identity } from '../../lib/identity';
+import { experienceUrl } from '../../lib/experienceUrl';
 
 /** Login por email + contraseña (S1.3-H3 UI). Al entrar, al pasaporte (Vestíbulo de S1.7). */
 export function LoginForm() {
@@ -22,9 +23,16 @@ export function LoginForm() {
     mutationFn: () => identity.login({ email, password }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: OSIA_SESSION_KEY });
-      // Honra ?next= (del middleware) si es una ruta interna; si no, al Vestíbulo.
-      const next = new URLSearchParams(window.location.search).get('next');
-      router.push(next && next.startsWith('/') ? next : '/');
+      // Destino post-login: ?returnTo= (deep-link cross-app de social/games) o ?next= (del middleware).
+      // resolvePostLoginUrl acepta rutas internas y URLs absolutas SOLO de dominios del ecosistema
+      // (allowlist) — cierra el open redirect (?next=//evil.com) y arregla el retorno a la app social.
+      const params = new URLSearchParams(window.location.search);
+      const dest = resolvePostLoginUrl(params.get('returnTo') ?? params.get('next'), {
+        allowedOrigins: [experienceUrl('world'), experienceUrl('social')],
+        fallback: '/',
+      });
+      if (dest.startsWith('/')) router.push(dest);
+      else window.location.href = dest; // otra app del ecosistema (la sesión viaja por cookie .osia.*)
     },
   });
 
@@ -47,9 +55,9 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
       <div style={{ display: 'grid', gap: 'var(--space-1)', textAlign: 'left' }}>
-        <label htmlFor={emailId} className="osia-overline">
+        <Text as="label" variant="caption" htmlFor={emailId}>
           {t('emailLabel')}
-        </label>
+        </Text>
         <Field
           id={emailId}
           name="email"
@@ -62,9 +70,9 @@ export function LoginForm() {
         />
       </div>
       <div style={{ display: 'grid', gap: 'var(--space-1)', textAlign: 'left' }}>
-        <label htmlFor={pwId} className="osia-overline">
+        <Text as="label" variant="caption" htmlFor={pwId}>
           {t('passwordLabel')}
-        </label>
+        </Text>
         <PasswordField
           id={pwId}
           name="current-password"
@@ -80,6 +88,14 @@ export function LoginForm() {
         {t('submit')}
       </Button>
       {error && <FormError style={{ textAlign: 'center' }}>{error}</FormError>}
+      <div style={{ textAlign: 'center' }}>
+        <a
+          className="osia-btn osia-btn--ghost osia-btn--sm"
+          href={email ? `/recuperar?email=${encodeURIComponent(email)}` : '/recuperar'}
+        >
+          {t('forgot')}
+        </a>
+      </div>
     </form>
   );
 }

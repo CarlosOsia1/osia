@@ -18,6 +18,8 @@ import { RefreshSessionUseCase } from './application/use-cases/refresh-session.u
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
 import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from './application/use-cases/resend-verification.use-case';
+import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { IssueWorldTicketUseCase } from './application/use-cases/issue-world-ticket.use-case';
 import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
 import { RequestAccountDeletionUseCase } from './application/use-cases/request-account-deletion.use-case';
@@ -67,6 +69,8 @@ import { AuthGuard } from '../common/auth.guard';
     LogoutUseCase,
     VerifyEmailUseCase,
     ResendVerificationUseCase,
+    RequestPasswordResetUseCase,
+    ResetPasswordUseCase,
     IssueWorldTicketUseCase,
     DeleteAccountUseCase,
     RequestAccountDeletionUseCase,

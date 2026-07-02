@@ -21,6 +21,11 @@ import { startLoops } from './loop';
 async function main(): Promise<void> {
   const world = createWorld();
 
+  // Saneo al ARRANCAR: si un crash/kill previo dejó sesiones de presencia abiertas, La Red Social
+  // mostraría a esa gente `online` para siempre (lee left_at IS NULL). Cerrarlas antes de aceptar
+  // conexiones. Idempotente y no bloquea el arranque si la DB falla.
+  await world.presence.sweepOpenSessions();
+
   // Reanudar el clima desde el último checkpoint (S2-B4): si lo hay, el cielo sigue donde
   // estaba en vez de saltar a "despejado". Sin checkpoint (o sin DB) arranca normal.
   const checkpoint = await world.weatherCheckpoint.load();
@@ -37,6 +42,35 @@ async function main(): Promise<void> {
   startLoops(world);
 
   httpServer.listen(config.port, () => log.info({ port: config.port }, 'world-server escuchando'));
+
+  // Apagado LIMPIO (SIGTERM de un deploy, SIGINT de Ctrl-C): dejar de aceptar conexiones, cerrar los
+  // sockets con 1001 (going away), CERRAR las sesiones de presencia abiertas (si no, quedan `online`
+  // fantasma), persistir el clima y soltar los pools de pg. Idempotente ante señales repetidas.
+  let closing = false;
+  async function shutdown(signal: string): Promise<void> {
+    if (closing) return;
+    closing = true;
+    log.info({ signal }, 'apagando world-server');
+    try {
+      wss.clients.forEach((ws) => ws.close(1001, 'server shutdown'));
+      httpServer.close();
+      // Cerrar las sesiones de presencia vivas (residentes con cuenta) para no dejar `online` fantasma.
+      await Promise.allSettled(
+        [...world.hub.entities.values()]
+          .map((e) => e.presenceSessionId)
+          .filter((sid): sid is string => sid !== null)
+          .map((sid) => world.presence.close(sid)),
+      );
+      await world.weatherCheckpoint.save(world.director.serialize());
+      await Promise.allSettled([world.presence.shutdown(), world.weatherCheckpoint.shutdown()]);
+    } catch (err) {
+      log.warn({ err: String(err) }, 'apagado con errores (se continúa)');
+    } finally {
+      process.exit(0);
+    }
+  }
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
 main().catch((err) => {

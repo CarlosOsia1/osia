@@ -132,6 +132,30 @@
     "errInvalid": "Código inválido o expirado.",
     "errGeneric": "Algo salió mal. Prueba de nuevo."
   },
+  "recover": {
+    "kicker": "Recuperación",
+    "title": "Recupera tu acceso",
+    "intro": "Escribe tu correo y te enviamos un código para crear una contraseña nueva.",
+    "emailLabel": "Correo electrónico",
+    "sendCode": "Enviar código",
+    "sent": "Si {email} está registrado, te enviamos un código de recuperación.",
+    "codeLabel": "Código de recuperación",
+    "newPasswordLabel": "Contraseña nueva",
+    "confirmPasswordLabel": "Confirma la contraseña",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "submit": "Cambiar contraseña",
+    "resend": "Reenviar código",
+    "resent": "Código reenviado",
+    "success": "Contraseña actualizada. Ya estás dentro.",
+    "enter": "Entrar",
+    "errInvalid": "Código inválido o expirado.",
+    "errMismatch": "Las contraseñas no coinciden.",
+    "errWeak": "La contraseña debe tener al menos 8 caracteres.",
+    "errSame": "La contraseña nueva debe ser distinta a la anterior.",
+    "errGeneric": "Algo salió mal. Prueba de nuevo.",
+    "backToLogin": "Volver a entrar"
+  },
   "deleteAccount": {
     "kicker": "Cuenta",
     "title": "Borrar tu cuenta",
@@ -154,7 +178,8 @@
     "submit": "Entrar",
     "errCredentials": "Correo o contraseña incorrectos.",
     "errUnverified": "Verifica tu email antes de entrar.",
-    "errGeneric": "Algo salió mal. Prueba de nuevo."
+    "errGeneric": "Algo salió mal. Prueba de nuevo.",
+    "forgot": "¿Olvidaste tu contraseña?"
   },
   "passport": {
     "kicker": "Vestíbulo",
@@ -182,7 +207,19 @@
     "loading": "Cargando…",
     "needLogin": "Inicia sesión para ver tu pasaporte.",
     "toLogin": "Ir a entrar",
-    "errSave": "No se pudo guardar. Prueba de nuevo."
+    "errSave": "No se pudo guardar. Prueba de nuevo.",
+    "account": "Cuenta",
+    "language": "Idioma",
+    "lang_es": "Español",
+    "lang_en": "English",
+    "deleteHelp": "Borrar tu cuenta es definitivo: se elimina tu pasaporte, tu perfil y tu presencia en El Mundo.",
+    "deleteCta": "Borrar mi cuenta",
+    "deleteConfirmTitle": "¿Borrar tu cuenta?",
+    "deleteConfirmBody": "Te enviaremos un correo con un link para confirmar el borrado definitivo (vale 24 horas y se usa una sola vez). Nada se borra hasta que lo confirmes desde tu correo.",
+    "deleteConfirmCta": "Enviar el correo",
+    "deleteCancel": "Cancelar",
+    "deleteSent": "Listo. Revisa tu correo: el link de borrado vale 24 horas.",
+    "deleteErr": "No se pudo enviar el correo. Prueba de nuevo."
   },
   "vestibule": {
     "loading": "Abriendo el Vestíbulo…",
@@ -210,11 +247,15 @@
     "welcome": "Hola de nuevo, {name}.",
     "tagline": "Aquí vivirán tu feed, tu red y tu estatus.",
     "loading": "Tejiendo tu red…",
+    "sessionError": "No pudimos verificar tu sesión.",
+    "retry": "Reintentar",
     "nav": {
       "home": "Inicio",
       "profile": "Mi perfil",
       "discover": "Descubrir",
       "friends": "Amigos",
+      "bookmarks": "Guardados",
+      "messages": "Mensajes",
       "notifications": "Notificaciones"
     },
     "menu": {
@@ -238,7 +279,8 @@
       "tabs": {
         "followers": "Seguidores",
         "following": "Siguiendo",
-        "requests": "Solicitudes"
+        "requests": "Solicitudes",
+        "management": "Gestión"
       },
       "accept": "Aceptar",
       "reject": "Rechazar",
@@ -272,7 +314,90 @@
       "commentsLoading": "Cargando comentarios…",
       "noComments": "Aún no hay comentarios. Sé el primero.",
       "moreComments": "Más comentarios",
-      "notFound": "Publicación no encontrada."
+      "notFound": "Publicación no encontrada.",
+      "deleted": "Publicación eliminada.",
+      "openMedia": "Ver en grande",
+      "reply": "Responder",
+      "showReplies": "{count, plural, one {Ver # respuesta} other {Ver # respuestas}}",
+      "hideReplies": "Ocultar respuestas",
+      "replyingTo": "Respondiendo a {name}",
+      "commentError": "No se pudo comentar. Inténtalo de nuevo.",
+      "edit": "Editar",
+      "edited": "editado",
+      "editSaved": "Cambios guardados.",
+      "editError": "No se pudo guardar la edición. Inténtalo de nuevo."
+    },
+    "report": {
+      "action": "Reportar",
+      "title": "Reportar",
+      "body": "Cuéntanos qué ocurre. Una persona del equipo lo revisará con discreción.",
+      "reasonLabel": "Motivo del reporte",
+      "reasonPlaceholder": "Describe el motivo…",
+      "send": "Enviar reporte",
+      "sent": "Reporte enviado. Gracias por cuidar la casa.",
+      "error": "No se pudo enviar el reporte. Inténtalo de nuevo."
+    },
+    "echo": {
+      "action": "Ecoar",
+      "remove": "Quitar tu eco",
+      "quote": "Ecoar con nota",
+      "quoteTitle": "Ecoar con nota",
+      "quoteLabel": "Tu nota",
+      "quotePlaceholder": "Añade tu voz al eco…",
+      "publish": "Publicar eco",
+      "done": "Eco publicado.",
+      "removed": "Eco retirado.",
+      "error": "No se pudo ecoar. Inténtalo de nuevo.",
+      "unavailable": "Contenido no disponible."
+    },
+    "moderation": {
+      "mute": "Silenciar",
+      "unmute": "Quitar silencio",
+      "muted": "Cuenta silenciada. Solo tú lo sabes.",
+      "unmuted": "Silencio retirado.",
+      "block": "Bloquear",
+      "unblock": "Desbloquear",
+      "blocked": "Cuenta bloqueada.",
+      "unblocked": "Cuenta desbloqueada.",
+      "blockTitle": "¿Bloquear a {name}?",
+      "blockBody": "Dejarán de verse mutuamente: publicaciones, perfiles y seguimientos quedan cortados en ambos sentidos. Puedes deshacerlo cuando quieras.",
+      "blockedTitle": "Bloqueadas",
+      "mutedTitle": "Silenciadas",
+      "emptyBlocked": "No has bloqueado a nadie.",
+      "emptyMuted": "No has silenciado a nadie."
+    },
+    "dm": {
+      "title": "Mensajes",
+      "message": "Mensaje",
+      "emptyTitle": "Sin conversaciones aún",
+      "emptyBody": "Escribe a alguien desde su perfil. Aquí vivirá la conversación.",
+      "pick": "Elige una conversación.",
+      "noMessages": "Sin mensajes aún.",
+      "placeholder": "Escribe un mensaje…",
+      "send": "Enviar",
+      "sendError": "No se pudo enviar. Inténtalo de nuevo.",
+      "openError": "No se pudo abrir la conversación.",
+      "back": "Volver",
+      "older": "Mensajes anteriores",
+      "retracted": "Mensaje retirado."
+    },
+    "share": {
+      "action": "Compartir",
+      "profile": "Compartir perfil",
+      "copied": "Enlace copiado.",
+      "error": "No se pudo compartir."
+    },
+    "bookmarks": {
+      "saved": "Guardado en tu colección.",
+      "removed": "Quitado de tu colección.",
+      "error": "No se pudo guardar. Inténtalo de nuevo.",
+      "save": "Guardar",
+      "remove": "Quitar de guardados",
+      "emptyTitle": "Tu colección espera",
+      "emptyBody": "Guarda publicaciones para volver a ellas cuando quieras. Solo tú las ves."
+    },
+    "mention": {
+      "label": "Personas sugeridas"
     },
     "notif": {
       "title": "Notificaciones",
@@ -285,7 +410,45 @@
       "comment": "{name} comentó tu post.",
       "mention": "{name} te mencionó.",
       "follow_request": "{name} solicitó seguirte.",
-      "follow_accepted": "{name} aceptó tu solicitud."
+      "follow_accepted": "{name} aceptó tu solicitud.",
+      "echo": "{name} amplificó tu publicación."
+    },
+    "errors": {
+      "loadTitle": "No pudimos cargar esto",
+      "loadBody": "La conexión se interrumpió. Inténtalo de nuevo en un momento.",
+      "reaction": "No se pudo guardar tu reacción. Inténtalo de nuevo.",
+      "follow": "No se pudo actualizar el seguimiento. Inténtalo de nuevo.",
+      "delete": "No se pudo eliminar. Inténtalo de nuevo.",
+      "notFoundTitle": "Esta página no existe",
+      "notFoundBody": "El enlace puede haber cambiado o el contenido ya no está.",
+      "crashTitle": "Algo se interrumpió",
+      "crashBody": "Un error inesperado detuvo esta pantalla. Puedes reintentarlo.",
+      "goHome": "Volver al inicio"
+    },
+    "toasts": {
+      "region": "Avisos",
+      "close": "Cerrar"
+    },
+    "meta": {
+      "post": "Publicación",
+      "compose": "Publicar"
+    },
+    "rail": {
+      "presenceTitle": "En El Mundo ahora",
+      "travel": "Viajar",
+      "presenceEmpty": "Nadie de tu red camina el Mundo en este momento.",
+      "requestsTitle": "Solicitudes",
+      "suggestionsTitle": "Para tu órbita",
+      "seeAll": "Ver todo"
+    },
+    "discoverInterstitial": {
+      "title": "Personas cerca de tu órbita"
+    },
+    "lightbox": {
+      "label": "Visor de media",
+      "close": "Cerrar visor",
+      "prev": "Anterior",
+      "next": "Siguiente"
     },
     "profile": {
       "loading": "Cargando perfil…",
@@ -321,13 +484,14 @@
       "errorUpload": "No se pudo subir la imagen. Inténtalo de nuevo."
     },
     "compose": {
-      "open": "Publicar algo",
+      "open": "Publicar",
       "title": "Componer",
+      "prompt": "¿Qué contemplas hoy?",
       "bodyPlaceholder": "¿Qué quieres compartir?",
       "bodyLabel": "Tu post",
       "charCount": "{count}/{max}",
       "addMedia": "Agregar foto o video",
-      "media": "Adjunto",
+      "removeMedia": "Quitar adjunto {n}",
       "uploading": "Subiendo…",
       "visibility": "Visibilidad",
       "visibilityPublic": "Público",

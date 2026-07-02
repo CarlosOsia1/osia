@@ -132,6 +132,30 @@
     "errInvalid": "Invalid or expired code.",
     "errGeneric": "Something went wrong. Try again."
   },
+  "recover": {
+    "kicker": "Recovery",
+    "title": "Recover your access",
+    "intro": "Enter your email and we will send you a code to create a new password.",
+    "emailLabel": "Email",
+    "sendCode": "Send code",
+    "sent": "If {email} is registered, we sent you a recovery code.",
+    "codeLabel": "Recovery code",
+    "newPasswordLabel": "New password",
+    "confirmPasswordLabel": "Confirm password",
+    "show": "Show",
+    "hide": "Hide",
+    "submit": "Change password",
+    "resend": "Resend code",
+    "resent": "Code resent",
+    "success": "Password updated. You are in.",
+    "enter": "Enter",
+    "errInvalid": "Invalid or expired code.",
+    "errMismatch": "Passwords do not match.",
+    "errWeak": "Password must be at least 8 characters.",
+    "errSame": "The new password must be different from the previous one.",
+    "errGeneric": "Something went wrong. Try again.",
+    "backToLogin": "Back to sign in"
+  },
   "deleteAccount": {
     "kicker": "Account",
     "title": "Delete your account",
@@ -154,7 +178,8 @@
     "submit": "Enter",
     "errCredentials": "Wrong email or password.",
     "errUnverified": "Verify your email before entering.",
-    "errGeneric": "Something went wrong. Try again."
+    "errGeneric": "Something went wrong. Try again.",
+    "forgot": "Forgot your password?"
   },
   "passport": {
     "kicker": "Vestibule",
@@ -182,7 +207,19 @@
     "loading": "Loading…",
     "needLogin": "Log in to see your passport.",
     "toLogin": "Go to login",
-    "errSave": "Couldn't save. Try again."
+    "errSave": "Couldn't save. Try again.",
+    "account": "Account",
+    "language": "Language",
+    "lang_es": "Español",
+    "lang_en": "English",
+    "deleteHelp": "Deleting your account is final: your passport, your profile and your presence in The World are removed.",
+    "deleteCta": "Delete my account",
+    "deleteConfirmTitle": "Delete your account?",
+    "deleteConfirmBody": "We will send you an email with a link to confirm the permanent deletion (valid for 24 hours, single use). Nothing is deleted until you confirm from your email.",
+    "deleteConfirmCta": "Send the email",
+    "deleteCancel": "Cancel",
+    "deleteSent": "Done. Check your email: the deletion link is valid for 24 hours.",
+    "deleteErr": "We could not send the email. Try again."
   },
   "vestibule": {
     "loading": "Opening the Vestibule…",
@@ -210,11 +247,15 @@
     "welcome": "Welcome back, {name}.",
     "tagline": "Your feed, your network and your status will live here.",
     "loading": "Weaving your network…",
+    "sessionError": "We couldn't verify your session.",
+    "retry": "Retry",
     "nav": {
       "home": "Home",
       "profile": "My profile",
       "discover": "Discover",
       "friends": "Friends",
+      "bookmarks": "Saved",
+      "messages": "Messages",
       "notifications": "Notifications"
     },
     "menu": {
@@ -238,7 +279,8 @@
       "tabs": {
         "followers": "Followers",
         "following": "Following",
-        "requests": "Requests"
+        "requests": "Requests",
+        "management": "Manage"
       },
       "accept": "Accept",
       "reject": "Reject",
@@ -272,7 +314,90 @@
       "commentsLoading": "Loading comments…",
       "noComments": "No comments yet. Be the first.",
       "moreComments": "More comments",
-      "notFound": "Post not found."
+      "notFound": "Post not found.",
+      "deleted": "Post deleted.",
+      "openMedia": "View full size",
+      "reply": "Reply",
+      "showReplies": "{count, plural, one {View # reply} other {View # replies}}",
+      "hideReplies": "Hide replies",
+      "replyingTo": "Replying to {name}",
+      "commentError": "The comment couldn't be sent. Try again.",
+      "edit": "Edit",
+      "edited": "edited",
+      "editSaved": "Changes saved.",
+      "editError": "The edit couldn't be saved. Try again."
+    },
+    "report": {
+      "action": "Report",
+      "title": "Report",
+      "body": "Tell us what's happening. Someone from the team will review it with discretion.",
+      "reasonLabel": "Report reason",
+      "reasonPlaceholder": "Describe the reason…",
+      "send": "Send report",
+      "sent": "Report sent. Thank you for keeping the house.",
+      "error": "The report couldn't be sent. Try again."
+    },
+    "echo": {
+      "action": "Echo",
+      "remove": "Remove your echo",
+      "quote": "Echo with a note",
+      "quoteTitle": "Echo with a note",
+      "quoteLabel": "Your note",
+      "quotePlaceholder": "Add your voice to the echo…",
+      "publish": "Publish echo",
+      "done": "Echo published.",
+      "removed": "Echo removed.",
+      "error": "It couldn't be echoed. Try again.",
+      "unavailable": "Content not available."
+    },
+    "moderation": {
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "muted": "Account muted. Only you know.",
+      "unmuted": "Mute removed.",
+      "block": "Block",
+      "unblock": "Unblock",
+      "blocked": "Account blocked.",
+      "unblocked": "Account unblocked.",
+      "blockTitle": "Block {name}?",
+      "blockBody": "You will stop seeing each other: posts, profiles and follows are cut both ways. You can undo it anytime.",
+      "blockedTitle": "Blocked",
+      "mutedTitle": "Muted",
+      "emptyBlocked": "You haven't blocked anyone.",
+      "emptyMuted": "You haven't muted anyone."
+    },
+    "dm": {
+      "title": "Messages",
+      "message": "Message",
+      "emptyTitle": "No conversations yet",
+      "emptyBody": "Write to someone from their profile. The conversation will live here.",
+      "pick": "Pick a conversation.",
+      "noMessages": "No messages yet.",
+      "placeholder": "Write a message…",
+      "send": "Send",
+      "sendError": "It couldn't be sent. Try again.",
+      "openError": "The conversation couldn't be opened.",
+      "back": "Back",
+      "older": "Earlier messages",
+      "retracted": "Message retracted."
+    },
+    "share": {
+      "action": "Share",
+      "profile": "Share profile",
+      "copied": "Link copied.",
+      "error": "It couldn't be shared."
+    },
+    "bookmarks": {
+      "saved": "Saved to your collection.",
+      "removed": "Removed from your collection.",
+      "error": "It couldn't be saved. Try again.",
+      "save": "Save",
+      "remove": "Remove from saved",
+      "emptyTitle": "Your collection awaits",
+      "emptyBody": "Save posts to come back to them anytime. Only you can see them."
+    },
+    "mention": {
+      "label": "Suggested people"
     },
     "notif": {
       "title": "Notifications",
@@ -285,7 +410,45 @@
       "comment": "{name} commented on your post.",
       "mention": "{name} mentioned you.",
       "follow_request": "{name} requested to follow you.",
-      "follow_accepted": "{name} accepted your follow request."
+      "follow_accepted": "{name} accepted your follow request.",
+      "echo": "{name} echoed your post."
+    },
+    "errors": {
+      "loadTitle": "We couldn't load this",
+      "loadBody": "The connection was interrupted. Try again in a moment.",
+      "reaction": "Your reaction couldn't be saved. Try again.",
+      "follow": "The follow couldn't be updated. Try again.",
+      "delete": "It couldn't be deleted. Try again.",
+      "notFoundTitle": "This page doesn't exist",
+      "notFoundBody": "The link may have changed or the content is gone.",
+      "crashTitle": "Something was interrupted",
+      "crashBody": "An unexpected error stopped this screen. You can try again.",
+      "goHome": "Back to home"
+    },
+    "toasts": {
+      "region": "Notices",
+      "close": "Close"
+    },
+    "meta": {
+      "post": "Post",
+      "compose": "Compose"
+    },
+    "rail": {
+      "presenceTitle": "In The World now",
+      "travel": "Travel",
+      "presenceEmpty": "No one from your circle walks the World right now.",
+      "requestsTitle": "Requests",
+      "suggestionsTitle": "For your orbit",
+      "seeAll": "See all"
+    },
+    "discoverInterstitial": {
+      "title": "People near your orbit"
+    },
+    "lightbox": {
+      "label": "Media viewer",
+      "close": "Close viewer",
+      "prev": "Previous",
+      "next": "Next"
     },
     "profile": {
       "loading": "Loading profile…",
@@ -321,13 +484,14 @@
       "errorUpload": "Couldn't upload the image. Please try again."
     },
     "compose": {
-      "open": "Post something",
+      "open": "Post",
       "title": "Compose",
+      "prompt": "What are you contemplating today?",
       "bodyPlaceholder": "What do you want to share?",
       "bodyLabel": "Your post",
       "charCount": "{count}/{max}",
       "addMedia": "Add photo or video",
-      "media": "Attachment",
+      "removeMedia": "Remove attachment {n}",
       "uploading": "Uploading…",
       "visibility": "Visibility",
       "visibilityPublic": "Public",

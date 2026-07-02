@@ -2,17 +2,43 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Avatar, Button, Divider, Skeleton, Text, IconLock } from '@osia/ui';
-import type { PostDto } from '@osia/shared';
 import {
-  followAccount,
+  Avatar,
+  Button,
+  ConfirmDialog,
+  Divider,
+  ErrorState,
+  IconButton,
+  Menu,
+  Skeleton,
+  Text,
+  IconComment,
+  IconLock,
+  IconMore,
+  IconShare,
+  IconStar,
+  useToast,
+  type MenuItem,
+} from '@osia/ui';
+import type { PostDto } from '@osia/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  blockAccount,
   getPresence,
+  openConversation,
   getProfilePosts,
   getPublicProfile,
-  unfollowAccount,
-} from '../../lib/social-api';
+  muteAccount,
+  unblockAccount,
+  unmuteAccount,
+} from '../../lib/api';
+import { queryKeys } from '../../lib/query-keys';
+import { routes } from '../../lib/routes';
+import { shareUrl } from '../../lib/share';
+import { useToggleFollow } from '../../lib/mutations/follows';
 import { ProfileEditModal } from './ProfileEditModal';
 
 const profileKey = (handle: string) => ['social', 'profile', handle] as const;
@@ -24,8 +50,11 @@ const profileKey = (handle: string) => ['social', 'profile', handle] as const;
  */
 export function ProfileView({ handle }: { handle: string }) {
   const t = useTranslations('social');
+  const toast = useToast();
   const qc = useQueryClient();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
 
   const profileQ = useQuery({ queryKey: profileKey(handle), queryFn: () => getPublicProfile(handle) });
   const canView = profileQ.data?.canViewContent ?? false;
@@ -45,22 +74,72 @@ export function ProfileView({ handle }: { handle: string }) {
     refetchInterval: 60_000,
   });
 
-  const follow = useMutation({
+  // Optimista (R1): el CTA y el conteo cambian al instante; rollback + toast si el API falla.
+  // El botón solo se pinta con perfil cargado y ajeno, así que los defaults nunca llegan a red.
+  const viewerState = profileQ.data?.viewerState;
+  const follow = useToggleFollow({
+    accountId: profileQ.data?.accountId ?? '',
+    viewerState: viewerState === 'self' || viewerState === undefined ? 'none' : viewerState,
+    isPrivate: profileQ.data?.isPrivate,
+  });
+
+  // Control del propio espacio (R4.4): silenciar es discreto; bloquear pide confirmación.
+  const invalidateProfile = (): void => {
+    void qc.invalidateQueries({ queryKey: ['social', 'profile'] });
+    void qc.invalidateQueries({ queryKey: queryKeys.feed });
+  };
+  const muteM = useMutation({
     mutationFn: async () => {
       const p = profileQ.data;
       if (!p) return;
-      if (p.viewerState === 'following') await unfollowAccount(p.accountId);
-      else await followAccount(p.accountId);
+      if (p.mutedByViewer) await unmuteAccount(p.accountId);
+      else await muteAccount(p.accountId);
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: profileKey(handle) }),
+    onSuccess: () => {
+      toast.success(profileQ.data?.mutedByViewer ? t('moderation.unmuted') : t('moderation.muted'));
+      invalidateProfile();
+    },
+    onError: () => toast.error(t('errors.loadTitle')),
+  });
+  const blockM = useMutation({
+    mutationFn: async () => {
+      const p = profileQ.data;
+      if (!p) return;
+      if (p.blockedByViewer) await unblockAccount(p.accountId);
+      else await blockAccount(p.accountId);
+    },
+    onSuccess: () => {
+      setConfirmBlock(false);
+      toast.success(profileQ.data?.blockedByViewer ? t('moderation.unblocked') : t('moderation.blocked'));
+      invalidateProfile();
+    },
+    onError: () => toast.error(t('errors.loadTitle')),
+  });
+  // Mensaje directo (R5): abre (o recupera) la conversación y aterriza en el hilo.
+  const openDm = useMutation({
+    mutationFn: async () => {
+      const p = profileQ.data;
+      if (!p) throw new Error('perfil sin cargar');
+      return openConversation(p.accountId);
+    },
+    onSuccess: (conversation) => {
+      router.push(`${routes.mensajes}?con=${conversation.id}`);
+    },
+    onError: () => toast.error(t('dm.openError')),
   });
 
   if (profileQ.isPending) return <ProfileSkeleton />;
   if (profileQ.isError || !profileQ.data) {
     return (
-      <Text variant="read" tone="muted">
-        {t('profile.notFound')}
-      </Text>
+      <ErrorState
+        title={t('profile.notFound')}
+        description={t('errors.loadBody')}
+        action={
+          <Button variant="secondary" onClick={() => void profileQ.refetch()}>
+            {t('retry')}
+          </Button>
+        }
+      />
     );
   }
 
@@ -102,9 +181,56 @@ export function ProfileView({ handle }: { handle: string }) {
           </Text>
         </div>
         <div className="osia-profile__actions">
+          <IconButton
+            label={t('share.profile')}
+            onClick={() => {
+              void shareUrl(routes.perfil(p.handle), `${p.displayName} · OSIA`).then((outcome) => {
+                if (outcome === 'copied') toast.success(t('share.copied'));
+                else if (outcome === 'failed') toast.error(t('share.error'));
+              });
+            }}
+          >
+            <IconShare />
+          </IconButton>
+          {!isSelf && (
+            <Menu
+              label={t('post.more')}
+              triggerClassName="osia-iconbtn"
+              items={
+                [
+                  {
+                    key: 'mute',
+                    label: p.mutedByViewer ? t('moderation.unmute') : t('moderation.mute'),
+                    onClick: () => muteM.mutate(),
+                  },
+                  {
+                    key: 'block',
+                    label: p.blockedByViewer ? t('moderation.unblock') : t('moderation.block'),
+                    danger: !p.blockedByViewer,
+                    onClick: () => (p.blockedByViewer ? blockM.mutate() : setConfirmBlock(true)),
+                  },
+                ] satisfies MenuItem[]
+              }
+            >
+              <IconMore />
+            </Menu>
+          )}
+          {!isSelf && !p.blockedByViewer && (
+            <Button
+              variant="secondary"
+              loading={openDm.isPending}
+              onClick={() => openDm.mutate()}
+            >
+              {t('dm.message')}
+            </Button>
+          )}
           {isSelf ? (
             <Button variant="secondary" onClick={() => setEditing(true)}>
               {t('profile.edit')}
+            </Button>
+          ) : p.blockedByViewer ? (
+            <Button variant="secondary" loading={blockM.isPending} onClick={() => blockM.mutate()}>
+              {t('moderation.unblock')}
             </Button>
           ) : (
             <Button
@@ -159,6 +285,17 @@ export function ProfileView({ handle }: { handle: string }) {
       )}
 
       {isSelf && <ProfileEditModal open={editing} onClose={() => setEditing(false)} profile={p} />}
+      <ConfirmDialog
+        open={confirmBlock}
+        onClose={() => setConfirmBlock(false)}
+        onConfirm={() => blockM.mutate()}
+        title={t('moderation.blockTitle', { name: p.displayName })}
+        message={t('moderation.blockBody')}
+        confirmLabel={t('moderation.block')}
+        cancelLabel={t('edit.cancel')}
+        danger
+        loading={blockM.isPending}
+      />
     </div>
   );
 }
@@ -186,7 +323,7 @@ function ProfilePosts({
   }
   if (posts.length === 0) {
     return (
-      <Text variant="read" tone="muted" style={{ paddingInline: 'var(--space-4)' }}>
+      <Text variant="read" tone="muted" className="osia-profile__noposts">
         {emptyLabel}
       </Text>
     );
@@ -196,18 +333,33 @@ function ProfilePosts({
       {posts.map((post) => {
         const first = post.media[0];
         return (
-          <Link key={post.id} href={`/post/${post.id}`} className="osia-profile__tile">
+          <Link key={post.id} href={routes.publicacion(post.id)} className="osia-profile__tile">
             {first ? (
               first.kind === 'video' ? (
-                <video src={first.url} muted preload="metadata" style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }} />
+                <video className="osia-profile__tilemedia" src={first.url} muted preload="metadata" />
               ) : (
-                <img src={first.url} alt="" style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }} />
+                <img className="osia-profile__tilemedia" src={first.url} alt="" loading="lazy" />
               )
             ) : (
               <Text variant="read" tone="muted">
                 {post.body}
               </Text>
             )}
+            {/* Al posar: los contadores respiran sobre la pieza (R3). */}
+            <span className="osia-profile__tileveil" aria-hidden="true">
+              <span className="osia-profile__tilestat">
+                <IconStar />
+                <Text variant="meta" as="span">
+                  {post.reactionCount}
+                </Text>
+              </span>
+              <span className="osia-profile__tilestat">
+                <IconComment />
+                <Text variant="meta" as="span">
+                  {post.commentCount}
+                </Text>
+              </span>
+            </span>
           </Link>
         );
       })}

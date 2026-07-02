@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { Text } from '@osia/ui';
 import { SignupForm } from '../_components/SignupForm';
 
 /**
@@ -23,10 +24,8 @@ export default async function JoinPage({
     >
       <div style={{ display: 'grid', gap: 'var(--space-5)', maxWidth: '28rem', width: '100%' }}>
         <header style={{ textAlign: 'center', display: 'grid', gap: 'var(--space-2)' }}>
-          <span className="osia-overline">{t('kicker')}</span>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', margin: 0, color: 'var(--color-text-strong)' }}>
-            {t('title')}
-          </h1>
+          <Text variant="caption">{t('kicker')}</Text>
+          <Text variant="hero">{t('title')}</Text>
         </header>
         <SignupForm initialCode={code ?? ''} />
       </div>

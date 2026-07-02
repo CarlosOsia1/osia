@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import { asAccountId, type PresenceEntryDto } from '@osia/shared';
+import { asAccountId, type NetworkPresenceEntryDto, type PresenceEntryDto } from '@osia/shared';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { PresenceQueryPort } from '../../application/ports/out/presence.query';
+import { toProfileBrief, PROFILE_BRIEF_COLS, type ProfileBriefRow } from './mappers';
 
 type PresenceRow = {
   account_id: string;
@@ -10,6 +11,13 @@ type PresenceRow = {
   left_at: Date | null;
   joined_at: Date | null;
   zone: string | null;
+};
+
+type NetworkPresenceRow = ProfileBriefRow & {
+  account_id: string;
+  world_instance_id: string;
+  joined_at: Date;
+  zone: string;
 };
 
 /**
@@ -50,6 +58,38 @@ export class PgPresenceQuery implements PresenceQueryPort {
       [viewerAccountId, accountIds],
     );
     return res.rows.map(toPresenceEntry);
+  }
+
+  async getNetworkPresence(viewerAccountId: string, limit: number): Promise<NetworkPresenceEntryDto[]> {
+    // Mi red que está en el Mundo AHORA: seguidores activos (regla direccional S3.9: ves online a X
+    // solo si X te sigue) cuya ÚLTIMA sesión sigue abierta. El LATERAL toma la sesión más reciente y
+    // el ON la exige abierta (left_at IS NULL) — una sola consulta, sin accountIds del cliente.
+    const res = await this.pool.query<NetworkPresenceRow>(
+      `SELECT f.follower_account_id AS account_id, ${PROFILE_BRIEF_COLS},
+              l.world_instance_id, l.joined_at, l.zone
+       FROM social.follows f
+       JOIN identity.profiles p ON p.account_id = f.follower_account_id AND p.deleted_at IS NULL
+       JOIN LATERAL (
+         SELECT ps.world_instance_id, ps.joined_at, ps.left_at, z.name AS zone
+         FROM world.presence_sessions ps
+         JOIN world.world_instances wi ON wi.id = ps.world_instance_id
+         JOIN world.zones z ON z.id = wi.zone_id
+         WHERE ps.account_id = f.follower_account_id
+         ORDER BY ps.joined_at DESC
+         LIMIT 1
+       ) l ON l.left_at IS NULL
+       WHERE f.followee_account_id = $1 AND f.status = 'active'
+       ORDER BY l.joined_at DESC
+       LIMIT $2`,
+      [viewerAccountId, limit],
+    );
+    return res.rows.map((row) => ({
+      profile: toProfileBrief(row),
+      accountId: asAccountId(row.account_id),
+      zone: row.zone,
+      instanceId: row.world_instance_id,
+      since: row.joined_at.toISOString(),
+    }));
   }
 }
 

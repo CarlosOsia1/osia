@@ -5,18 +5,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { Avatar, Button, Card, Text } from '@osia/ui';
 import type { NotificationDto } from '@osia/shared';
-import { getNotifications, markAllNotificationsRead } from '../../lib/social-api';
+import { getNotifications, markAllNotificationsRead } from '../../lib/api';
+import { routes } from '../../lib/routes';
 import { relativeTime } from '../../lib/time';
 
 const NOTIF_KEY = ['social', 'notifications'] as const;
 
 /** Destino del deep-link (S3.11): reacción/comentario/mención → el post; follow/solicitud → el perfil. */
 function hrefFor(n: NotificationDto): string | null {
-  if (n.type === 'reaction' || n.type === 'comment' || n.type === 'mention') {
+  if (n.type === 'reaction' || n.type === 'comment' || n.type === 'mention' || n.type === 'echo') {
     const pid = n.payload && typeof n.payload.postId === 'string' ? n.payload.postId : null;
-    return pid ? `/post/${pid}` : null;
+    return pid ? routes.publicacion(pid) : null;
   }
-  return n.actor ? `/profile/${n.actor.handle}` : null;
+  return n.actor ? routes.perfil(n.actor.handle) : null;
 }
 
 /**

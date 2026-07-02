@@ -3,7 +3,13 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
+    // typecheck-only: una app no publica tipos. Sin `declaration: false`, el flag heredado
+    // del base computa errores de emisión (TS4023) sobre los esquemas Zod con IDs branded
+    // de @osia/shared (el `unique symbol` del brand no es nombrable en un .d.ts). Mismo
+    // patrón que las demás apps y que packages/shared.
     "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,

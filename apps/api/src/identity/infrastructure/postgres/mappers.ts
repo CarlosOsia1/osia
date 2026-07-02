@@ -9,7 +9,6 @@ import {
   type AvatarDto,
   type AvatarKind,
   type Passport,
-  type ProfileBrief,
   type ProfileDto,
   type ProfilePrefs,
   type ProfilePrivacy,
@@ -72,18 +71,6 @@ export function toProfileDto(row: ProfileRow): ProfileDto {
     // Claves ausentes en el jsonb caen al default de marca (sin migración de datos).
     prefs: { ...PROFILE_PREFS_DEFAULT, ...row.prefs },
     createdAt: row.created_at.toISOString(),
-  };
-}
-
-/** Vista pública acotada del perfil (`GET /v1/profiles/{handle}`). */
-export function toProfileBrief(row: ProfileRow): ProfileBrief {
-  return {
-    profileId: asProfileId(row.id),
-    handle: row.handle,
-    displayName: row.display_name,
-    avatarUrl: row.avatar_url,
-    accentColor: row.accent_color,
-    popularityPoints: row.popularity_points,
   };
 }
 

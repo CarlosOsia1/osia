@@ -38,6 +38,7 @@ const comment: CommentDto = {
   author,
   parentCommentId: null,
   body: 'hola @maria',
+  editedAt: null,
   createdAt: '2026-06-28T00:00:00.000Z',
 };
 
@@ -50,6 +51,7 @@ const spyPublisher = () => {
     postReacted: () => {},
     postPublished: () => {},
     postCommented: (p) => emitted.push(p),
+    postEchoed: () => {},
   };
   return { pub, emitted };
 };
@@ -58,6 +60,7 @@ const repo = (over: Partial<CommentRepository> = {}): CommentRepository => ({
   createComment: async (): Promise<CreatedComment | null> => ({ comment, postAuthorAccountId: POST_AUTHOR }),
   listComments: async () => null,
   softDeleteOwnComment: async () => false,
+  updateOwnComment: async () => null,
   resolveMentionedAccountIds: async () => [],
   ...over,
 });

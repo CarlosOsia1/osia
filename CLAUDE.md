@@ -13,8 +13,45 @@
 
 ## Estado actual del proyecto (vivo — actualizar al cerrar cada sprint)
 
-> **Última actualización:** 2026-06-28. Mantener este bloque al día: al cerrar un sprint o pasar un
+> **Última actualización:** 2026-07-02. Mantener este bloque al día: al cerrar un sprint o pasar un
 > gate, actualizarlo aquí **y** en [`docs/backlog/00-roadmap-overview.md`](./docs/backlog/00-roadmap-overview.md).
+
+> **⚠️ En curso — RECONSTRUCCIÓN (leer [`docs/HANDOFF-fable.md`](./docs/HANDOFF-fable.md)):** Carlos pidió
+> repensar todo el ecosistema first-principles y rehacer lo que convenga (con la atmósfera del Mundo
+> CONGELADA en lo visual). Se hizo una **auditoría de 13 subsistemas** (veredictos mantener/refactorizar/
+> rehacer) y un plan de **5 olas**. La **Ola 0 (endurecimiento de seguridad) está HECHA y verde**
+> (la hizo Opus porque los safeguards de Fable marcan el trabajo «ciber»).
+>
+> **✅ Ola 3 — La Red Social de lujo RECONSTRUIDA (Fable, 2026-07-02): HECHA y verde (typecheck/lint/test
+> 16/16, sin caché).** Se rehízo `apps/social` visual y funcionalmente sobre el «Salón de 3 columnas»
+> (nav + feed editorial + rail VIVO: presencia «en El Mundo ahora», solicitudes y sugerencias), en 6
+> sprints (R1–R6). **R1** cimientos: contratos schema-first con **validación runtime de respuestas**
+> (zod, cazó el bug real de presencia), `Toast`/`ErrorState`, teclado APG en `Menu`/`Tabs`, capa de datos
+> `lib/api/*` + **mutaciones optimistas con rollback**, páginas de error de ruta. **R2** el Salón:
+> `Lightbox`/`HoverCard`, endpoint `GET /v1/presence/network`, social proof (`recentReactors`), composer
+> en 3 pieles, feed con scroll infinito e interstitials, **rutas en español**. **R3** perfil+conversación:
+> **comentarios anidados 1 nivel**, **menciones con autocompletado** (`MentionTextarea`+`RichBody`),
+> reportar, compartir. **R4** funciones nuevas (4 migraciones): **editar** post/comentario (`edited_at`),
+> **guardados** (`social.bookmarks`), **eco/repost** (`posts.kind='echo'`+`referenced_post_id`),
+> **bloquear** (`follows.status='blocked'`) + **silenciar** (`social.mutes`). **R5** **DM** 1-a-1
+> (`social.dm_conversations` par canónico a<b + `dm_messages`, `/mensajes` master-detail, badge propio).
+> **R6** QA multi-agente (autorización adversarial + contratos + UI/i18n): **0 críticos/altos**; se
+> corrigieron el eco que saltaba el bloqueo, el badge de «no-leídos fantasma», la bandeja/hilo de DM que
+> no re-chequeaban bloqueo, y 2 fidelidades de contrato (marca «editado» en listas, embed del eco al crear).
+> Las **6 migraciones nuevas están aplicadas al cloud y verificadas por introspección**. Todo en STAGED.
+>
+> **✅ Vestíbulo (`apps/web`) — Ola 3 restante HECHO (Fable, 2026-07-02, gates 16/16 sin caché + build):**
+> V1 **recuperación de contraseña** por OTP (endpoints `forgot-password`/`reset-password` espejo del
+> verify-email, revoca las demás sesiones, e2e real contra cloud con cuenta desechable — **pendiente de
+> Carlos: confirmar que el template Recovery del dashboard Supabase muestra `{{ .Token }}`**); V2 sección
+> **Cuenta** (idioma es/en por cookie + borrado de cuenta por email con Modal); V3 **skeletons** de lujo
+> (sin SSR de sesión a propósito: cookie single-use) y puerta social ya `live`; V4 **§2.1 completa**
+> (todo texto de apps/web por `Text`; `Text` ganó `htmlFor` + tonos `strong`/`success`). Detalle en
+> `docs/HANDOFF-fable.md`.
+>
+> Lo siguiente (foco de Carlos): el **game-feel del Mundo 3D** (Ola 2). **Estado del git:** `origin/main`
+> en `184646b`; local `main` tiene `b91a40f` + Ola 0 + Ola 3 (social+Vestíbulo), todo sin push (lo hace
+> Carlos).
 
 **Fases cerradas**
 - **Fase 0 — El Sentimiento (S0.1–S0.8): ✅ cerrada.** El Mundo camina, voz P2P, presencia
@@ -158,7 +195,7 @@
      alineados back↔front, y **gates verdes reales** (`pnpm typecheck/lint/test`, forzados sin caché) antes
      de declarar hecho. Para endpoints protegidos se verifica el wiring con un smoke (401 + sobre `ApiError`).
   3. **Migraciones:** forward-only, **aplicadas al cloud** con `supabase db push --db-url` (§14) y
-     **verificadas por introspección** `pg`. Hoy hay **15 migraciones, todas aplicadas** en Supabase.
+     **verificadas por introspección** `pg`. Hoy hay **35 migraciones, todas aplicadas** en Supabase.
   4. **Git:** se deja en **staged**; se commitea **solo** cuando Carlos lo pide (§0.1).
 - **Decisiones de Fase 2 (Carlos), vinculantes:** clima ESCASO (≤ 2 eventos por día de juego, 2–5 min
   c/u); estación derivada del reloj (no viaja por red); borrado de cuenta por contraseña **y por link

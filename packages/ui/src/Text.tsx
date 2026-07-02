@@ -15,13 +15,15 @@ export type TextVariant =
   | 'read'
   | 'meta'
   | 'caption';
-export type TextTone = 'default' | 'subtle' | 'muted' | 'accent';
+export type TextTone = 'default' | 'strong' | 'subtle' | 'muted' | 'accent' | 'success';
 
 export type TextProps = HTMLAttributes<HTMLElement> & {
   /** Elemento HTML a renderizar (default según la variante). */
   as?: ElementType;
   variant?: TextVariant;
   tone?: TextTone;
+  /** Asocia el texto a un control cuando `as="label"`. */
+  htmlFor?: string;
   /** Texto SOBRE la escena 3D: añade un halo oscuro (text-shadow) → legible de día y de noche. */
   scrim?: boolean;
 };

@@ -6,7 +6,15 @@
  * el gamut exacto de valores se cierra junto a la migración en S1.2.
  */
 
-import type { AccountId, ProfileId } from '../../domain/ids';
+import type { AccountId } from '../../domain/ids';
+import type { ProfileBrief } from '../../schemas/profile-responses';
+
+/**
+ * Desde la reconstrucción (Ola 3, R1) la forma de `ProfileBrief` vive como esquema Zod en
+ * `schemas/profile-responses.ts` (el cliente valida las respuestas en runtime) y el tipo se
+ * deriva con `z.infer`; aquí se re-exporta con su nombre histórico.
+ */
+export type { ProfileBrief } from '../../schemas/profile-responses';
 
 /** Tope de caracteres de la bio (espejo del CHECK del ER y del schema Zod de identidad). */
 export const PROFILE_BIO_MAX = 280;
@@ -43,16 +51,6 @@ export const PROFILE_PREFS_DEFAULT: ProfilePrefs = {
   volume: 0.7,
   reducedMotion: 'system',
   micOptIn: false,
-};
-
-/** Vista pública acotada de un perfil (`GET /v1/profiles/{handle}`). */
-export type ProfileBrief = {
-  profileId: ProfileId;
-  handle: string;
-  displayName: string;
-  avatarUrl: string | null;
-  accentColor: string;
-  popularityPoints: number;
 };
 
 /** Vista propia/privada (`GET /v1/profiles/me`): suma bio, reputación, privacidad y preferencias. */

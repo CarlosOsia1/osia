@@ -24,4 +24,11 @@ export interface AuthSessionPort {
   sendVerification(email: string): Promise<void>;
   /** Verifica el OTP de email; al confirmar, devuelve la sesión (auto-login). Lanza InvalidOtp. */
   verifyEmail(email: string, token: string): Promise<AuthSession>;
+  /** Envía el código de recuperación de contraseña. Best-effort: nunca filtra si el email existe. */
+  sendPasswordReset(email: string): Promise<void>;
+  /**
+   * Canjea el OTP de recuperación y fija la contraseña nueva; devuelve la sesión (auto-login) y
+   * revoca las demás sesiones del usuario. Lanza InvalidOtp / PasswordUnchanged.
+   */
+  resetPassword(email: string, token: string, newPassword: string): Promise<AuthSession>;
 }

@@ -78,6 +78,34 @@ export const updateProfileCardSchema = z
   });
 export type UpdateProfileCardInput = z.infer<typeof updateProfileCardSchema>;
 
+/**
+ * `PATCH /v1/posts/{id}` (R4) — editar el CUERPO de un post propio. Solo `body`: la visibilidad
+ * no es editable (el fan-out ya ocurrió) y la media tampoco (cambiarla reescribiría la pieza;
+ * para eso está borrar y volver a publicar).
+ */
+export const updatePostSchema = z
+  .object({
+    body: z.string().trim().min(1).max(POST_BODY_MAX),
+  })
+  .strict();
+export type UpdatePostInput = z.infer<typeof updatePostSchema>;
+
+/** `PATCH /v1/comments/{id}` (R4) — editar el cuerpo de un comentario propio. */
+export const updateCommentSchema = z
+  .object({
+    body: z.string().trim().min(1).max(COMMENT_BODY_MAX),
+  })
+  .strict();
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
+
+/** `POST /v1/posts/{id}/echo` (R4.3) — amplificar un post: eco simple (sin nota) o quote (con nota). */
+export const createEchoSchema = z
+  .object({
+    body: z.string().trim().min(1).max(POST_BODY_MAX).optional(),
+  })
+  .strict();
+export type CreateEchoInput = z.infer<typeof createEchoSchema>;
+
 /** `POST /v1/posts/{id}/comments` — comentar un post (con hilo opcional). */
 export const createCommentSchema = z
   .object({

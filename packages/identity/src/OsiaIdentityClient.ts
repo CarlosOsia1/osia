@@ -3,6 +3,7 @@ import type {
   AvatarDto,
   LoginInput,
   ProfileDto,
+  ResetPasswordInput,
   SessionDto,
   SignupInput,
   SignupResultDto,
@@ -91,6 +92,24 @@ export class OsiaIdentityClient {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
+  }
+
+  /** Pide el código de recuperación de contraseña (204 siempre; no filtra si el email existe). */
+  async forgotPassword(email: string): Promise<void> {
+    await this.request<void>('/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  /** Canjea el OTP de recuperación por la contraseña nueva; al confirmar inicia sesión. */
+  async resetPassword(input: ResetPasswordInput): Promise<SessionDto> {
+    const { session } = await this.request<{ session: SessionDto }>('/v1/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+    this.rememberAccess(session.accessToken, session.expiresIn);
+    return session;
   }
 
   /** Lee la sesión (pasaporte + access token) desde la cookie de refresh; rota la cookie. */

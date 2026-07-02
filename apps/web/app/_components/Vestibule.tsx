@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { AppSwitcher, Button, ExperienceThreshold, PassportCard, ThresholdTransition } from '@osia/ui';
+import { AppSwitcher, Button, ExperienceThreshold, PassportCard, Skeleton, ThresholdTransition } from '@osia/ui';
 import { useOsiaSession } from '@osia/identity';
 import { LIVE_EXPERIENCES, OSIA, type ExperienceId } from '@osia/shared';
 import { identity } from '../../lib/identity';
@@ -35,9 +35,34 @@ export function Vestibule() {
   const passport = session.data?.passport ?? null;
   if (session.isError) return null; // redirigiendo a /login
   if (!passport) {
+    // Skeleton con la MISMA silueta del Vestíbulo cargado (switcher + pasaporte + 2 puertas): sin
+    // salto de layout. No hay SSR de la sesión a propósito: GET /v1/auth/session ROTA la cookie de
+    // refresh (single-use) y un server component de Next no puede reescribirla → rompería la sesión
+    // del navegador. El SSR real llega con la sesión server-side de la Ola 1.
     return (
-      <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        <p style={{ color: 'var(--color-text-muted)' }}>{t('loading')}</p>
+      <main
+        aria-busy="true"
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          alignContent: 'start',
+          gap: 'var(--space-7)',
+          maxWidth: '48rem',
+          margin: '0 auto',
+          padding: 'var(--space-7) var(--space-5)',
+        }}
+      >
+        <span className="osia-sr-only" role="status">
+          {t('loading')}
+        </span>
+        <header style={{ display: 'flex', justifyContent: 'center' }}>
+          <Skeleton width="16rem" height="2.5rem" />
+        </header>
+        <Skeleton height="13rem" />
+        <div style={{ display: 'grid', gap: 'var(--space-4)' }} aria-hidden>
+          <Skeleton height="8rem" />
+          <Skeleton height="8rem" />
+        </div>
       </main>
     );
   }

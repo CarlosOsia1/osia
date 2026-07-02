@@ -6,6 +6,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Button, Skeleton, Text, UserRow, type AvatarPresence } from '@osia/ui';
 import type { Page, ProfileBrief } from '@osia/shared';
+import { routes } from '../../lib/routes';
 
 /**
  * UserList (S3.9) — lista de personas paginada por cursor (infinite query). Genérica sobre cualquier DTO
@@ -59,7 +60,7 @@ export function UserList<T extends ProfileBrief>({
           handle={u.handle}
           avatarUrl={u.avatarUrl}
           presence={presenceOf?.(u)}
-          href={`/profile/${u.handle}`}
+          href={routes.perfil(u.handle)}
           LinkComponent={Link}
         >
           {renderAction?.(u)}

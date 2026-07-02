@@ -10,13 +10,16 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'packages', 'ui', 'fonts');
+// TODA app Next que sirve UI de @osia/ui necesita las woff2 en su /public (Next solo sirve de ahí).
+// Olvidar una aquí = esa app renderiza con la fuente del sistema (le pasó a social).
 const targets = [
   join('apps', 'web', 'public', 'fonts'),
   join('apps', 'world-client', 'public', 'fonts'),
+  join('apps', 'social', 'public', 'fonts'),
 ];
 
 if (!existsSync(src)) {
-  console.warn(`[sync-fonts] no existe ${src} — omito (corré el pipeline @osia/assets primero).`);
+  console.warn(`[sync-fonts] no existe ${src} — omito (corre el pipeline @osia/assets primero).`);
   process.exit(0);
 }
 

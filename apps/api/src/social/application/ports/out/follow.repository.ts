@@ -1,8 +1,8 @@
 import type {
+  AccountBriefDto,
   Cursor,
   FollowDto,
   FollowRequestDto,
-  FollowStatus,
   Page,
   ProfileBrief,
 } from '@osia/shared';
@@ -10,15 +10,24 @@ import type {
 export const FOLLOW_REPOSITORY = Symbol('FOLLOW_REPOSITORY');
 
 export interface FollowRepository {
-  /** Crea el follow con el `status` dado (`active` público / `pending` privado); idempotente por
-   *  `(follower, followee)`. `created=false` si ya existía (se devuelve el vigente, con su estado). */
+  /** Crea el follow decidiendo el `status` en la MISMA sentencia según la privacidad del destino
+   *  (`pending` si es privado, `active` si no) — sin TOCTOU entre leer is_private e insertar.
+   *  Idempotente por `(follower, followee)`; `created=false` si ya existía (devuelve el vigente con
+   *  su estado real, que el llamador usa para decidir el evento a emitir). `null` si el par está
+   *  BLOQUEADO en cualquier dirección (R4.4) → 403 en el caso de uso, sin oráculo. */
   follow(
     followerAccountId: string,
     followeeAccountId: string,
-    status: FollowStatus,
-  ): Promise<{ follow: FollowDto; created: boolean }>;
-  /** Borra el follow; `true` si existía (lo borró), `false` si no había nada (idempotente). */
+  ): Promise<{ follow: FollowDto; created: boolean } | null>;
+  /** Borra el follow (`active`/`pending`; jamás deshace un bloqueo); `true` si existía (idempotente). */
   unfollow(followerAccountId: string, followeeAccountId: string): Promise<boolean>;
+  /** Bloquea (R4.4), atómico e idempotente: mi arista pasa a `blocked`, la inversa muere y los
+   *  feeds de ambos quedan limpios del otro. */
+  block(blockerAccountId: string, blockedAccountId: string): Promise<void>;
+  /** Desbloquea (borra MI arista `blocked`); no restaura follows. `true` si había bloqueo. */
+  unblock(blockerAccountId: string, blockedAccountId: string): Promise<boolean>;
+  /** Página (keyset) de las cuentas que YO bloqueé (gestión propia). */
+  listBlocked(accountId: string, limit: number, cursor: Cursor | null): Promise<Page<AccountBriefDto>>;
   /** ¿La cuenta destino es privada? (S3.9 — decide si el follow nace `pending`). */
   isAccountPrivate(accountId: string): Promise<boolean>;
   /** ¿`followerAccountId` sigue ACTIVAMENTE a `followeeAccountId`? (para gatear listas de cuenta privada). */

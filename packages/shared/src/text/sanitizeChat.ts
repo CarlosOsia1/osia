@@ -32,8 +32,13 @@ export function normalizeChat(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim();
   if ([...s].length > MAX_CHARS) s = [...s].slice(0, MAX_CHARS).join(''); // por codepoints (sin surrogates huérfanos)
-  // Guard por bytes (recorta respetando codepoints completos).
-  while (s.length > 0 && enc.encode(s).length > MAX_BYTES) s = s.slice(0, -1);
+  // Guard por bytes recortando por CODEPOINTS: `s.slice(0,-1)` corta por code units UTF-16 y
+  // puede dejar medio surrogate pair → U+FFFD (�) visible. `[...s]` itera codepoints completos.
+  if (enc.encode(s).length > MAX_BYTES) {
+    const cps = [...s];
+    while (cps.length > 0 && enc.encode(cps.join('')).length > MAX_BYTES) cps.pop();
+    s = cps.join('');
+  }
   return s;
 }
 

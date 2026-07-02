@@ -5,12 +5,14 @@ import {
   SOCIAL_FOLLOW_CREATED,
   SOCIAL_FOLLOW_REQUESTED,
   SOCIAL_POST_COMMENTED,
+  SOCIAL_POST_ECHOED,
   SOCIAL_POST_PUBLISHED,
   SOCIAL_POST_REACTED,
   type SocialFollowAcceptedPayload,
   type SocialFollowCreatedPayload,
   type SocialFollowRequestedPayload,
   type SocialPostCommentedPayload,
+  type SocialPostEchoedPayload,
   type SocialPostPublishedPayload,
   type SocialPostReactedPayload,
 } from '@osia/shared';
@@ -48,4 +50,8 @@ export class EventEmitterSocialPublisher implements SocialEventPublisher {
   postCommented(payload: SocialPostCommentedPayload): void {
     this.emitter.emit(SOCIAL_POST_COMMENTED, payload);
   }
-}
+
+
+  postEchoed(payload: SocialPostEchoedPayload): void {
+    this.emitter.emit(SOCIAL_POST_ECHOED, payload);
+  }}

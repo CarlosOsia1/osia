@@ -25,6 +25,9 @@ const repo = (existed: boolean): FollowRepository => ({
   accountIdByHandle: async () => null,
   listFollowers: async () => emptyPage,
   listFollowing: async () => emptyPage,
+  block: async () => {},
+  unblock: async () => false,
+  listBlocked: async () => ({ data: [], page: { nextCursor: null, hasMore: false, limit: 20 } }),
 });
 
 test('unfollow: arista existente se borra sin error', async () => {

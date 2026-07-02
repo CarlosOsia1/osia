@@ -3,29 +3,41 @@
  * de las formas que viajan por el cable entre `apps/api` y `apps/social`: si esta forma cambia,
  * ambos lados dejan de compilar a la vez (atomicidad, CLAUDE.md §5).
  *
+ * Desde la reconstrucción (Ola 3, R1) las FORMAS de respuesta viven como esquemas Zod en
+ * `schemas/social-responses.ts` y los tipos se derivan con `z.infer` (una sola fuente de verdad,
+ * igual que los inputs); este módulo las re-exporta con sus nombres históricos y conserva las
+ * CONSTANTES de límites/MIME (espejo de los CHECK del ER y de los buckets).
+ *
  * Notas de alcance (IA descartada al 100%, CLAUDE.md): no hay `author_kind`/Habitantes; todo post
  * lo escribe una cuenta. Las listas se devuelven como `Page<T>` (cursor keyset, `pagination.ts`).
  * Las fechas son ISO-8601 UTC (docs/10 §1.7).
  */
 
-import type {
-  AccountId,
-  PostId,
-  CommentId,
-  ReactionId,
-  FollowId,
-  NotificationId,
-} from '../../domain/ids';
-import type {
-  PostKind,
-  PostVisibility,
-  ReactionKind,
-  FollowStatus,
-  FeedReason,
-  NotificationType,
-} from '../../domain/enums';
-import type { ProfileBrief } from './profile';
-import type { Page } from '../pagination';
+// --- Formas de respuesta (derivadas de los esquemas Zod; ver schemas/social-responses.ts) ---
+export { MEDIA_ITEM_KINDS, PROFILE_VIEWER_STATES } from '../../schemas/social-responses';
+export type {
+  MediaItemKind,
+  MediaItem,
+  ProfileViewerState,
+  UploadTargetDto,
+  PostDto,
+  EchoedPostDto,
+  CommentDto,
+  ReactionDto,
+  ReactionResult,
+  ReactionActorDto,
+  PublicProfileDto,
+  ProfileSummaryDto,
+  SocialMetricsDto,
+  FollowDto,
+  AccountBriefDto,
+  FollowRequestDto,
+  FeedItemDto,
+  NotificationDto,
+  NotificationsPageDto,
+  PresenceEntryDto,
+  NetworkPresenceEntryDto,
+} from '../../schemas/social-responses';
 
 /** Límites de contenido (espejo de los CHECK del ER y de los esquemas Zod de `schemas/social.ts`). */
 export const POST_BODY_MAX = 2000;
@@ -55,12 +67,6 @@ export const POST_VIDEO_SIZE_MAX = 50 * 1024 * 1024;
 export const POST_UPLOAD_MIME_TYPES = [...POST_MEDIA_MIME_TYPES, ...POST_VIDEO_MIME_TYPES] as const;
 export type PostUploadMime = (typeof POST_UPLOAD_MIME_TYPES)[number];
 
-/** Tipo de un adjunto de post: imagen o video. */
-export const MEDIA_ITEM_KINDS = ['image', 'video'] as const;
-export type MediaItemKind = (typeof MEDIA_ITEM_KINDS)[number];
-/** Un adjunto de un post: URL pública de nuestro Storage + su tipo (para render `<img>`/`<video>`). */
-export type MediaItem = { url: string; kind: MediaItemKind };
-
 /** Media del PERFIL (S3.8): foto y portada. Misma allowlist no-ejecutable que los posts (sin gif/svg). */
 export const PROFILE_MEDIA_KINDS = ['photo', 'cover'] as const;
 export type ProfileMediaKind = (typeof PROFILE_MEDIA_KINDS)[number];
@@ -68,187 +74,3 @@ export const PROFILE_MEDIA_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'
 export type ProfileMediaMime = (typeof PROFILE_MEDIA_MIME_TYPES)[number];
 /** Tope de tamaño de foto/portada (bytes). Espejo del `file_size_limit` del bucket `profile-media`. */
 export const PROFILE_MEDIA_SIZE_MAX = 5 * 1024 * 1024;
-
-/**
- * Relación del solicitante con un perfil, para pintar el CTA correcto:
- * - `self`: es tu propio perfil (editable).
- * - `following`: lo sigues (follow activo).
- * - `requested`: le enviaste una solicitud aún pendiente (cuentas privadas, S3.9).
- * - `none`: no lo sigues ni tienes solicitud.
- */
-export type ProfileViewerState = 'self' | 'following' | 'requested' | 'none';
-
-/**
- * Resultado de `POST /v1/media/upload-url`: destino prefirmado para subir el binario directo a Storage
- * (el API nunca recibe el archivo) + la URL pública final que luego se guarda en `post.media`.
- */
-export type UploadTargetDto = {
-  /** URL a la que el cliente sube el binario por PUT (token embebido; expira pronto). */
-  uploadUrl: string;
-  /** URL pública final del objeto; es la que viaja en `CreatePostInput.media`. */
-  publicUrl: string;
-  /** Ruta del objeto dentro del bucket (scoped por cuenta). */
-  path: string;
-};
-
-/** Un post del feed (`social.posts` + autor desnormalizado + estado del lector). */
-export type PostDto = {
-  id: PostId;
-  /** Autor (vista pública acotada; respeta privacidad/RLS). */
-  author: ProfileBrief;
-  kind: PostKind;
-  /** Cuerpo del post; `null` si es un post solo-media. */
-  body: string | null;
-  /** Adjuntos (imagen/video), 0..`POST_MEDIA_MAX`; cada uno con su URL de Storage y tipo. */
-  media: MediaItem[];
-  visibility: PostVisibility;
-  /** Contador desnormalizado (trigger sobre `reactions`). */
-  reactionCount: number;
-  /** Contador desnormalizado (trigger sobre `comments`). */
-  commentCount: number;
-  /** Reacción del lector a este post, si reaccionó; `null` si no. */
-  viewerReaction: ReactionKind | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-/** Un comentario bajo un post (`social.comments`; hilos vía `parentCommentId`). */
-export type CommentDto = {
-  id: CommentId;
-  postId: PostId;
-  author: ProfileBrief;
-  /** Comentario padre para hilos; `null` si es de primer nivel. */
-  parentCommentId: CommentId | null;
-  body: string;
-  createdAt: string;
-};
-
-/** Una reacción a un post (`social.reactions`; única por `(post, account, kind)`). */
-export type ReactionDto = {
-  id: ReactionId;
-  postId: PostId;
-  accountId: AccountId;
-  kind: ReactionKind;
-  createdAt: string;
-};
-
-/** Respuesta de `PUT /v1/posts/{id}/reactions`: la reacción + el contador ya actualizado. */
-export type ReactionResult = {
-  reaction: ReactionDto;
-  reactionCount: number;
-};
-
-/** Quién reaccionó a un post (`GET /v1/posts/{id}/reactions`, S3.10): brief + tipo de reacción + cuándo. */
-export type ReactionActorDto = ProfileBrief & {
-  kind: ReactionKind;
-  reactedAt: string;
-};
-
-/**
- * Perfil público con estatus (`GET /v1/profiles/{handle}`): el brief + bio, reputación, conteos del grafo
- * y si el solicitante lo sigue. Los achievements (lectura de Fase 2) se sumarán cuando exista su tabla.
- */
-export type PublicProfileDto = ProfileBrief & {
-  accountId: AccountId;
-  bio: string | null;
-  reputation: number;
-  followersCount: number;
-  followingCount: number;
-  /** ¿El solicitante sigue a este perfil? (equivale a `viewerState === 'following'`). */
-  isFollowing: boolean;
-  /** Presentación de lujo (S3.8): cuenta privada + foto y portada reales (o `null` → respaldo al avatar). */
-  isPrivate: boolean;
-  photoUrl: string | null;
-  coverUrl: string | null;
-  /** Relación del solicitante con este perfil (para el CTA: editar / seguir / solicitado). */
-  viewerState: ProfileViewerState;
-  /**
-   * ¿El solicitante puede ver el contenido (posts, listas)? `false` en cuenta privada de la que no eres
-   * dueño ni seguidor activo — la UI muestra solo la cabecera + "Solicitar seguir" (gating estricto).
-   */
-  canViewContent: boolean;
-};
-
-/** Métricas operativas del Tejido Social (`GET /v1/metrics/social`, S3.6-H3). Conteos agregados. */
-export type SocialMetricsDto = {
-  posts: number;
-  reactions: number;
-  comments: number;
-  follows: number;
-  postsLast24h: number;
-  feedItems: number;
-};
-
-/** Una arista del grafo de seguidores (`social.follows`). */
-export type FollowDto = {
-  id: FollowId;
-  followerAccountId: AccountId;
-  followeeAccountId: AccountId;
-  status: FollowStatus;
-  createdAt: string;
-};
-
-/**
- * Una solicitud de seguimiento ENTRANTE pendiente (`GET /v1/follows/requests`, S3.9): la vista breve del
- * solicitante + su `accountId` (necesario para aceptar/rechazar por la ruta `requests/{accountId}/…`).
- */
-export type FollowRequestDto = ProfileBrief & {
-  accountId: AccountId;
-};
-
-/**
- * Una persona en Descubrir/Buscar (S3.11): brief + `accountId` (para seguir) + relación con el
- * solicitante (`viewerState`, para pintar el botón). Nunca incluye al propio usuario.
- */
-export type ProfileSummaryDto = ProfileBrief & {
-  accountId: AccountId;
-  viewerState: Extract<ProfileViewerState, 'following' | 'requested' | 'none'>;
-};
-
-/** Un ítem materializado del feed (`social.feed_items`) — embebe el post completo para render directo. */
-export type FeedItemDto = {
-  /** `feed_items.id` (la PK real es `(account_id, id)`; aquí basta el id como string opaco). */
-  id: string;
-  post: PostDto;
-  reason: FeedReason;
-  score: number;
-  createdAt: string;
-};
-
-/** Una notificación social (`social.notifications`). El tipo `gossip` queda fuera (IA descartada). */
-export type NotificationDto = {
-  id: NotificationId;
-  type: NotificationType;
-  /** Quién la disparó (sigue/reacciona/comenta/menciona); `null` si es de sistema. */
-  actor: ProfileBrief | null;
-  /**
-   * Datos específicos del tipo (jsonb `payload` del ER). Forma esperada por `type`:
-   * - `follow`: `{}` (el actor ya identifica el follow)
-   * - `reaction`: `{ postId, kind }`
-   * - `comment`: `{ postId, commentId }`
-   * - `mention`: `{ postId, commentId? }`
-   */
-  payload: Record<string, unknown> | null;
-  /** ISO-8601 cuando se marcó leída; `null` si no leída. */
-  readAt: string | null;
-  createdAt: string;
-};
-
-/** Respuesta de `GET /v1/notifications`: página de notificaciones + contador de no-leídas (badge). */
-export type NotificationsPageDto = Page<NotificationDto> & { unreadCount: number };
-
-/**
- * Presencia social de una cuenta. Fuente real: el checkpoint durable `world.presence_sessions` que
- * mantiene el world-server (open/close); una sesión abierta = online. (La presencia EN VIVO con TTL en
- * Redis es una mejora futura; ver S3.6.) Solo se devuelve para cuentas en relación con el solicitante.
- */
-export type PresenceEntryDto = {
-  accountId: AccountId;
-  online: boolean;
-  /** Zona del Mundo donde está (p. ej. "El Claro"); `null` si offline. */
-  zone: string | null;
-  /** Instancia del Mundo; `null` si offline. */
-  instanceId: string | null;
-  /** Última señal vista (ISO-8601 UTC); `null` si nunca se ha conectado. */
-  lastSeen: string | null;
-};

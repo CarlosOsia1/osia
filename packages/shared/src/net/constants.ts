@@ -30,6 +30,13 @@ export const GROUND_RADIUS = 23.5; // límite del claro de Fase 0
 /** Anti-cheat / anti-flood de inputs (server-authoritative). */
 export const MAX_QUEUED_INPUTS = 120; // techo de la cola de inputs por entidad (descarta flood)
 export const MAX_INPUT_DT_S = 0.1; // dt máximo admitido por input (100 ms) — clampa teleport por dt inflado
+/**
+ * Presupuesto de tiempo SIMULADO por tick y entidad (anti speed-hack, patrón Source
+ * `sv_maxusrcmdprocessticks` / Overwatch). `step()` aplica movimiento mientras Σdt ≤ este techo;
+ * el excedente igual actualiza yaw/ackSeq pero NO desplaza. Un cliente honesto (dt real ≈ TICK_MS
+ * por tick) nunca lo alcanza; un flood de inputs con dt inflado queda acotado a ~2 ticks de avance.
+ */
+export const MAX_SIM_DT_PER_TICK_S = (TICK_MS / 1000) * 2; // 0.1 s con TICK_MS=50
 
 /** Instancias. */
 export const INSTANCE_CAPACITY = 12; // techo del hub en Fase 0

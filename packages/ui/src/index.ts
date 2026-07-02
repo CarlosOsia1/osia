@@ -39,8 +39,18 @@ export { Skeleton, type SkeletonProps } from './Skeleton';
 export { Tabs, type TabsProps, type TabItem } from './Tabs';
 export { Divider } from './Divider';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
+export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { Menu, type MenuProps, type MenuItem } from './Menu';
+export {
+  ToastProvider,
+  useToast,
+  type ToastProviderProps,
+  type ToastKind,
+  type ToastOptions,
+} from './Toast';
 export { AppShell, type AppShellProps, type ShellNavItem } from './AppShell';
+export { Lightbox, type LightboxProps, type LightboxItem } from './Lightbox';
+export { HoverCard, type HoverCardProps } from './HoverCard';
 export { ImageUploadField, type ImageUploadFieldProps } from './ImageUploadField';
 export { UserRow, type UserRowProps } from './UserRow';
 export { MediaGallery } from './MediaGallery';

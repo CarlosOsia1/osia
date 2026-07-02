@@ -16,7 +16,7 @@ import {
 } from '@osia/ui';
 import { PROFILE_BIO_MAX } from '@osia/shared';
 import type { PublicProfileDto } from '@osia/shared';
-import { MediaUploadError, updateBio, updateProfileCard, uploadProfileImage } from '../../lib/social-api';
+import { MediaUploadError, updateBio, updateProfileCard, uploadProfileImage } from '../../lib/api';
 
 const PROFILE_KEY = ['social', 'profile'] as const;
 

@@ -172,6 +172,23 @@ test('decode rechaza basura', () => {
   assert.equal(decode(new Uint8Array([0xff])), null); // opcode desconocido
 });
 
+test('decode INPUT rechaza f64 no finitos en yaw/dtMs (anti-griefing NaN)', () => {
+  // Un yaw/dtMs no finito corrompe la posición autoritativa de forma permanente y se
+  // difunde a todos; el frame debe rechazarse en el borde (return null), no propagarse.
+  for (const [yaw, dtMs] of [
+    [Number.NaN, 16],
+    [Number.POSITIVE_INFINITY, 16],
+    [0.5, Number.NaN],
+    [0.5, Number.NEGATIVE_INFINITY],
+  ] as const) {
+    const raw = encode({ op: C2S.INPUT, seq: 1, f: 1, r: 0, yaw, dtMs });
+    assert.equal(decode(raw), null, `INPUT yaw=${yaw} dtMs=${dtMs} debe rechazarse`);
+  }
+  // El caso sano sigue pasando (no rompimos el camino feliz).
+  const ok: InputMsg = { op: C2S.INPUT, seq: 1, f: 1, r: 0, yaw: 0.5, dtMs: 16 };
+  assert.deepEqual(decode(encode(ok)), ok);
+});
+
 test('decode rechaza frames truncados / con prefijo mentiroso (bounds-check)', () => {
   // INPUT completo, truncado a la mitad → null (no acepta datos corruptos).
   const full = encode({ op: C2S.INPUT, seq: 1, f: 1, r: 0, yaw: 0, dtMs: 16 });
@@ -201,4 +218,23 @@ test('applyMovement avanza y respeta el límite del claro', () => {
   const far: Vec2 = { x: 100, z: 0 };
   applyMovement(far, { f: 1, r: 0, yaw: Math.PI / 2 }, 0.05);
   assert.ok(Math.hypot(far.x, far.z) <= GROUND_RADIUS + 1e-6, 'no debe salir del claro');
+});
+
+test('applyMovement es no-op ante yaw/dt no finitos (defensa en profundidad)', () => {
+  const p1: Vec2 = { x: 3, z: -2 };
+  applyMovement(p1, { f: 1, r: 0, yaw: Number.NaN }, 0.05);
+  assert.deepEqual(p1, { x: 3, z: -2 }, 'yaw=NaN no debe mover ni envenenar pos');
+
+  const p2: Vec2 = { x: 3, z: -2 };
+  applyMovement(p2, { f: 1, r: 0, yaw: 0 }, Number.POSITIVE_INFINITY);
+  assert.deepEqual(p2, { x: 3, z: -2 }, 'dt=Infinity no debe mover ni envenenar pos');
+});
+
+test('normalizeChat recorta por bytes sin partir un emoji en el borde', () => {
+  // '🌙' = 4 bytes UTF-8; 130 lunas = 520 bytes > MAX_BYTES(480). El recorte por code units
+  // partiría un surrogate pair dejando U+FFFD; por codepoints no debe aparecer ningún �.
+  const out = normalizeChat('🌙'.repeat(130));
+  assert.ok(!out.includes('�'), 'no debe quedar carácter de reemplazo por surrogate huérfano');
+  assert.ok(new TextEncoder().encode(out).length <= 480, 'debe respetar el tope de bytes');
+  assert.ok([...out].every((cp) => cp === '🌙'), 'solo lunas completas');
 });

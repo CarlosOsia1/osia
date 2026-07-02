@@ -58,6 +58,11 @@ const HANDLES = [
   'Deneb',
 ];
 const BUFFER_MAX = 30;
+/** Tope de inputs sin confirmar. Si el server deja de emitir DELTA con el WS abierto, `pending`
+ *  crecería a ritmo de frame y el replay de reconciliación sería O(n)/frame; se descartan los
+ *  más viejos (ya nunca se van a confirmar). Holgado: ~4 s a 60 fps. */
+const MAX_PENDING = 256;
+const TWO_PI = Math.PI * 2;
 const voiceEnc = new TextEncoder(); // para medir el tamaño en bytes del payload de voz
 
 function randomHandle(): string {
@@ -236,7 +241,11 @@ export class NetClient {
 
   private scheduleReconnect(): void {
     this.attempts++;
-    const delay = Math.min(8000, 500 * 2 ** Math.min(this.attempts, 4));
+    // Backoff exponencial con JITTER ±30%: si el server reinicia, todos los clientes reintentarían
+    // en los mismos instantes (thundering herd) contra el WS y el endpoint de tickets. El jitter
+    // dispersa los reintentos.
+    const base = Math.min(8000, 500 * 2 ** Math.min(this.attempts, 4));
+    const delay = Math.round(base * (0.7 + Math.random() * 0.6));
     this.publish('reconnecting');
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     const ep = ++this.epoch;
@@ -352,6 +361,8 @@ export class NetClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
     this.seq++;
     this.pending.push({ seq: this.seq, f, r, yaw, dt }); // guardado para el replay de reconciliación
+    // Cap del backlog: si el server dejó de confirmar (stall), no dejar crecer `pending` sin fin.
+    if (this.pending.length > MAX_PENDING) this.pending.splice(0, this.pending.length - MAX_PENDING);
     this.ws.send(encode({ op: C2S.INPUT, seq: this.seq, f, r, yaw, dtMs: dt * 1000 }));
   }
 
@@ -411,7 +422,12 @@ export class NetClient {
         out.t = renderTime;
         out.x = a.x + (b.x - a.x) * k;
         out.z = a.z + (b.z - a.z) * k;
-        out.yaw = a.yaw + (b.yaw - a.yaw) * k;
+        // Yaw es un ángulo: interpolar por el ARCO CORTO (normalizar el delta a [-π, π]). Sin esto,
+        // cruzar ±π gira el camino largo (~360° fantasma) y desalinea el audio espacial del remoto.
+        let dyaw = b.yaw - a.yaw;
+        if (dyaw > Math.PI) dyaw -= TWO_PI;
+        else if (dyaw < -Math.PI) dyaw += TWO_PI;
+        out.yaw = a.yaw + dyaw * k;
         return true;
       }
     }

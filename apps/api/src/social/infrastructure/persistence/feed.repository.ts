@@ -3,7 +3,16 @@ import type { Pool } from 'pg';
 import { encodeCursor, type Cursor, type FeedItemDto, type Page } from '@osia/shared';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { FeedRepository } from '../../application/ports/out/feed.repository';
-import { AUTHOR_BRIEF_ALIASED_COLS, toFeedItemDto, type FeedItemRow } from './mappers';
+import {
+  AUTHOR_BRIEF_ALIASED_COLS,
+  recentReactorsLateral,
+  referencedPostJoin,
+  REF_POST_COLS,
+  toFeedItemDto,
+  viewerBookmarkedSelect,
+  viewerEchoedSelect,
+  type FeedItemRow,
+} from './mappers';
 import { postVisiblePredicate } from './post-visibility';
 
 /** Adapter Postgres del feed (S3.3-H4). Fan-out-on-write + lectura keyset + poda. SQL directo. */
@@ -46,15 +55,27 @@ export class PgFeedRepository implements FeedRepository {
               po.id AS post_id, po.author_account_id AS post_author_account_id, po.kind AS post_kind,
               po.body AS post_body, po.media AS post_media, po.visibility AS post_visibility,
               po.reaction_count AS post_reaction_count, po.comment_count AS post_comment_count,
+              po.edited_at AS post_edited_at,
+              po.referenced_post_id AS post_referenced_post_id, po.echo_count AS post_echo_count,
               po.created_at AS post_created_at, po.updated_at AS post_updated_at,
               ${AUTHOR_BRIEF_ALIASED_COLS},
+              ${REF_POST_COLS},
+              reactors.recent_reactors,
+              ${viewerBookmarkedSelect('po', '$1')},
+              ${viewerEchoedSelect('po', '$1')},
               (SELECT r.kind FROM social.reactions r
                  WHERE r.post_id = po.id AND r.account_id = $1
                  ORDER BY r.created_at LIMIT 1) AS viewer_reaction
        FROM social.feed_items fi
        JOIN social.posts po ON po.id = fi.post_id AND po.deleted_at IS NULL
        JOIN identity.profiles p ON p.account_id = po.author_account_id AND p.deleted_at IS NULL
-       WHERE fi.account_id = $1 AND ${postVisiblePredicate('po', '$1')} ${cursorClause}
+       ${referencedPostJoin('po', '$1')}
+       ${recentReactorsLateral('po')}
+       WHERE fi.account_id = $1 AND ${postVisiblePredicate('po', '$1')}
+         -- Silenciados (R4.4): fuera de MI feed, sin que lo sepan (preferencia privada de lectura).
+         AND NOT EXISTS (SELECT 1 FROM social.mutes m
+           WHERE m.muter_account_id = $1 AND m.muted_account_id = po.author_account_id)
+         ${cursorClause}
        ORDER BY fi.created_at DESC, fi.id DESC
        LIMIT $${params.length}`,
       params,

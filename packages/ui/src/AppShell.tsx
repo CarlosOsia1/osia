@@ -32,6 +32,8 @@ export type AppShellProps = {
   headerActions?: ReactNode;
   /** Columna derecha: "en línea" + "a quién seguir" (slot de la app). */
   rail?: ReactNode;
+  /** Pie de la sidebar (R2): el CTA de publicar del Salón (necesita el composer → slot de la app). */
+  sidebarFooter?: ReactNode;
   children: ReactNode;
   LinkComponent?: ElementType;
 };
@@ -91,6 +93,7 @@ export function AppShell({
   searchSlot,
   headerActions,
   rail,
+  sidebarFooter,
   children,
   LinkComponent = 'a',
 }: AppShellProps) {
@@ -119,6 +122,7 @@ export function AppShell({
               <NavItem key={item.key} item={item} active={item.key === activeKey} Link={Link} />
             ))}
           </nav>
+          {sidebarFooter && <div className="osia-sidebar__footer">{sidebarFooter}</div>}
         </aside>
 
         <main className="osia-shell__main">{children}</main>

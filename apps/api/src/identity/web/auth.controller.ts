@@ -15,12 +15,16 @@ import {
   ErrorCode,
   SESSION_REFRESH_COOKIE,
   SESSION_REFRESH_MAX_AGE_MS,
+  forgotPasswordSchema,
   loginSchema,
   resendVerificationSchema,
+  resetPasswordSchema,
   signupSchema,
   verifyEmailSchema,
+  type ForgotPasswordInput,
   type LoginInput,
   type ResendVerificationInput,
+  type ResetPasswordInput,
   type SessionDto,
   type SignupInput,
   type SignupResultDto,
@@ -36,6 +40,8 @@ import { RefreshSessionUseCase } from '../application/use-cases/refresh-session.
 import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
+import { RequestPasswordResetUseCase } from '../application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case';
 
 /** Cookie de refresh (HttpOnly) que sostiene el SSO entre apps — nombre/vida compartidos. */
 const RT_COOKIE = SESSION_REFRESH_COOKIE;
@@ -57,6 +63,8 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly verifyEmailUseCase: VerifyEmailUseCase,
     private readonly resendVerificationUseCase: ResendVerificationUseCase,
+    private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
     @Inject(APP_ENV) private readonly env: Env,
   ) {}
 
@@ -97,6 +105,31 @@ export class AuthController {
     @Body(new ZodValidationPipe(resendVerificationSchema)) body: ResendVerificationInput,
   ): Promise<void> {
     await this.resendVerificationUseCase.execute(body.email);
+  }
+
+  /** Pide el código de recuperación de contraseña. SIEMPRE 204: no filtra si el email existe. */
+  @Post('forgot-password')
+  @HttpCode(204)
+  async forgotPassword(
+    @Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordInput,
+  ): Promise<void> {
+    await this.requestPasswordResetUseCase.execute(body.email);
+  }
+
+  /** Canjea el OTP de recuperación por la contraseña nueva; al confirmar inicia sesión (set-cookie). */
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(
+    @Body(new ZodValidationPipe(resetPasswordSchema)) body: ResetPasswordInput,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ session: SessionDto }> {
+    const { session, refreshToken } = await this.resetPasswordUseCase.execute(
+      body.email,
+      body.token,
+      body.newPassword,
+    );
+    this.setRefreshCookie(res, refreshToken);
+    return { session };
   }
 
   /** Devuelve el pasaporte + access token a partir de la cookie de refresh (rota la cookie). */

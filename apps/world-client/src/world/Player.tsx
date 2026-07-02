@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { applyMovement } from '@osia/shared';
+import { applyMovement, MAX_INPUT_DT_S } from '@osia/shared';
 import { getNetClient } from '../net/useNet';
 import { isChatTyping } from '../net/store';
 import AvatarMesh from './AvatarMesh';
@@ -13,10 +13,12 @@ import AvatarMesh from './AvatarMesh';
  * Player — el avatar local de OSIA (S0.3 + S0.5).
  *
  * Movimiento A PIE relativo a la cámara (WASD/flechas), mouse-look estándar
- * (pointer lock). En red (S0.5): predicción LOCAL inmediata + envío de INPUT a
- * 20 Hz (intención f/r/yaw, nunca posiciones) + reconciliación suave con el estado
- * autoritativo del servidor (snap solo ante desync grande). Usa MOVE_SPEED y
- * GROUND_RADIUS de @osia/shared: la MISMA simulación que el server → casi sin error.
+ * (pointer lock). En red (S0.5): predicción LOCAL inmediata + envío de INPUT (intención
+ * f/r/yaw, nunca posiciones) UNA VEZ POR FRAME de render + reconciliación suave con el
+ * estado autoritativo del servidor (snap solo ante desync grande). El dt se clampa a
+ * MAX_INPUT_DT_S antes de predecir Y de enviar (misma cota que el server) para que un
+ * tab-switch/stutter no diverja entre predicción y autoridad. Usa MOVE_SPEED/GROUND_RADIUS
+ * de @osia/shared: la MISMA simulación que el server → casi sin error.
  */
 
 export type Controls = 'forward' | 'back' | 'left' | 'right';
@@ -81,6 +83,10 @@ export default function Player() {
     const f = typing ? 0 : (k.forward ? 1 : 0) - (k.back ? 1 : 0);
     const r = typing ? 0 : (k.right ? 1 : 0) - (k.left ? 1 : 0);
     const moving = f !== 0 || r !== 0;
+    // Clamp del dt a la MISMA cota que aplica el server (MAX_INPUT_DT_S): tras un tab-switch o
+    // stutter, R3F entrega un delta grande; sin clamp, la predicción local avanzaría más que la
+    // autoridad (que sí recorta) → snap visible al reconciliar. Clampado, ambos coinciden.
+    const dt = Math.min(delta, MAX_INPUT_DT_S);
 
     // Orientación del cuerpo: mira hacia donde se mueve (visual; no se reconcilia).
     if (moving) {
@@ -88,9 +94,9 @@ export default function Player() {
       g.rotation.y = Math.atan2(move.x, move.z);
     }
 
-    // --- enviar 1 INPUT POR FRAME (con su dt) → NetClient lo guarda en `pending` ---
+    // --- enviar 1 INPUT POR FRAME (con su dt clampado) → NetClient lo guarda en `pending` ---
     // (también parado, para reportar f=0). El server lo encola y lo drena por tick.
-    net.sendInput(f, r, yaw.current, delta);
+    net.sendInput(f, r, yaw.current, dt);
 
     // --- posición = estado AUTORITATIVO + REPLAY de los inputs pendientes (Gambetta/Valve) ---
     // Como envío 1 input por frame, `recon` avanza un paso de frame por frame → suave; y el
@@ -107,7 +113,7 @@ export default function Player() {
       // sin servidor todavía: dead-reckoning local por frame (misma función pura).
       recon.x = g.position.x;
       recon.z = g.position.z;
-      applyMovement(recon, { f, r, yaw: yaw.current }, delta);
+      applyMovement(recon, { f, r, yaw: yaw.current }, dt);
       g.position.x = recon.x;
       g.position.z = recon.z;
     }

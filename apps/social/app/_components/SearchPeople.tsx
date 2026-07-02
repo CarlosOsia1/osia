@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { SearchInput, Text, UserRow } from '@osia/ui';
-import { searchProfiles } from '../../lib/social-api';
+import { searchProfiles } from '../../lib/api';
+import { routes } from '../../lib/routes';
 
 /**
  * SearchPeople (S3.11) — buscador de personas del header: input con debounce (250 ms) + panel de
@@ -56,7 +57,7 @@ export function SearchPeople() {
             results.map((u) => (
               <Link
                 key={u.profileId}
-                href={`/profile/${u.handle}`}
+                href={routes.perfil(u.handle)}
                 style={{ textDecoration: 'none' }}
                 onClick={() => setOpen(false)}
               >

@@ -44,9 +44,9 @@ export class PgCommentRepository implements CommentRepository {
            SELECT 1 FROM social.comments c
            WHERE c.id = $4 AND c.post_id = $1 AND c.deleted_at IS NULL
          )
-         RETURNING id, post_id, author_account_id, parent_comment_id, body, created_at
+         RETURNING id, post_id, author_account_id, parent_comment_id, body, edited_at, created_at
        )
-       SELECT i.id, i.post_id, i.author_account_id, i.parent_comment_id, i.body, i.created_at,
+       SELECT i.id, i.post_id, i.author_account_id, i.parent_comment_id, i.body, i.edited_at, i.created_at,
               v.author_account_id AS post_author_account_id,
               ${AUTHOR_BRIEF_ALIASED_COLS}
        FROM ins i
@@ -91,7 +91,7 @@ export class PgCommentRepository implements CommentRepository {
     }
     params.push(limit + 1);
     const res = await this.pool.query<CommentJoinRow>(
-      `SELECT c.id, c.post_id, c.author_account_id, c.parent_comment_id, c.body, c.created_at,
+      `SELECT c.id, c.post_id, c.author_account_id, c.parent_comment_id, c.body, c.edited_at, c.created_at,
               ${AUTHOR_BRIEF_ALIASED_COLS}
        FROM social.comments c
        JOIN identity.profiles p ON p.account_id = c.author_account_id AND p.deleted_at IS NULL
@@ -118,5 +118,26 @@ export class PgCommentRepository implements CommentRepository {
       [commentId, accountId],
     );
     return (res.rowCount ?? 0) > 0;
+  }
+
+  async updateOwnComment(
+    commentId: string,
+    accountId: string,
+    body: string,
+  ): Promise<CommentDto | null> {
+    // Ownership en la MISMA sentencia (0 filas = no existe o no es tuyo → 404, sin oráculo).
+    const res = await this.pool.query<CommentJoinRow>(
+      `WITH upd AS (
+         UPDATE social.comments SET body = $3, edited_at = now()
+         WHERE id = $1 AND author_account_id = $2 AND deleted_at IS NULL
+         RETURNING *
+       )
+       SELECT upd.*, ${AUTHOR_BRIEF_ALIASED_COLS}
+       FROM upd
+       JOIN identity.profiles p ON p.account_id = upd.author_account_id AND p.deleted_at IS NULL`,
+      [commentId, accountId, body],
+    );
+    const row = res.rows[0];
+    return row ? toCommentDto(row, toAuthorBrief(row)) : null;
   }
 }

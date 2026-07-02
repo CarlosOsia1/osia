@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -13,10 +14,12 @@ import { z } from 'zod';
 import {
   createCommentSchema,
   listQuerySchema,
+  updateCommentSchema,
   type CommentDto,
   type CreateCommentInput,
   type ListQueryInput,
   type Page,
+  type UpdateCommentInput,
 } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
@@ -24,6 +27,7 @@ import { EmailVerifiedGuard } from '../../common/email-verified.guard';
 import { CreateCommentUseCase } from '../application/use-cases/create-comment.use-case';
 import { ListCommentsUseCase } from '../application/use-cases/list-comments.use-case';
 import { DeleteCommentUseCase } from '../application/use-cases/delete-comment.use-case';
+import { UpdateCommentUseCase } from '../application/use-cases/update-comment.use-case';
 
 /** Valida un id de ruta como UUID en el borde (evita 22P02 en SQL). */
 const uuidParam = new ZodValidationPipe(z.string().uuid());
@@ -62,13 +66,27 @@ export class PostCommentsController {
 }
 
 /**
- * Borrado de comentario propio (S3.3-H3): `DELETE /v1/comments/{id}` (soft-delete, 204). Vive en su
- * propia ruta porque no cuelga de un post. Protegido (AuthGuard).
+ * Comentario propio por id (S3.3-H3; editar en R4): `DELETE /v1/comments/{id}` (soft-delete, 204)
+ * y `PATCH /v1/comments/{id}` (editar el cuerpo). Vive en su propia ruta porque no cuelga de un
+ * post. Protegido (AuthGuard); escrituras exigen email verificado.
  */
 @Controller('comments')
 @UseGuards(AuthGuard)
 export class CommentsController {
-  constructor(private readonly deleteComment: DeleteCommentUseCase) {}
+  constructor(
+    private readonly deleteComment: DeleteCommentUseCase,
+    private readonly updateComment: UpdateCommentUseCase,
+  ) {}
+
+  @Patch(':commentId')
+  @UseGuards(EmailVerifiedGuard)
+  async update(
+    @CurrentAccount() account: AccountContext,
+    @Param('commentId', uuidParam) commentId: string,
+    @Body(new ZodValidationPipe(updateCommentSchema)) body: UpdateCommentInput,
+  ): Promise<{ comment: CommentDto }> {
+    return { comment: await this.updateComment.execute(commentId, account.accountId, body) };
+  }
 
   @Delete(':commentId')
   @HttpCode(204)

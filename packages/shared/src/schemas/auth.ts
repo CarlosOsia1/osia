@@ -46,6 +46,18 @@ export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export const resendVerificationSchema = z.object({ email });
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 
+/** `POST /v1/auth/forgot-password` — pide el código de recuperación. Responde 204 SIEMPRE (sin oráculo). */
+export const forgotPasswordSchema = z.object({ email });
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+/** `POST /v1/auth/reset-password` — canjea el OTP de recuperación por una contraseña nueva (auto-login). */
+export const resetPasswordSchema = z.object({
+  email,
+  token: z.string().trim().min(1),
+  newPassword: password,
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
 /** Canje de invitación (placeholder de S1.3/S1.4): solo el código. */
 export const redeemInvitationSchema = z.object({
   code: z.string().trim().min(1),

@@ -9,14 +9,18 @@ import { useOsiaSession } from '@osia/identity';
 import { identity } from '../../lib/identity';
 import {
   acceptFollowRequest,
+  getBlocked,
   getFollowRequests,
   getFollowers,
   getFollowing,
+  getMuted,
   rejectFollowRequest,
-} from '../../lib/social-api';
+  unblockAccount,
+  unmuteAccount,
+} from '../../lib/api';
 import { UserList } from './UserList';
 
-type FriendsTab = 'followers' | 'following' | 'requests';
+type FriendsTab = 'followers' | 'following' | 'requests' | 'management';
 const REQUESTS_KEY = ['social', 'requests'] as const;
 
 /**
@@ -37,6 +41,7 @@ export function FriendsView() {
     { key: 'followers', label: t('friends.tabs.followers') },
     { key: 'following', label: t('friends.tabs.following') },
     { key: 'requests', label: t('friends.tabs.requests'), count: reqCountQ.data ?? 0 },
+    { key: 'management', label: t('friends.tabs.management') },
   ];
 
   return (
@@ -66,6 +71,28 @@ export function FriendsView() {
           renderAction={(u) => <RequestActions requesterId={u.accountId} />}
         />
       )}
+      {tab === 'management' && (
+        <div className="osia-feed">
+          <Text variant="overline" tone="subtle">
+            {t('moderation.blockedTitle')}
+          </Text>
+          <UserList<FollowRequestDto>
+            queryKey={['social', 'blocked']}
+            fetchPage={getBlocked}
+            emptyLabel={t('moderation.emptyBlocked')}
+            renderAction={(u) => <UndoAction accountId={u.accountId} kind="block" />}
+          />
+          <Text variant="overline" tone="subtle">
+            {t('moderation.mutedTitle')}
+          </Text>
+          <UserList<FollowRequestDto>
+            queryKey={['social', 'muted']}
+            fetchPage={getMuted}
+            emptyLabel={t('moderation.emptyMuted')}
+            renderAction={(u) => <UndoAction accountId={u.accountId} kind="mute" />}
+          />
+        </div>
+      )}
     </section>
   );
 }
@@ -89,5 +116,24 @@ function RequestActions({ requesterId }: { requesterId: string }) {
         {t('friends.reject')}
       </Button>
     </>
+  );
+}
+
+/** Deshacer bloqueo/silencio desde la gestión (R4.4): un botón discreto por fila. */
+function UndoAction({ accountId, kind }: { accountId: string; kind: 'block' | 'mute' }) {
+  const t = useTranslations('social');
+  const qc = useQueryClient();
+  const undo = useMutation({
+    mutationFn: () => (kind === 'block' ? unblockAccount(accountId) : unmuteAccount(accountId)),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['social', kind === 'block' ? 'blocked' : 'muted'] });
+      void qc.invalidateQueries({ queryKey: ['social', 'feed'] });
+      void qc.invalidateQueries({ queryKey: ['social', 'profile'] });
+    },
+  });
+  return (
+    <Button size="sm" variant="ghost" loading={undo.isPending} onClick={() => undo.mutate()}>
+      {kind === 'block' ? t('moderation.unblock') : t('moderation.unmute')}
+    </Button>
   );
 }

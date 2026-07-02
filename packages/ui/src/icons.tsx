@@ -191,3 +191,24 @@ export const IconFlag = (p: IconProps) => (
     <path d="M5 21V4m0 1h11l-2 3.5L16 12H5" />
   </svg>
 );
+
+export const IconBookmark = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M7 3h10a1 1 0 0 1 1 1v17l-6-4-6 4V4a1 1 0 0 1 1-1z" />
+  </svg>
+);
+
+export const IconEcho = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M17 2.5 20 5.5l-3 3" />
+    <path d="M4 11V8.5a3 3 0 0 1 3-3h13" />
+    <path d="M7 21.5 4 18.5l3-3" />
+    <path d="M20 13v2.5a3 3 0 0 1-3 3H4" />
+  </svg>
+);
+
+export const IconPencil = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1z" />
+  </svg>
+);

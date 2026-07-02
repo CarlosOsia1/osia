@@ -41,8 +41,14 @@ const makePost = (input: CreatePostInput): PostDto => ({
   reactionCount: 0,
   commentCount: 0,
   viewerReaction: null,
+  recentReactors: [],
+  editedAt: null,
+  viewerBookmarked: false,
   createdAt: '2026-06-28T00:00:00.000Z',
   updatedAt: '2026-06-28T00:00:00.000Z',
+  echoCount: 0,
+  viewerEchoed: false,
+  referencedPost: null,
 });
 
 /** Construye un `CreatePostInput` ya "parseado" (kind/visibility presentes, como los entrega Zod). */
@@ -58,6 +64,9 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
     },
     getById: async () => null,
     softDelete: async () => false,
+    updateBody: async () => null,
+    createEcho: async () => null,
+    removeSimpleEcho: async () => false,
   };
   const storage: StoragePort = {
     createUploadTarget: async () => {
@@ -72,6 +81,7 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
     postReacted: () => {},
     postCommented: () => {},
     postPublished: (p) => published.push({ postId: p.postId, authorAccountId: p.authorAccountId }),
+    postEchoed: () => {},
   };
   return { posts, storage, events, created, published };
 };

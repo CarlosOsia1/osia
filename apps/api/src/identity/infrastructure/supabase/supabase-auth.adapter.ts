@@ -5,6 +5,7 @@ import type {
   CreateUserInput,
   SupabaseAuthPort,
 } from '../../application/ports/out/supabase-auth.port';
+import { EmailTakenError } from '../../application/errors';
 
 /**
  * Adapter de Supabase Auth (infrastructure): traduce el port a llamadas del SDK con service_role.
@@ -28,7 +29,12 @@ export class SupabaseAuthAdapter implements SupabaseAuthPort {
       email_confirm: false, // requiere verificación de email (S1.5)
       user_metadata: input.metadata ?? {},
     });
-    if (error) throw error;
+    if (error) {
+      // Email ya registrado (reintento de signup / invitación con email viejo): error de dominio
+      // traducible a 409, NO un 500. GoTrue lo señala con code 'email_exists' (o 422 legacy).
+      if (error.code === 'email_exists' || error.status === 422) throw new EmailTakenError();
+      throw error;
+    }
     if (!data.user) throw new Error('createUser no devolvió usuario');
     return { id: data.user.id };
   }

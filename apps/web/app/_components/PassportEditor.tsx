@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Field, FormError, Switch, useTheme } from '@osia/ui';
+import { Button, Card, Field, FormError, Skeleton, Switch, Text, useTheme } from '@osia/ui';
 import {
   ACCENT_PALETTE,
   AVATAR_STYLES,
@@ -14,6 +14,7 @@ import {
 } from '@osia/shared';
 import { OSIA_SESSION_KEY } from '@osia/identity';
 import { identity } from '../../lib/identity';
+import { AccountSection } from './AccountSection';
 
 type Draft = { displayName: string; bio: string; accentColor: AccentColor };
 const PROFILE_KEY = ['osia', 'profile'] as const;
@@ -83,7 +84,9 @@ export function PassportEditor() {
   if (profileQuery.isError) {
     return (
       <Card pad>
-        <p style={{ marginTop: 0, color: 'var(--color-text-muted)' }}>{t('needLogin')}</p>
+        <Text as="p" variant="read" tone="muted" style={{ marginBottom: 'var(--space-3)' }}>
+          {t('needLogin')}
+        </Text>
         <a className="osia-btn osia-btn--primary" href="/login">
           {t('toLogin')}
         </a>
@@ -91,7 +94,32 @@ export function PassportEditor() {
     );
   }
   if (!draft || !profileQuery.data) {
-    return <p style={{ color: 'var(--color-text-muted)' }}>{t('loading')}</p>;
+    // Skeleton con la silueta del pasaporte (identidad + formulario + ajustes): sin salto de layout.
+    // Sin SSR de sesión a propósito (la cookie de refresh es single-use — ver Vestibule).
+    return (
+      <div style={{ display: 'grid', gap: 'var(--space-5)' }} aria-busy="true">
+        <span className="osia-sr-only" role="status">
+          {t('loading')}
+        </span>
+        <Card pad>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }} aria-hidden>
+            <Skeleton variant="circle" width="var(--space-9)" height="var(--space-9)" />
+            <div style={{ flex: 1, display: 'grid', gap: 'var(--space-2)' }}>
+              <Skeleton variant="text" width="7rem" />
+              <Skeleton variant="text" width="11rem" />
+            </div>
+          </div>
+        </Card>
+        <div style={{ display: 'grid', gap: 'var(--space-4)' }} aria-hidden>
+          <Skeleton height="3.25rem" />
+          <Skeleton height="3.25rem" />
+          <Skeleton height="2.5rem" width="60%" />
+        </div>
+        <Card pad>
+          <Skeleton variant="text" lines={4} />
+        </Card>
+      </div>
+    );
   }
   const profile = profileQuery.data;
 
@@ -115,37 +143,30 @@ export function PassportEditor() {
             }}
           />
           <div>
-            <p className="osia-overline" style={{ margin: 0 }}>
+            <Text as="p" variant="caption">
               @{profile.handle}
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'var(--text-xl)',
-                margin: 'var(--space-1) 0 0',
-                color: 'var(--color-text-strong)',
-              }}
-            >
+            </Text>
+            <Text as="p" variant="display" tone="strong" style={{ marginTop: 'var(--space-1)' }}>
               {draft.displayName || profile.displayName}
-            </p>
-            <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+            </Text>
+            <Text as="p" variant="body" tone="muted" style={{ marginTop: 'var(--space-1)' }}>
               {t(`style_${currentStyle}`)}
-            </p>
+            </Text>
           </div>
         </div>
       </Card>
 
       <form onSubmit={onSubmit} style={{ display: 'grid', gap: 'var(--space-4)' }}>
         <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
-          <span className="osia-overline">{t('displayName')}</span>
+          <Text variant="caption">{t('displayName')}</Text>
           <Field value={draft.displayName} maxLength={40} onChange={(e) => setDraft({ ...draft, displayName: e.currentTarget.value })} />
         </div>
         <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
-          <span className="osia-overline">{t('bio')}</span>
+          <Text variant="caption">{t('bio')}</Text>
           <Field value={draft.bio} maxLength={280} onChange={(e) => setDraft({ ...draft, bio: e.currentTarget.value })} />
         </div>
         <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-          <span className="osia-overline">{t('accent')}</span>
+          <Text variant="caption">{t('accent')}</Text>
           <div role="group" aria-label={t('accent')} style={{ display: 'flex', gap: 'var(--space-2)' }}>
             {ACCENT_PALETTE.map((c) => (
               <button
@@ -170,7 +191,7 @@ export function PassportEditor() {
           </div>
         </div>
         <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-          <span className="osia-overline">{t('avatarStyle')}</span>
+          <Text variant="caption">{t('avatarStyle')}</Text>
           <div role="group" aria-label={t('avatarStyle')} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
             {AVATAR_STYLES.map((style) => (
               <button
@@ -192,7 +213,7 @@ export function PassportEditor() {
             {t('save')}
           </Button>
           {save.isSuccess && (
-            <span style={{ color: 'var(--color-success)', fontSize: 'var(--text-sm)' }}>{t('saved')}</span>
+            <Text variant="body" tone="success">{t('saved')}</Text>
           )}
           <button
             type="button"
@@ -207,7 +228,7 @@ export function PassportEditor() {
 
       <Card pad>
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-          <span className="osia-overline">{t('settings')}</span>
+          <Text variant="caption">{t('settings')}</Text>
 
           <Switch
             label={t('sound')}
@@ -219,9 +240,9 @@ export function PassportEditor() {
           />
 
           <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
-            <label htmlFor="osia-volume" style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>
+            <Text as="label" variant="body" htmlFor="osia-volume">
               {t('volume')}
-            </label>
+            </Text>
             <input
               id="osia-volume"
               className="osia-range"
@@ -242,7 +263,7 @@ export function PassportEditor() {
           </div>
 
           <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{t('reducedMotion')}</span>
+            <Text variant="body">{t('reducedMotion')}</Text>
             <div role="group" aria-label={t('reducedMotion')} style={{ display: 'flex', gap: 'var(--space-2)' }}>
               {MOTION_PREFS.map((pref) => (
                 <button
@@ -271,10 +292,12 @@ export function PassportEditor() {
               checked={profile.prefs.micOptIn}
               onChange={(on) => savePrefs.mutate({ micOptIn: on })}
             />
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-subtle)' }}>{t('micHelp')}</span>
+            <Text variant="body" tone="subtle">{t('micHelp')}</Text>
           </div>
         </div>
       </Card>
+
+      <AccountSection />
     </div>
   );
 }

@@ -15,6 +15,12 @@ export interface PresenceStore {
   open(accountId: string, connectionId: string): Promise<string | null>;
   /** Cierra la sesión (marca left_at). Idempotente. */
   close(sessionId: string): Promise<void>;
+  /**
+   * Cierra TODAS las sesiones abiertas del hub (left_at IS NULL). Se llama al ARRANCAR para sanear
+   * la presencia fantasma que deja un crash/kill sin apagado limpio (`online` eterno visible en La
+   * Red Social, que lee `left_at IS NULL`). Idempotente y tolerante a fallos de DB.
+   */
+  sweepOpenSessions(): Promise<void>;
   shutdown(): Promise<void>;
 }
 
@@ -24,6 +30,7 @@ export class NullPresenceStore implements PresenceStore {
     return null;
   }
   async close(): Promise<void> {}
+  async sweepOpenSessions(): Promise<void> {}
   async shutdown(): Promise<void> {}
 }
 
@@ -84,6 +91,21 @@ export class PgPresenceStore implements PresenceStore {
       );
     } catch (err) {
       log.warn({ err: String(err) }, 'presence: close falló');
+    }
+  }
+
+  async sweepOpenSessions(): Promise<void> {
+    try {
+      const instanceId = await this.instanceId;
+      if (!instanceId) return;
+      const res = await this.pool.query(
+        `UPDATE world.presence_sessions SET left_at = now()
+          WHERE world_instance_id = $1 AND left_at IS NULL`,
+        [instanceId],
+      );
+      if (res.rowCount) log.info({ closed: res.rowCount }, 'presence: barrido de sesiones fantasma al arrancar');
+    } catch (err) {
+      log.warn({ err: String(err) }, 'presence: sweepOpenSessions falló');
     }
   }
 

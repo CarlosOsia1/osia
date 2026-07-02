@@ -1,15 +1,14 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
-import {
-  updateProfileSchema,
-  type ProfileBrief,
-  type ProfileDto,
-  type UpdateProfileInput,
-} from '@osia/shared';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { updateProfileSchema, type ProfileDto, type UpdateProfileInput } from '@osia/shared';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { AuthGuard, CurrentAccount, type AccountContext } from '../../common/auth.guard';
 import { ProfileService } from '../application/profile.service';
 
-/** Perfil (S1.6-H1): ver/editar el propio + ver el público por handle. Protegido (AuthGuard). */
+/**
+ * Perfil propio (S1.6-H1): ver/editar. Protegido (AuthGuard). La vista pública por handle vive en
+ * `social/PublicProfileController` (`GET /v1/profiles/{handle}`, S3.5-H1): declararla también aquí
+ * la tapaba (Nest enruta al primer módulo registrado) y el perfil llegaba sin `viewerState`.
+ */
 @Controller('profiles')
 @UseGuards(AuthGuard)
 export class ProfileController {
@@ -26,11 +25,5 @@ export class ProfileController {
     @Body(new ZodValidationPipe(updateProfileSchema)) body: UpdateProfileInput,
   ): Promise<{ profile: ProfileDto }> {
     return { profile: await this.profiles.update(account.accountId, body) };
-  }
-
-  // 'me' se declara antes que ':handle' para que /profiles/me no caiga en el param.
-  @Get(':handle')
-  async byHandle(@Param('handle') handle: string): Promise<{ profile: ProfileBrief }> {
-    return { profile: await this.profiles.getPublic(handle) };
   }
 }

@@ -34,7 +34,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ['@osia/*/src/*', '@osia/*/dist/*'],
-              message: 'Importá desde el entrypoint del paquete (@osia/<pkg>), no de sus internos.',
+              message: 'Importa desde el entrypoint del paquete (@osia/<pkg>), no de sus internos.',
             },
           ],
         },
@@ -71,7 +71,7 @@ export default tseslint.config(
           object: 'Math',
           property: 'random',
           message:
-            'Math.random PROHIBIDO en @osia/atmosphere: el motor es determinista. Usá un PRNG sembrado (mulberry32). Ver CLAUDE.md §6.',
+            'Math.random PROHIBIDO en @osia/atmosphere: el motor es determinista. Usa un PRNG sembrado (mulberry32). Ver CLAUDE.md §6.',
         },
       ],
     },
@@ -88,12 +88,12 @@ export default tseslint.config(
         'error',
         {
           selector: 'JSXText[value=/[A-Za-zÀ-ÿ]/]',
-          message: "Texto de UI hardcodeado: usá i18n (t('...')) de @osia/i18n. Ver CLAUDE.md §3.2.",
+          message: "Texto de UI hardcodeado: usa i18n (t('...')) de @osia/i18n. Ver CLAUDE.md §3.2.",
         },
         {
           selector:
             'JSXAttribute[name.name=/^(placeholder|title|alt|aria-label)$/] > Literal[value=/[A-Za-zÀ-ÿ]/]',
-          message: 'Atributo de UI con texto hardcodeado: usá i18n (t(...)). Ver CLAUDE.md §3.2.',
+          message: 'Atributo de UI con texto hardcodeado: usa i18n (t(...)). Ver CLAUDE.md §3.2.',
         },
         {
           // Tipografía de marca (CLAUDE.md §2.5): solo Italiana (--font-display) + Jost (--font-ui).

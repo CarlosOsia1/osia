@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { Button, FormError } from '@osia/ui';
+import { Button, FormError, Text } from '@osia/ui';
 import { OsiaApiError } from '@osia/identity';
 import { identity } from '../../lib/identity';
 
@@ -30,17 +30,9 @@ export function DeleteAccountConfirm({ token }: { token: string }) {
   if (del.isSuccess) {
     return (
       <div style={{ display: 'grid', gap: 'var(--space-4)', textAlign: 'center' }}>
-        <p
-          role="status"
-          style={{
-            color: 'var(--color-accent)',
-            fontFamily: 'var(--font-display)',
-            fontSize: 'var(--text-xl)',
-            margin: 0,
-          }}
-        >
+        <Text as="p" role="status" variant="display">
           {t('success')}
-        </p>
+        </Text>
         <div>
           <a className="osia-btn osia-btn--ghost osia-btn--sm" href="/">
             {t('home')}
@@ -59,7 +51,9 @@ export function DeleteAccountConfirm({ token }: { token: string }) {
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-5)', textAlign: 'center' }}>
-      <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>{t('warning')}</p>
+      <Text as="p" variant="read" tone="muted">
+        {t('warning')}
+      </Text>
       {errorMsg && <FormError>{errorMsg}</FormError>}
       <div style={{ display: 'grid', gap: 'var(--space-3)', justifyItems: 'center' }}>
         <Button variant="danger" size="lg" loading={del.isPending} onClick={() => del.mutate()}>

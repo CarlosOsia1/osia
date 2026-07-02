@@ -59,7 +59,7 @@ test('social enums: post kind/visibility y feed/follow guards', () => {
 test('social enums: NotificationType incluye solicitudes (S3.9), NO gossip (IA descartada 100%)', () => {
   assert.deepEqual(
     [...NOTIFICATION_TYPE_VALUES],
-    ['follow', 'reaction', 'comment', 'mention', 'follow_request', 'follow_accepted'],
+    ['follow', 'reaction', 'comment', 'mention', 'follow_request', 'follow_accepted', 'echo'],
   );
   assert.ok(isNotificationType('mention') && isNotificationType('follow_request'));
   assert.ok(!isNotificationType('gossip')); // ❌ IA
@@ -90,7 +90,7 @@ test('social events: nombres canónicos presentes; gossip ausente (IA)', () => {
   assert.ok(isSocialEvent('social.follow.requested') && isSocialEvent('social.follow.accepted')); // S3.9
   assert.ok(!isSocialEvent('social.gossip.published')); // ❌ IA
   assert.ok(!isSocialEvent('social.unknown'));
-  assert.equal(SOCIAL_EVENTS.length, 8);
+  assert.equal(SOCIAL_EVENTS.length, 9);
 });
 
 // --- createPostSchema ---

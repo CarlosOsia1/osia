@@ -16,6 +16,7 @@ const repo = (deleted: boolean): CommentRepository => ({
   createComment: async () => null,
   listComments: async () => null,
   softDeleteOwnComment: async () => deleted,
+  updateOwnComment: async () => null,
   resolveMentionedAccountIds: async () => [],
 });
 

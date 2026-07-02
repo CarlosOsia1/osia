@@ -33,7 +33,8 @@ const makeFollow = (follower: string, followee: string, status: FollowStatus, cr
 const emptyPage = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
 
 const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
-  follow: async (f, t, status) => ({ follow: makeFollow(f, t, status, '2026-06-28T00:00:00.000Z'), created: true }),
+  // El repo decide el status atómicamente; por defecto el fake devuelve `active` (cuenta pública).
+  follow: async (f, t) => ({ follow: makeFollow(f, t, 'active', '2026-06-28T00:00:00.000Z'), created: true }),
   unfollow: async () => true,
   isAccountPrivate: async () => false,
   isActiveFollower: async () => false,
@@ -44,6 +45,9 @@ const repo = (over: Partial<FollowRepository> = {}): FollowRepository => ({
   accountIdByHandle: async () => null,
   listFollowers: async () => emptyPage,
   listFollowing: async () => emptyPage,
+  block: async () => {},
+  unblock: async () => false,
+  listBlocked: async () => ({ data: [], page: { nextCursor: null, hasMore: false, limit: 20 } }),
   ...over,
 });
 
@@ -63,6 +67,7 @@ const spyPublisher = (): {
       postReacted: () => {},
       postPublished: () => {},
       postCommented: () => {},
+  postEchoed: () => {},
     },
     created,
     requested,
@@ -82,7 +87,11 @@ test('follow público: arista activa y emite social.follow.created (no requested
 
 test('follow privado: arista PENDING y emite social.follow.requested (no created)', async () => {
   const { pub, created, requested } = spyPublisher();
-  const uc = new FollowAccountUseCase(repo({ isAccountPrivate: async () => true }), pub);
+  // El repo decide `pending` atómicamente para una cuenta privada; el evento se deriva del status.
+  const uc = new FollowAccountUseCase(
+    repo({ follow: async (f, t) => ({ follow: makeFollow(f, t, 'pending', '2026-06-28T00:00:00.000Z'), created: true }) }),
+    pub,
+  );
   const follow = await uc.execute(A, B);
   assert.equal(follow.status, 'pending');
   assert.deepEqual(requested, [{ followerAccountId: A, followeeAccountId: B }]);
@@ -93,7 +102,7 @@ test('follow: idempotente — re-seguir devuelve el vigente SIN re-emitir evento
   const { pub, created } = spyPublisher();
   const uc = new FollowAccountUseCase(
     repo({
-      follow: async (f, t, status) => ({ follow: makeFollow(f, t, status, '2026-06-01T00:00:00.000Z'), created: false }),
+      follow: async (f, t) => ({ follow: makeFollow(f, t, 'active', '2026-06-01T00:00:00.000Z'), created: false }),
     }),
     pub,
   );

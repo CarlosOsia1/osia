@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
-import type { ProfileBrief, ProfileDto, UpdateProfileInput } from '@osia/shared';
+import type { ProfileDto, UpdateProfileInput } from '@osia/shared';
 import { PG_POOL } from './postgres.tokens';
 import type { ProfileRepository } from '../../application/ports/out/profile.repository';
-import { PROFILE_COLS, toProfileBrief, toProfileDto, type ProfileRow } from './mappers';
+import { PROFILE_COLS, toProfileDto, type ProfileRow } from './mappers';
 
 @Injectable()
 export class PgProfileRepository implements ProfileRepository {
@@ -15,14 +15,6 @@ export class PgProfileRepository implements ProfileRepository {
       [accountId],
     );
     return res.rows[0] ? toProfileDto(res.rows[0]) : null;
-  }
-
-  async getPublicByHandle(handle: string): Promise<ProfileBrief | null> {
-    const res = await this.pool.query<ProfileRow>(
-      `SELECT ${PROFILE_COLS} FROM identity.profiles WHERE handle = $1 AND deleted_at IS NULL`,
-      [handle],
-    );
-    return res.rows[0] ? toProfileBrief(res.rows[0]) : null;
   }
 
   async update(accountId: string, patch: UpdateProfileInput): Promise<ProfileDto> {

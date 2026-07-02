@@ -250,8 +250,18 @@ export function decode<T extends NetMessage = NetMessage>(
         const resumeToken = rd.str();
         return { op, ticket, protocol, ...(resumeToken ? { resumeToken } : {}) } as T;
       }
-      case C2S.INPUT:
-        return { op, seq: rd.u32(), f: rd.i8(), r: rd.i8(), yaw: rd.f64(), dtMs: rd.f64() } as T;
+      case C2S.INPUT: {
+        const seq = rd.u32();
+        const f = rd.i8();
+        const r = rd.i8();
+        const yaw = rd.f64();
+        const dtMs = rd.f64();
+        // Un f64 no finito (NaN/±Infinity) en yaw/dtMs corrompe la posición autoritativa de
+        // forma permanente (sin(NaN)→NaN, y el clamp de distancia no recupera: NaN>R es false)
+        // y se difunde a todos por DELTA. Rechazar el frame es la validación de borde de §5.
+        if (!Number.isFinite(yaw) || !Number.isFinite(dtMs)) return null;
+        return { op, seq, f, r, yaw, dtMs } as T;
+      }
       case C2S.PING:
         return { op, t: rd.f64() } as T;
       case C2S.CHAT_SEND:

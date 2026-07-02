@@ -50,6 +50,40 @@ import { NOTIFICATION_REPOSITORY } from './application/ports/out/notification.re
 import { PgNotificationRepository } from './infrastructure/persistence/notification.repository';
 import { PresenceController } from './web/presence.controller';
 import { GetPresenceUseCase } from './application/use-cases/get-presence.use-case';
+import { GetNetworkPresenceUseCase } from './application/use-cases/get-network-presence.use-case';
+import { UpdatePostUseCase } from './application/use-cases/update-post.use-case';
+import { UpdateCommentUseCase } from './application/use-cases/update-comment.use-case';
+import { CreateEchoUseCase, RemoveEchoUseCase } from './application/use-cases/echo.use-cases';
+import { ModerationController } from './web/moderation.controller';
+import {
+  BlockAccountUseCase,
+  ListBlockedUseCase,
+  ListMutedUseCase,
+  MuteAccountUseCase,
+  UnblockAccountUseCase,
+  UnmuteAccountUseCase,
+} from './application/use-cases/moderation.use-cases';
+import { MUTE_REPOSITORY } from './application/ports/out/mute.repository';
+import { DmController } from './web/dm.controller';
+import {
+  DeleteMessageUseCase,
+  ListConversationsUseCase,
+  ListMessagesUseCase,
+  MarkConversationReadUseCase,
+  OpenConversationUseCase,
+  SendMessageUseCase,
+} from './application/use-cases/dm.use-cases';
+import { DM_REPOSITORY } from './application/ports/out/dm.repository';
+import { PgDmRepository } from './infrastructure/persistence/dm.repository';
+import { PgMuteRepository } from './infrastructure/persistence/mute.repository';
+import { BookmarkController } from './web/bookmark.controller';
+import {
+  ListBookmarksUseCase,
+  RemoveBookmarkUseCase,
+  SetBookmarkUseCase,
+} from './application/use-cases/bookmark.use-cases';
+import { BOOKMARK_REPOSITORY } from './application/ports/out/bookmark.repository';
+import { PgBookmarkRepository } from './infrastructure/persistence/bookmark.repository';
 import { PRESENCE_QUERY } from './application/ports/out/presence.query';
 import { PgPresenceQuery } from './infrastructure/persistence/presence.query';
 import { PublicProfileController } from './web/public-profile.controller';
@@ -103,6 +137,9 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     FeedController,
     NotificationController,
     PresenceController,
+    BookmarkController,
+    ModerationController,
+    DmController,
     PublicProfileController,
     ReportController,
     MetricsController,
@@ -134,6 +171,26 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     MarkNotificationsReadUseCase,
     NotificationListener,
     GetPresenceUseCase,
+    GetNetworkPresenceUseCase,
+    UpdatePostUseCase,
+    UpdateCommentUseCase,
+    CreateEchoUseCase,
+    RemoveEchoUseCase,
+    BlockAccountUseCase,
+    UnblockAccountUseCase,
+    ListBlockedUseCase,
+    MuteAccountUseCase,
+    UnmuteAccountUseCase,
+    ListMutedUseCase,
+    OpenConversationUseCase,
+    ListConversationsUseCase,
+    ListMessagesUseCase,
+    SendMessageUseCase,
+    MarkConversationReadUseCase,
+    DeleteMessageUseCase,
+    SetBookmarkUseCase,
+    RemoveBookmarkUseCase,
+    ListBookmarksUseCase,
     GetPublicProfileUseCase,
     ListProfilePostsUseCase,
     CreateReportUseCase,
@@ -150,6 +207,9 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     { provide: PRESENCE_QUERY, useClass: PgPresenceQuery },
     { provide: PROFILE_QUERY, useClass: PgProfileQuery },
     { provide: REPORT_REPOSITORY, useClass: PgReportRepository },
+    { provide: BOOKMARK_REPOSITORY, useClass: PgBookmarkRepository },
+    { provide: MUTE_REPOSITORY, useClass: PgMuteRepository },
+    { provide: DM_REPOSITORY, useClass: PgDmRepository },
     { provide: METRICS_QUERY, useClass: PgMetricsQuery },
     DiscoveryService,
     { provide: DISCOVERY_QUERY, useClass: PgDiscoveryQuery },

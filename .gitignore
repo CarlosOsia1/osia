@@ -37,3 +37,10 @@ pnpm-debug.log*
 
 # Fuentes: copias generadas desde packages/ui/fonts por scripts/sync-fonts.mjs (no versionar)
 apps/*/public/fonts/
+
+# Artefactos de tsc emitidos por error JUNTO al fuente .ts (deben ir a dist/, ya ignorado). El motor
+# de atmósfera se sirve desde ./src (exports), no desde un build; un .js viejo aquí serviría lógica
+# del cielo desfasada en silencio. Se ignoran para que no vuelvan a colarse en un commit.
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.js.map

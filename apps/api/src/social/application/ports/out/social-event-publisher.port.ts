@@ -1,4 +1,5 @@
 import type {
+  SocialPostEchoedPayload,
   SocialFollowAcceptedPayload,
   SocialFollowCreatedPayload,
   SocialFollowRequestedPayload,
@@ -29,4 +30,6 @@ export interface SocialEventPublisher {
   postReacted(payload: SocialPostReactedPayload): void;
   /** Anuncia un comentario nuevo (avisa al autor del post y a los mencionados). */
   postCommented(payload: SocialPostCommentedPayload): void;
+  /** Eco nuevo (R4.3): notifica al autor del ORIGINAL. SIN reputación. */
+  postEchoed(payload: SocialPostEchoedPayload): void;
 }

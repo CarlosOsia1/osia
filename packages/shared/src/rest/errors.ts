@@ -25,6 +25,7 @@ export const ErrorCode = {
   ALREADY_INVITED: 'ALREADY_INVITED',
   ALREADY_QUEUED: 'ALREADY_QUEUED',
   HANDLE_TAKEN: 'HANDLE_TAKEN',
+  EMAIL_TAKEN: 'EMAIL_TAKEN',
   // genéricos
   BAD_REQUEST: 'BAD_REQUEST',
   FORBIDDEN: 'FORBIDDEN',
@@ -36,6 +37,8 @@ export const ErrorCode = {
   UPSTREAM_UNAVAILABLE: 'UPSTREAM_UNAVAILABLE',
   // dominio social / economía / plots (contrato listo; se implementan Fase 3+)
   ALREADY_FOLLOWING: 'ALREADY_FOLLOWING',
+  /** El par está bloqueado (R4.4): la acción social no procede (403, sin oráculo de dirección). */
+  BLOCKED: 'BLOCKED',
   CANNOT_FOLLOW_SELF: 'CANNOT_FOLLOW_SELF',
   ALREADY_REACTED: 'ALREADY_REACTED',
   INSUFFICIENT_POINTS: 'INSUFFICIENT_POINTS',

@@ -22,6 +22,9 @@ const postRepo = (over: Partial<PostRepository>): PostRepository => ({
   },
   getById: async () => null,
   softDelete: async () => false,
+  updateBody: async () => null,
+  createEcho: async () => null,
+  removeSimpleEcho: async () => false,
   ...over,
 });
 

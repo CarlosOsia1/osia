@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // typecheck-only (main = src): sin `declaration: false`, el flag heredado del base computa
+    // errores de emisión (TS4023) sobre los esquemas Zod con IDs branded de @osia/shared
+    // (el `unique symbol` del brand no es nombrable en un .d.ts). Mismo patrón que shared.
     "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },

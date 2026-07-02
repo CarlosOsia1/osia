@@ -24,6 +24,10 @@ export function clampUnit(v: number): number {
  * Mismo esquema que el controlador del cliente: dirección relativa al yaw de cámara.
  */
 export function applyMovement(pos: Vec2, input: MoveInput, dt: number): void {
+  // Defensa en profundidad: el codec ya rechaza INPUT con yaw/dtMs no finitos, pero esta función
+  // es pura y compartida (la llaman también predicción y tests) — un dt/yaw no finito envenena `pos`
+  // sin retorno. Un no-op ante entrada corrupta preserva el invariante server-authoritative.
+  if (!Number.isFinite(input.yaw) || !Number.isFinite(dt)) return;
   const f = clampUnit(input.f);
   const r = clampUnit(input.r);
   if (f === 0 && r === 0) return;

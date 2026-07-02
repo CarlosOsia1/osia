@@ -20,6 +20,26 @@ test('Instance.step: sin inputs no mueve la entidad', () => {
   assert.deepEqual({ x: rt.state.x, z: rt.state.z }, { x: 5, z: 5 });
 });
 
+test('Instance.step: presupuesto de dt acota el speed-hack (flood de inputs con dt inflado)', () => {
+  // Un tramposo encola muchos inputs con el dt máximo (0.1 s c/u): sin presupuesto avanzaría
+  // ~MOVE_SPEED × 4 s en un solo tick. Con el techo (~0.1 s de tiempo simulado) el avance queda
+  // acotado a ~1 paso, y aun así ackea el último seq (no traba la reconciliación).
+  const inst = new Instance('hub');
+  const cheater = inst.add(E(1), 'x', '#CBB89A', { x: 0, z: 0 }, 't1');
+  for (let i = 1; i <= 40; i++) cheater.inputs.push({ seq: i, f: 1, r: 0, yaw: 0, dt: 0.1 });
+  inst.step();
+  const cheatDist = Math.abs(cheater.state.z);
+
+  // Cliente honesto: un input de un tick real (~0.05 s).
+  const honest = inst.add(E(2), 'y', '#CBB89A', { x: 0, z: 0 }, 't2');
+  honest.inputs.push({ seq: 1, f: 1, r: 0, yaw: 0, dt: 0.05 });
+  inst.step();
+  const honestStep = Math.abs(honest.state.z);
+
+  assert.ok(cheatDist <= honestStep * 2.5, `avance del tramposo (${cheatDist}) acotado al presupuesto`);
+  assert.equal(cheater.lastSeq, 40, 'ackea el último seq aunque no aplique el excedente');
+});
+
 test('Instance AOI: el DELTA siempre incluye al propio + los visibles', () => {
   const inst = new Instance('hub');
   inst.add(E(1), 'a', '#CBB89A', { x: 0, z: 0 }, 't1');

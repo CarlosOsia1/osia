@@ -5,11 +5,13 @@ import {
   SOCIAL_FOLLOW_CREATED,
   SOCIAL_FOLLOW_REQUESTED,
   SOCIAL_POST_COMMENTED,
+  SOCIAL_POST_ECHOED,
   SOCIAL_POST_REACTED,
   type SocialFollowAcceptedPayload,
   type SocialFollowCreatedPayload,
   type SocialFollowRequestedPayload,
   type SocialPostCommentedPayload,
+  type SocialPostEchoedPayload,
   type SocialPostReactedPayload,
 } from '@osia/shared';
 import { CreateNotificationUseCase } from '../../application/use-cases/create-notification.use-case';
@@ -56,6 +58,17 @@ export class NotificationListener {
       this.createNotification.execute(p.postAuthorAccountId, 'reaction', p.reactorAccountId, {
         postId: p.postId,
         kind: p.kind,
+      }),
+    );
+  }
+
+  @OnEvent(SOCIAL_POST_ECHOED)
+  async onEchoed(p: SocialPostEchoedPayload): Promise<void> {
+    if (p.echoAuthorAccountId === p.originalAuthorAccountId) return; // auto-eco: no notifica
+    await this.safe(() =>
+      this.createNotification.execute(p.originalAuthorAccountId, 'echo', p.echoAuthorAccountId, {
+        postId: p.originalPostId,
+        echoPostId: p.echoPostId,
       }),
     );
   }

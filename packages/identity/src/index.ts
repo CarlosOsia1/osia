@@ -8,4 +8,4 @@ export {
   type OsiaIdentityClientOptions,
 } from './OsiaIdentityClient';
 export { useOsiaSession, usePassport, OSIA_SESSION_KEY } from './useOsiaSession';
-export { buildDeepLink } from './deepLink';
+export { buildDeepLink, resolvePostLoginUrl } from './deepLink';
