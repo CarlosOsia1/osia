@@ -1,5 +1,6 @@
 import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import * as Sentry from '@sentry/node';
 import type { Request, Response } from 'express';
 import { ErrorCode, type ApiError, type ApiErrorEnvelope } from '@osia/shared';
 import { AppException } from './app-exception';
@@ -23,6 +24,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const apiError = this.toApiError(exception, requestId);
     if (apiError.status >= 500) {
       this.logger.error({ requestId, err: exception }, apiError.message);
+      // Ola 4: reporta el bug a Sentry (no-op si no hay SENTRY_DSN). Solo 5xx: los 4xx son esperados.
+      Sentry.captureException(exception, { tags: { requestId } });
     }
     res.setHeader('x-request-id', requestId);
     const body: ApiErrorEnvelope = { error: apiError };

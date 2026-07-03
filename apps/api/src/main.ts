@@ -1,5 +1,6 @@
 import './load-env'; // PRIMER import: carga .env antes que nada lea process.env
 import 'reflect-metadata';
+import * as Sentry from '@sentry/node';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
@@ -33,6 +34,10 @@ async function listenWithRetry(app: INestApplication, port: number): Promise<voi
 /** Composition root de apps/api (NestJS hexagonal). */
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
+  // Observabilidad (Ola 4): con SENTRY_DSN reporta excepciones; sin él, inerte (captureException es no-op).
+  if (env.SENTRY_DSN) {
+    Sentry.init({ dsn: env.SENTRY_DSN, environment: env.NODE_ENV, tracesSampleRate: 0 });
+  }
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger)); // Pino como logger de Nest
 

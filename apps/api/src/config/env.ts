@@ -41,6 +41,15 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().min(1).default('OSIA <noreply@codfysas.com>'),
+  // Voz P2P (Ola 4): STUN siempre; TURN (relay para NAT simétrico) opcional. Si TURN_URLS+TURN_SECRET
+  // están, el API mintea credenciales EFÍMERAS HMAC (REST API de coturn / Cloudflare TURN). Sin ellas,
+  // solo STUN (funciona en la mayoría de redes). Ver docs/PROVISIONING.md (§TURN).
+  STUN_URLS: z.string().default('stun:stun.l.google.com:19302'),
+  TURN_URLS: z.string().optional(), // csv, p.ej. turn:turn.osia.com:3478,turns:turn.osia.com:5349
+  TURN_SECRET: z.string().optional(), // secreto compartido con coturn (use-auth-secret)
+  TURN_TTL_S: z.coerce.number().int().positive().default(3600),
+  // Observabilidad (Ola 4): si SENTRY_DSN está, el API reporta excepciones a Sentry. Sin él, inerte.
+  SENTRY_DSN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema> & {

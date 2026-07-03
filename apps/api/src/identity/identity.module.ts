@@ -22,6 +22,7 @@ import { ResendVerificationUseCase } from './application/use-cases/resend-verifi
 import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { IssueWorldTicketUseCase } from './application/use-cases/issue-world-ticket.use-case';
+import { IceService } from './application/ice.service';
 import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
 import { RequestAccountDeletionUseCase } from './application/use-cases/request-account-deletion.use-case';
 import { ConfirmAccountDeletionUseCase } from './application/use-cases/confirm-account-deletion.use-case';
@@ -72,6 +73,7 @@ import { AuthGuard } from '../common/auth.guard';
     RequestPasswordResetUseCase,
     ResetPasswordUseCase,
     IssueWorldTicketUseCase,
+    IceService,
     DeleteAccountUseCase,
     RequestAccountDeletionUseCase,
     ConfirmAccountDeletionUseCase,

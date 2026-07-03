@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { AccountThrottlerGuard } from './common/account-throttler.guard';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ConfigModule } from './config/config.module';
@@ -21,8 +22,9 @@ import { ApiExceptionFilter } from './common/http-exception.filter';
     ConfigModule,
     ScheduleModule.forRoot(), // cron de retención (RetentionService)
     EventEmitterModule.forRoot(), // bus de dominio in-process (social.* → reputación/notif)
-    // §8 rate-limit de borde: tope global por IP (generoso; corta abuso de signup/resend/confirm sin
-    // molestar uso normal). Detrás de proxy en prod, habilitar trust proxy para la IP real.
+    // §8 rate-limit de borde: tope generoso por CUENTA (o por IP sin sesión) — corta abuso de
+    // signup/resend/confirm y de escrituras sin molestar uso normal. Detrás de proxy en prod, habilitar
+    // trust proxy para la IP real. El tracking por cuenta lo hace AccountThrottlerGuard (abajo).
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     LoggerModule.forRoot({
       pinoHttp: {
@@ -49,8 +51,8 @@ import { ApiExceptionFilter } from './common/http-exception.filter';
   providers: [
     // Filtro global: todo error sale como el sobre ApiError de @osia/shared.
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
-    // Rate-limit global por IP (§8).
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Rate-limit global por CUENTA (o IP sin sesión) (§8 / Ola 4).
+    { provide: APP_GUARD, useClass: AccountThrottlerGuard },
   ],
 })
 export class AppModule {}
