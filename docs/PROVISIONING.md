@@ -48,4 +48,74 @@
 
 ---
 
-<!-- Las secciones siguientes se completan a medida que se implementa cada pieza de Ola 4. -->
+## 2. Observabilidad — Sentry (código listo, env-gated)
+
+- **Qué:** el API ya inicializa Sentry si hay `SENTRY_DSN` y reporta los errores 5xx; sin DSN es inerte.
+- **Dónde conseguirlo:** https://sentry.io → New Project → **Node.js** → copia el **DSN** (Settings → Client Keys).
+- **Qué poner:** `SENTRY_DSN=https://…@…ingest.sentry.io/…` en el entorno del API (host/CI; y en dev si quieres).
+- **Verificar:** forzar un 500 (o mirar el primer error real) y ver que aparece en el dashboard de Sentry.
+- **(Opcional) Alertas a Discord:** en Sentry → Alerts → crea una regla → integración **Discord** (o un webhook).
+
+## 3. Voz P2P — TURN (código listo, env-gated)
+
+- **Qué:** `GET /v1/world/ice` ya devuelve STUN siempre; y TURN con credenciales efímeras HMAC si hay
+  `TURN_URLS`+`TURN_SECRET`. Sin ellas, solo STUN (suficiente en la mayoría de redes; falla en NAT simétrico).
+- **Opción fácil (recomendada al lanzar): Cloudflare Calls TURN** → https://dash.cloudflare.com → Calls →
+  TURN → genera credenciales; usa el `turn:`/`turns:` y el secreto que te den.
+- **Opción propia: coturn** en tu server (Hetzner) con `use-auth-secret` y un `static-auth-secret`.
+- **Qué poner:** `TURN_URLS=turn:tu-turn:3478,turns:tu-turn:5349` y `TURN_SECRET=<el secreto compartido>`
+  (opcional `TURN_TTL_S`, default 3600). El secreto NUNCA sale al cliente; el API deriva la credencial.
+- **Pendiente de front (Fable):** que `world-client` pida `GET /v1/world/ice` y pase `iceServers` al
+  `RTCPeerConnection` de la voz (hoy usa STUN fijo). Es un cambio chico de front.
+
+## 4. Rate-limit multi-instancia — Redis (solo si corres >1 instancia del API)
+
+- **Qué:** el rate-limit ya es POR CUENTA, pero el conteo es en memoria del proceso. Con varias instancias
+  del API detrás de un balanceador, cada una cuenta por separado. Para un límite consistente hace falta un
+  storage compartido (Redis) para `@nestjs/throttler`.
+- **Cuándo:** solo al escalar a >1 instancia (el piloto corre 1 → no hace falta aún).
+- **Dónde:** Upstash Redis (free) https://upstash.com o el Redis de tu host. Copia la `REDIS_URL`.
+- **Qué falta de código:** cablear `ThrottlerModule` con `@nest-lab/throttler-storage-redis` + `REDIS_URL`
+  (media hora; lo hago cuando decidas escalar).
+
+## 5. Tiempo real — Supabase Realtime (notificaciones al instante)
+
+- **Qué:** hoy las notificaciones llegan por **polling cada 30 s**. Realtime las haría instantáneas.
+- **Dónde/activar:** Supabase Dashboard → Database → Replication → habilita Realtime en `social.notifications`
+  (o la tabla que corresponda). Requiere que el cliente se suscriba con la anon key.
+- **Pendiente de front (Fable):** suscripción Realtime en `apps/social` (reemplaza/complementa el polling).
+  Es trabajo de front; el backend solo necesita la tabla habilitada.
+
+## 6. Deploy (imágenes + hosts)
+
+- **Imágenes:** el push a `main` publica `ghcr.io/<owner>/osia-api` y `osia-world` (workflow `publish.yml`).
+  Requiere que el repo tenga GitHub Packages habilitado (por defecto lo está). El world-server ya tiene
+  guía (Fly.io/Hetzner) en `docs/deploy-paso-a-paso.md`; el **api** ahora también tiene Dockerfile.
+- **Frontend (Vercel):** apps/web, apps/social, apps/world-client → Vercel (zero-config Next). Setea las
+  envs `NEXT_PUBLIC_*` (API_URL, WORLD_URL, SOCIAL_URL) por proyecto.
+- **Env del api en prod:** `SUPABASE_*`, `SUPABASE_DB_URL`, `CORS_ORIGINS` (dominios reales, nunca `*`),
+  `COOKIE_DOMAIN=.tu-dominio` + `COOKIE_SECURE=true`, `WORLD_TICKET_SECRET` (robusto, = world-server),
+  `WORLD_WS_URL`, `APP_BASE_URL`, `SMTP_*`, y los opcionales de arriba (SENTRY/TURN).
+
+## 7. Pendientes de CÓDIGO que quedan (los hago cuando digas / cuando desbloquees)
+
+- **1G — tests de integración HTTP:** el job de CI "migraciones-desde-cero" ya está. Los tests HTTP
+  (supertest sobre la app Nest real) necesitan la **base de dev separada** (§1); cuando exista, los escribo.
+- **1B — precisión µs del cursor (menor):** el driver pg trunca el timestamp a ms; el fix (seleccionar el
+  ts como texto en cada query paginada) es amplio y arriesgado. Edge case raro (dos filas en el mismo ms).
+  Lo hago con calma si aparece en la práctica. La otra mitad (dedup de notif) ya la cubre 1C.
+- **Front de TURN y de Realtime:** cambios chicos en `world-client`/`social` (Fable), descritos arriba.
+
+---
+
+## Resumen: qué me pasas y yo activo
+
+| Necesito de ti | Dónde | Variable / paso |
+|---|---|---|
+| Proyecto Supabase de DEV | supabase.com | `SUPABASE_*` + `SUPABASE_DB_URL` (dev) |
+| Aplicar migraciones al desplegar | tu máquina | `supabase db push` (incluye 000011 media + 000012 sesiones) |
+| Sentry DSN | sentry.io | `SENTRY_DSN` |
+| TURN (Cloudflare o coturn) | Cloudflare Calls / tu server | `TURN_URLS`, `TURN_SECRET` |
+| Redis (solo si escalas) | Upstash / tu host | `REDIS_URL` |
+| Realtime | Supabase Dashboard | habilitar en `social.notifications` |
+| Template Recovery con `{{ .Token }}` | Supabase Dashboard | Email Templates → Reset Password |

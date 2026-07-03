@@ -70,16 +70,26 @@
 > adjuntos de post se sirven por URL FIRMADA (bucket privado, TTL 7d) + borrado de objetos al soft-delete;
 > `profile-media` se queda público a propósito. El código es no-breaking; **⚠️ falta que Carlos APLIQUE la
 > migración `20260702000011` (flip de buckets a privado) al desplegar** — es el interruptor que cierra la
-> fuga. **1E RLS** alineada al predicado (función SECURITY DEFINER `post_visible_to`). **Pendiente de Ola
-> 1:** **1F sesión SSO server-side** (reescritura de auth — requiere a Carlos probando login en las 3 apps,
-> NO se hace a ciegas) y **1G tests de integración** (necesitan una base de test separada = parte del
-> dev/prod split). **1B** (cursor µs / cooldown de notif) es menor.
+> fuga. **1E RLS** alineada al predicado (función SECURITY DEFINER `post_visible_to`). **1F sesión SSO
+> server-side** — la cookie pasa a ID opaco (`osia.sid`); la sesión de Supabase vive server-side
+> (`identity.sessions`) y se refresca single-flight (`FOR UPDATE`); `/session` sirve el access CACHEADO →
+> **mata el "logout aleatorio"** y da revocación real. El AuthGuard (JWKS) no cambia → frontends intactos
+> salvo el nombre de cookie en `apps/web/middleware`. **⚠️ migración `20260702000012` (sesiones) va con
+> 000011 al desplegar; implica un re-login único.** **1B** (cursor µs / cooldown de notif) es menor y
+> queda documentado.
 >
-> Con esto las Olas 0, 1 (mayor parte), 2 y 3 están hechas. Queda: **1F/1G/dev-prod split** (coordinar con
-> Carlos) y **Ola 4** (deploy/lanzable — infra parcial ya existe: CI con gates, world-server dockerizado +
-> Caddy + guía; falta Dockerfile del api, publish, Sentry/TURN/Realtime/rate-limit — casi todo depende de
-> las cuentas de Carlos). **Estado del git:** `origin/main` en `184646b`; local `main` tiene `b91a40f` +
-> Olas 0+1(1A/1C/1D/1E)+2+3, todo sin push (lo hace Carlos).
+> **✅ Ola 4 — deploy/observabilidad, CÓDIGO listo env-gated (Opus, 2026-07-02):** Dockerfile del api +
+> workflow de publish a GHCR + job CI "migraciones-desde-cero"; **rate-limit POR CUENTA** (guard que keyea
+> por el sub del JWT); **credenciales TURN** (`GET /v1/world/ice`, STUN+TURN HMAC estilo coturn) para la
+> voz; **Sentry** (init si `SENTRY_DSN`, reporta 5xx). Todo INERTE sin las keys de Carlos. **Lo que Carlos
+> aprovisiona** (dónde y qué variable) está en **`docs/PROVISIONING.md`**: proyecto Supabase de dev
+> (dev/prod split), `SENTRY_DSN`, `TURN_URLS`/`TURN_SECRET`, `REDIS_URL` (solo multi-instancia), habilitar
+> Realtime, y aplicar las 2 migraciones pendientes al desplegar. **Pendiente de código:** 1G tests HTTP
+> (necesitan la base de dev), front de TURN/Realtime (Fable), storage Redis del throttler (al escalar).
+>
+> Con esto las Olas **0, 1, 2, 3 y 4 (código) están hechas**; lo que queda es **aprovisionamiento de Carlos
+> + un par de enganches de front + 1G/1B**. **Estado del git:** `origin/main` en `184646b`; local `main`
+> tiene `b91a40f` + Olas 0+1(1A/1C/1D/1E/1F)+2+3+4, todo sin push (lo hace Carlos).
 
 **Fases cerradas**
 - **Fase 0 — El Sentimiento (S0.1–S0.8): ✅ cerrada.** El Mundo camina, voz P2P, presencia
