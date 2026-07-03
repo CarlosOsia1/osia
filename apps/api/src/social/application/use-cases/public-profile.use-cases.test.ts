@@ -15,7 +15,10 @@ import {
 import { GetPublicProfileUseCase } from './get-public-profile.use-case';
 import { ListProfilePostsUseCase } from './list-profile-posts.use-case';
 import type { ProfileQueryPort } from '../ports/out/profile.query';
+import type { PostMediaSigner } from '../post-media-signer.service';
 import { AppException } from '../../../common/app-exception';
+
+const fakeMediaSigner = { signPost: async () => {}, signPosts: async () => {} } as unknown as PostMediaSigner;
 
 const VIEWER = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const profile: PublicProfileDto = {
@@ -62,8 +65,8 @@ test('getPublicProfile: handle inexistente → NOT_FOUND (404)', async () => {
 });
 
 test('listProfilePosts: devuelve la página; handle inexistente → 404', async () => {
-  assert.deepEqual((await new ListProfilePostsUseCase(port()).execute('ariadna', VIEWER, {})).data, []);
-  const uc = new ListProfilePostsUseCase(port({ listProfilePosts: async () => null }));
+  assert.deepEqual((await new ListProfilePostsUseCase(port(), fakeMediaSigner).execute('ariadna', VIEWER, {})).data, []);
+  const uc = new ListProfilePostsUseCase(port({ listProfilePosts: async () => null }), fakeMediaSigner);
   await assert.rejects(
     () => uc.execute('nadie', VIEWER, {}),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,

@@ -9,15 +9,17 @@ import { UpdatePostUseCase } from './update-post.use-case';
 import { UpdateCommentUseCase } from './update-comment.use-case';
 import type { PostRepository } from '../ports/out/post.repository';
 import type { CommentRepository } from '../ports/out/comment.repository';
+import type { PostMediaSigner } from '../post-media-signer.service';
 import { AppException } from '../../../common/app-exception';
 
 const edited = { id: 'p1', body: 'nuevo', editedAt: '2026-07-02T12:00:00.000Z' } as unknown as PostDto;
+const fakeMediaSigner = { signPost: async () => {}, signPosts: async () => {} } as unknown as PostMediaSigner;
 
 function postsRepo(result: PostDto | null): PostRepository {
   return {
     createPost: () => Promise.reject(new Error('no aplica')),
     getById: () => Promise.resolve(null),
-    softDelete: () => Promise.resolve(false),
+    softDelete: () => Promise.resolve(null),
     createEcho: () => Promise.resolve(null),
     removeSimpleEcho: () => Promise.resolve(false),
     updateBody: (postId, author, body) => {
@@ -30,13 +32,13 @@ function postsRepo(result: PostDto | null): PostRepository {
 }
 
 test('updatePost: edita lo propio y devuelve el DTO con editedAt', async () => {
-  const result = await new UpdatePostUseCase(postsRepo(edited)).execute('p1', 'a1', { body: 'nuevo' });
+  const result = await new UpdatePostUseCase(postsRepo(edited), fakeMediaSigner).execute('p1', 'a1', { body: 'nuevo' });
   assert.equal(result.editedAt, '2026-07-02T12:00:00.000Z');
 });
 
 test('updatePost: ajeno o inexistente → 404 sin oráculo', async () => {
   await assert.rejects(
-    () => new UpdatePostUseCase(postsRepo(null)).execute('p1', 'a1', { body: 'nuevo' }),
+    () => new UpdatePostUseCase(postsRepo(null), fakeMediaSigner).execute('p1', 'a1', { body: 'nuevo' }),
     (e: unknown) => e instanceof AppException && e.status === 404,
   );
 });

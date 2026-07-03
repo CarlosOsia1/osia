@@ -211,18 +211,20 @@ export class PgPostRepository implements PostRepository {
     return row ? toFullPostDto(row) : null;
   }
 
-  async softDelete(postId: string, authorAccountId: string): Promise<boolean> {
-    const res = await this.pool.query(
+  async softDelete(postId: string, authorAccountId: string): Promise<string[] | null> {
+    // RETURNING media: devuelve los adjuntos del post borrado para poder borrar sus objetos del Storage
+    // (Ola 1D). 0 filas = no existe o no es suyo → null (sin oráculo).
+    const res = await this.pool.query<{ media: { url: string; kind: string }[] }>(
       `UPDATE social.posts SET deleted_at = now()
-       WHERE id = $1 AND author_account_id = $2 AND deleted_at IS NULL`,
+       WHERE id = $1 AND author_account_id = $2 AND deleted_at IS NULL
+       RETURNING media`,
       [postId, authorAccountId],
     );
-    const deleted = (res.rowCount ?? 0) > 0;
+    const row = res.rows[0];
+    if (!row) return null;
     // Sácalo de los feeds materializados de inmediato (la lectura del feed ya filtra borrados, pero esto
     // evita filas colgantes hasta la poda).
-    if (deleted) {
-      await this.pool.query(`DELETE FROM social.feed_items WHERE post_id = $1`, [postId]);
-    }
-    return deleted;
+    await this.pool.query(`DELETE FROM social.feed_items WHERE post_id = $1`, [postId]);
+    return (row.media ?? []).map((m) => m.url);
   }
 }

@@ -18,9 +18,12 @@ import type { StoragePort } from '../ports/out/storage.port';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
 import type { Tx, TxRunner } from '../../../common/tx';
+import type { PostMediaSigner } from '../post-media-signer.service';
 
 /** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
 const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
+/** Firmador de media fake: no-op (los tests no ejercen el firmado de URLs). */
+const fakeMediaSigner = { signPost: async () => {}, signPosts: async () => {} } as unknown as PostMediaSigner;
 
 const ACCOUNT = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const OWN = { url: 'https://ref.supabase.co/storage/v1/object/public/post-media/posts/x/y.png', kind: 'image' } as const;
@@ -67,7 +70,7 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
       return makePost(input);
     },
     getById: async () => null,
-    softDelete: async () => false,
+    softDelete: async () => null,
     updateBody: async () => null,
     createEcho: async () => null,
     removeSimpleEcho: async () => false,
@@ -77,6 +80,8 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
       throw new Error('no usado');
     },
     ownsPublicUrl: over.owns ?? ((u) => u.startsWith('https://ref.supabase.co/storage/v1/object/public/post-media/')),
+    signMediaUrls: async () => new Map(),
+    deleteByUrls: async () => {},
   };
   const events: SocialEventPublisher = {
     followCreated: async () => {},
@@ -94,7 +99,7 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
 
 test('publica un post de solo texto y emite social.post.published', async () => {
   const { posts, storage, events, created, published } = deps();
-  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner);
+  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner, fakeMediaSigner);
   const post = await uc.execute(ACCOUNT, input({ body: 'Hola mundo' }));
   assert.equal(post.body, 'Hola mundo');
   assert.equal(created.length, 1);
@@ -103,7 +108,7 @@ test('publica un post de solo texto y emite social.post.published', async () => 
 
 test('publica un post con adjunto de nuestro Storage', async () => {
   const { posts, storage, events, created } = deps();
-  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner);
+  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner, fakeMediaSigner);
   const post = await uc.execute(ACCOUNT, input({ kind: 'image', media: [OWN] }));
   assert.deepEqual(post.media, [OWN]);
   assert.equal(created.length, 1);
@@ -111,7 +116,7 @@ test('publica un post con adjunto de nuestro Storage', async () => {
 
 test('rechaza un adjunto externo (no de OSIA) con VALIDATION_FAILED, no persiste ni emite', async () => {
   const { posts, storage, events, created, published } = deps();
-  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner);
+  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner, fakeMediaSigner);
   await assert.rejects(
     () => uc.execute(ACCOUNT, input({ body: 'mira', media: [FOREIGN] })),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.VALIDATION_FAILED && e.status === 422,

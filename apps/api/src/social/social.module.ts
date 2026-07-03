@@ -24,6 +24,7 @@ import { DeletePostUseCase } from './application/use-cases/delete-post.use-case'
 import { ListReactionsUseCase } from './application/use-cases/list-reactions.use-case';
 import { STORAGE_PORT } from './application/ports/out/storage.port';
 import { SupabaseStorageAdapter } from './infrastructure/storage/supabase-storage.adapter';
+import { PostMediaSigner } from './application/post-media-signer.service';
 import { POST_REPOSITORY } from './application/ports/out/post.repository';
 import { PgPostRepository } from './infrastructure/persistence/post.repository';
 import { ReactionController } from './web/reaction.controller';
@@ -199,6 +200,7 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     CreateReportUseCase,
     EmailVerifiedGuard,
     OutboxDispatcher,
+    PostMediaSigner,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
     { provide: SOCIAL_EVENT_PUBLISHER, useClass: OutboxSocialPublisher },

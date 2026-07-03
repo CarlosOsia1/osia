@@ -7,9 +7,11 @@ import assert from 'node:assert/strict';
 import { encodeCursor, type Page, type PostDto } from '@osia/shared';
 import { ListBookmarksUseCase, RemoveBookmarkUseCase, SetBookmarkUseCase } from './bookmark.use-cases';
 import type { BookmarkRepository } from '../ports/out/bookmark.repository';
+import type { PostMediaSigner } from '../post-media-signer.service';
 import { AppException } from '../../../common/app-exception';
 
 const emptyPage: Page<PostDto> = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
+const fakeMediaSigner = { signPost: async () => {}, signPosts: async () => {} } as unknown as PostMediaSigner;
 
 function repo(over: Partial<BookmarkRepository> = {}): BookmarkRepository {
   return {
@@ -41,6 +43,7 @@ test('listBookmarks: clampa el limit y decodifica el cursor', async () => {
         return Promise.resolve(emptyPage);
       },
     }),
+    fakeMediaSigner,
   );
   await uc.execute('a1', { limit: 999, cursor: encodeCursor({ sortKey: 't', id: 'x' }) });
   await uc.execute('a1', {});

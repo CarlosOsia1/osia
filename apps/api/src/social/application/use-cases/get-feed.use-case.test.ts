@@ -14,7 +14,9 @@ import {
 } from '@osia/shared';
 import { GetFeedUseCase } from './get-feed.use-case';
 import type { FeedRepository } from '../ports/out/feed.repository';
+import type { PostMediaSigner } from '../post-media-signer.service';
 
+const fakeMediaSigner = { signPost: async () => {}, signPosts: async () => {} } as unknown as PostMediaSigner;
 const ACCOUNT = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const emptyPage: Page<FeedItemDto> = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
 
@@ -33,7 +35,7 @@ const spyRepo = () => {
 
 test('clampea el limit y pasa cursor null si no viene', async () => {
   const { feed, calls } = spyRepo();
-  await new GetFeedUseCase(feed).execute(ACCOUNT, { limit: 9999 });
+  await new GetFeedUseCase(feed, fakeMediaSigner).execute(ACCOUNT, { limit: 9999 });
   assert.equal(calls[0]!.limit, MAX_PAGE_LIMIT);
   assert.equal(calls[0]!.cursor, null);
 });
@@ -41,6 +43,6 @@ test('clampea el limit y pasa cursor null si no viene', async () => {
 test('decodifica el cursor opaco y lo pasa al repo', async () => {
   const { feed, calls } = spyRepo();
   const opaque = encodeCursor({ sortKey: '2026-06-28T00:00:00.000Z', id: 'f1' });
-  await new GetFeedUseCase(feed).execute(ACCOUNT, { cursor: opaque });
+  await new GetFeedUseCase(feed, fakeMediaSigner).execute(ACCOUNT, { cursor: opaque });
   assert.deepEqual(calls[0]!.cursor, decodeCursor(opaque));
 });

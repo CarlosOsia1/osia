@@ -9,6 +9,7 @@ import {
 } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
 import { BOOKMARK_REPOSITORY, type BookmarkRepository } from '../ports/out/bookmark.repository';
+import { PostMediaSigner } from '../post-media-signer.service';
 
 /**
  * Guardados (R4.2): coleccionar posts en PRIVADO. Guardar reimpone la visibilidad del post
@@ -37,11 +38,16 @@ export class RemoveBookmarkUseCase {
 
 @Injectable()
 export class ListBookmarksUseCase {
-  constructor(@Inject(BOOKMARK_REPOSITORY) private readonly bookmarks: BookmarkRepository) {}
+  constructor(
+    @Inject(BOOKMARK_REPOSITORY) private readonly bookmarks: BookmarkRepository,
+    private readonly mediaSigner: PostMediaSigner,
+  ) {}
 
-  execute(accountId: string, query: ListQueryInput): Promise<Page<PostDto>> {
+  async execute(accountId: string, query: ListQueryInput): Promise<Page<PostDto>> {
     const limit = clampLimit(query.limit);
     const cursor = query.cursor ? decodeCursor(query.cursor) : null;
-    return this.bookmarks.listBookmarks(accountId, limit, cursor);
+    const page = await this.bookmarks.listBookmarks(accountId, limit, cursor);
+    await this.mediaSigner.signPosts(page.data);
+    return page;
   }
 }

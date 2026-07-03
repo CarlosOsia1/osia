@@ -8,6 +8,7 @@ import {
   SOCIAL_EVENT_PUBLISHER,
   type SocialEventPublisher,
 } from '../ports/out/social-event-publisher.port';
+import { PostMediaSigner } from '../post-media-signer.service';
 
 /**
  * Publicar un Post (S3.3-H1/H4). El cuerpo/visibilidad ya pasaron Zod en el borde. Aquí se valida que
@@ -21,6 +22,7 @@ export class CreatePostUseCase {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
     @Inject(TX_RUNNER) private readonly tx: TxRunner,
+    private readonly mediaSigner: PostMediaSigner,
   ) {}
 
   async execute(authorAccountId: string, input: CreatePostInput): Promise<PostDto> {
@@ -34,10 +36,17 @@ export class CreatePostUseCase {
     // El post y su `social.post.published` (que dispara el fan-out) nacen en la MISMA transacción: o se
     // guardan ambos o ninguno. Sin esto, un crash tras crear el post perdía el evento y el post quedaba
     // invisible para los seguidores para siempre.
-    return this.tx.run(async (tx) => {
-      const post = await this.posts.createPost(authorAccountId, input, tx);
-      await this.events.postPublished(tx, { postId: post.id, authorAccountId, createdAt: post.createdAt });
-      return post;
+    const post = await this.tx.run(async (tx) => {
+      const created = await this.posts.createPost(authorAccountId, input, tx);
+      await this.events.postPublished(tx, {
+        postId: created.id,
+        authorAccountId,
+        createdAt: created.createdAt,
+      });
+      return created;
     });
+    // Firma la media recién subida para que el cliente reciba una URL utilizable (bucket privado).
+    await this.mediaSigner.signPost(post);
+    return post;
   }
 }

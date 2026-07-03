@@ -7,6 +7,7 @@ import {
   SOCIAL_EVENT_PUBLISHER,
   type SocialEventPublisher,
 } from '../ports/out/social-event-publisher.port';
+import { PostMediaSigner } from '../post-media-signer.service';
 
 /**
  * Eco (R4.3): amplificar un post ajeno hacia tu propio feed. El repo impone atómicamente que el
@@ -21,6 +22,7 @@ export class CreateEchoUseCase {
     @Inject(POST_REPOSITORY) private readonly posts: PostRepository,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
     @Inject(TX_RUNNER) private readonly tx: TxRunner,
+    private readonly mediaSigner: PostMediaSigner,
   ) {}
 
   async execute(accountId: string, originalPostId: string, input: CreateEchoInput): Promise<PostDto> {
@@ -44,6 +46,8 @@ export class CreateEchoUseCase {
       return echo;
     });
     if (!result) throw new AppException(ErrorCode.NOT_FOUND, 404, 'Publicación no encontrada.');
+    // El eco embebe el original: firma su media (directa + `referencedPost`) para el bucket privado.
+    await this.mediaSigner.signPost(result.echo);
     return result.echo;
   }
 }

@@ -17,8 +17,9 @@ export interface PostRepository {
   createPost(authorAccountId: string, input: CreatePostInput, tx?: Tx): Promise<PostDto>;
   /** Lee un post por id REIMPONIENDO la visibilidad para el lector; `null` si no existe o no lo puede ver. */
   getById(postId: string, viewerAccountId: string): Promise<PostDto | null>;
-  /** Soft-delete del post PROPIO (autor); también lo saca de los feeds. `true` si borró (era suyo y vivo). */
-  softDelete(postId: string, authorAccountId: string): Promise<boolean>;
+  /** Soft-delete del post PROPIO (autor); también lo saca de los feeds. Devuelve las URLs de media del
+   *  post borrado (para borrar sus objetos del Storage, Ola 1D), o `null` si no existe o no es suyo. */
+  softDelete(postId: string, authorAccountId: string): Promise<string[] | null>;
   /**
    * Edita el CUERPO de un post PROPIO (R4): marca `edited_at` y devuelve el DTO actualizado (con
    * el estado del autor como lector). `null` si no existe, está borrado o no es suyo (→ 404).

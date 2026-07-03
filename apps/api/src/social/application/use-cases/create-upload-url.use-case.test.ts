@@ -23,6 +23,8 @@ test('mintea el destino pasando cuenta + contentType al puerto', async () => {
       return target;
     },
     ownsPublicUrl: () => true,
+    signMediaUrls: async () => new Map(),
+    deleteByUrls: async () => {},
   };
   const uc = new CreateUploadUrlUseCase(storage);
   const res = await uc.execute(ACCOUNT, { contentType: 'image/png' });
