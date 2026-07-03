@@ -49,9 +49,20 @@
 > (todo texto de apps/web por `Text`; `Text` ganó `htmlFor` + tonos `strong`/`success`). Detalle en
 > `docs/HANDOFF-fable.md`.
 >
-> Lo siguiente (foco de Carlos): el **game-feel del Mundo 3D** (Ola 2). **Estado del git:** `origin/main`
-> en `184646b`; local `main` tiene `b91a40f` + Ola 0 + Ola 3 (social+Vestíbulo), todo sin push (lo hace
-> Carlos).
+> **✅ Ola 2 — game-feel del Mundo 3D HECHA (Fable, 2026-07-02, gates 16/16 sin caché + build + e2e
+> `verify` contra el server vivo; atmósfera INTACTA):** M1 **locomoción con peso** (accel/brake +
+> colisión círculos que desliza, `vx/vz` en el DELTA, **protocolo v7**, tests de determinismo/colisión/
+> anti speed-hack); M2 **terreno con relieve** determinista (plaza plana, borde-valle; sim sigue 2D) +
+> **scatter** (700 briznas + 48 rocas instanciadas, teñidas por estación §6); M3 **avatar procedural**
+> (`avatarMotion.ts` compartido local/remotos: giro con damping, bob por distancia, lean, manto,
+> chispa orbital, respiración; reduced-motion respetado); M4 **cámara con oclusión** (árboles/lomas;
+> acerca al instante, re-aleja suave) + **input coalescido a 60 Hz** con preview local. El FEEL fino
+> (constantes de accel/bob/lean) queda para afinar con Carlos jugando. Detalle en
+> `docs/HANDOFF-fable.md` §Ola 2.
+>
+> Con esto las Olas 0, 2 y 3 están hechas. Quedan: **Ola 1** (outbox, sesión server-side, privacidad
+> de media, dev/prod split) y **Ola 4** (deploy/lanzable). **Estado del git:** `origin/main` en
+> `184646b`; local `main` tiene `b91a40f` + Olas 0+2+3, todo sin push (lo hace Carlos).
 
 **Fases cerradas**
 - **Fase 0 — El Sentimiento (S0.1–S0.8): ✅ cerrada.** El Mundo camina, voz P2P, presencia

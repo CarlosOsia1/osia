@@ -135,16 +135,62 @@ es la red social (parte de Ola 3) y el Vestíbulo, luego el Mundo (Ola 2).**
   notificaciones. Unificar `listProfilePosts` sobre `post-visibility.ts`. Alinear RLS al predicado.
   `DROP INDEX idx_feed_acct_score`.
 
-### Ola 2 — El Mundo se siente vivo (100% producto/visual del jugable — ideal para Fable)
-> No toca la atmósfera (congelada). Sí el personaje/terreno/locomoción.
-- **Locomoción con peso** en `@osia/shared` (pura, determinista, compartida cliente↔servidor):
-  aceleración/frenado + **colisión real con árboles y monolito** (hoy se atraviesan; los datos de
-  obstáculos ya existen en `layout.ts`). Suma `vx/vz` al estado + bump de `PROTOCOL_VERSION`.
-- **Avatar con animación procedural** (sin rig ni assets): bob de paso, lean hacia la aceleración, giro
-  del cuerpo con damping (hoy hace snap), manto que ondea, chispa que orbita. 100% cliente, cero red.
-- **Terreno con relieve low-poly + scatter** (pasto/rocas) determinista para dar paralaje/sensación de
-  velocidad (hoy es un disco liso). Cámara con colisión (spherecast). Input a tasa fija coalescida.
-- Todo esto lo abrió Carlos explícitamente a rehacer. Referencias: juegos low-poly pro (Sable, Alto's).
+### Ola 2 — El Mundo se siente vivo — ✅ HECHA (Fable, 2026-07-02; gates 16/16 sin caché + build + e2e)
+> La atmósfera NO se tocó (congelada): mismo material/tinte del suelo, mismos colores; solo silueta
+> y lenguaje corporal nuevos. 4 sprints M1–M4, todo en STAGED:
+- **M1 — Locomoción con peso** (`@osia/shared`, pura y determinista, compartida cliente↔servidor):
+  la velocidad PERSIGUE a la objetivo (`MOVE_ACCEL` 18 / `MOVE_BRAKE` 24 m/s², snap-a-cero con
+  `MOVE_STOP_EPS`) + **colisión de círculos contra árboles/monolito/borde que DESLIZA** (2 pasadas,
+  `WORLD_OBSTACLES` singleton nuevo en layout.ts). `vx/vz` viaja en WELCOME/ENTITY_JOIN/DELTA
+  (**PROTOCOL_VERSION 6→7**; DELTA 44 B/entidad — 12 jugadores = 539 B < presupuesto 1500) porque el
+  replay de la reconciliación DEBE partir de la MISMA inercia autoritativa. `Instance.step` persiste
+  velocidad entre ticks; tests nuevos (aceleración, frenado exacto a 0, determinismo bit a bit,
+  monolito no atravesable, presupuesto anti speed-hack con tiempo simulado IGUALADO). e2e
+  `pnpm --filter @osia/world-server verify` verde contra el server vivo.
+- **M2 — Terreno con relieve + scatter** (`world-client/src/world/terrain.ts` + `Scatter.tsx`):
+  altura pura por suma de senos (SIN PRNG; plaza del monolito PLANA, realce del borde como valle,
+  ondulación ≤0.34 m en lo caminable — la sim sigue 2D, la altura solo VISTE), disco polar no
+  indexado ~2.9k tris; **700 briznas + 48 rocas** sembradas (mulberry32, esquivan obstáculos) en
+  2 InstancedMesh (§7) teñidas por estación (§6: pasto `foliage`, roca `ground`). Árboles, avatar
+  local y remotos POSADOS en la altura.
+- **M3 — Avatar procedural** (`avatarMotion.ts`, UNA implementación para local y remotos): giro con
+  damping por arco corto (adiós snap), bob ligado a la DISTANCIA recorrida, lean por aceleración +
+  lean de carrera, manto que arrastra/ondea, chispa que orbita más rápido al correr, respiración en
+  reposo. `prefers-reduced-motion` apaga los loops y conserva postura/giro. `AvatarMesh` ganó grupo
+  interior + `partsRef` (sigue tonto). Remotos derivan velocidad de la interpolación (cero red).
+- **M4 — Cámara con oclusión + input a tasa fija** (`cameraOcclusion.ts`): rayo mirada→cámara contra
+  cilindros de los MISMOS obstáculos (con altura aproximada: pasa por encima de copas) + muestreo del
+  relieve; acerca AL INSTANTE, se re-aleja suave (`CAM_RECOVER_LAMBDA`). INPUT coalescido a
+  `INPUT_SEND_HZ=60` (a 120/144 Hz: mitad de paquetes, mismo tiempo simulado) con **preview local del
+  tramo no enviado** → render de alta tasa igual de suave.
+- **M5 — Pulido con el feedback de Carlos (2026-07-02, tras jugarlo) + QA adversarial:**
+  - **Colisión al cuerpo, no a la copa** (Carlos: «nunca alcanzo a pegarme al árbol»): radios de
+    colisión desacoplados del render — `TREE_COLLISION_RADIUS 0.42/escala` (te metes ~0.4 m entre
+    las hojas del pino grande), `MONOLITH 1.6→1.05`, `PLAYER_RADIUS 0.6→0.35` (ahora lo TOCAS).
+  - **Cámara sin zoom de golpe** (Carlos: «horrible»): patrón industria (Genshin/Zelda) — la cámara
+    colisiona SOLO con el terreno; árbol/monolito que se interponen se DESVANECEN con dither
+    (`alphaHash`, canal alfa por-árbol en la DataTexture del bosque + `cameraRay.ts` singleton).
+  - **Pasto**: fade por distancia EN GPU (brizna se encoge según distancia a cámara, atributo
+    instanciado + smoothstep 13→19 m, cero CPU) y **superficie estacional propia `grass`** en
+    @osia/atmosphere (§6: dato nuevo) — en otoño oliva-verdoso (#5f7530), NO el naranja del follaje.
+  - **Chispa calmada**: órbita lenta, plana y pequeña (r 0.16, 0.5→1.2 rad/s, sin bamboleo).
+  - **QA adversarial (2 revisores) — hallazgos corregidos:** (1) ALTO: agujero de 1 m en el centro
+    del terreno (guarda del triángulo degenerado invertida); (2) ALTO: el presupuesto anti
+    speed-hack DESCARTABA tiempo simulado de clientes honestos tras un hitch/ráfaga TCP (snap
+    0.15–0.9 m) y a la vez permitía **2× de velocidad sostenida** → reemplazado por **token bucket**
+    (`SIM_BANK_CAP_S 0.25` + refill 1.05× tiempo real; procesa hasta el crédito y DEJA el resto en
+    cola, ackea SOLO lo procesado — test verifica bit a bit contra el replay); (3) MEDIO: el resume
+    teletransportaba desde posiciones legítimas (borde/árbol, igualdad al ulp) → `isPositionTenable`
+    tolerante + velocidad a cero al reubicar; (4) yaw normalizado en el borde (anti-spin, branchless
+    anti-DoS), seq duplicados rechazados vs la cola, dt del replay == dt del server al bit,
+    literales de input fuera del hot path (§7), piso de cámara 1.2 m, guardia de `rayLen`.
+  - **Diferidos documentados:** AOI 45 m < diámetro 47 m (remoto antipodal puede congelarse sin
+    LEAVE — preexistente F0); validar finitud en decode S2C (defensa en profundidad); bisección del
+    retroceso de cámara vs terreno; `receiveShadow` en rocas. El FEEL fino sigue siendo ajustable
+    (constantes = datos): accel/brake, bob/lean, fades, radios.
+- **Pendiente de Carlos:** volver a jugarlo y decidir si el feel quedó (las constantes están
+  listadas arriba). **Sprint propuesto (sin comprometer): «rediseño visual del avatar»** — M3 animó
+  el cuerpo EXISTENTE (cono+cabeza+chispa); si quieres un personaje nuevo, es un sprint aparte.
 
 ### Ola 3 — La Red Social de lujo + Vestíbulo (LO QUE CARLOS MÁS QUIERE — 100% Fable)
 - **`apps/social` — ✅ RECONSTRUIDA (Fable, 2026-07-02).** Rehecha visual y funcionalmente sobre el

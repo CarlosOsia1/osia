@@ -11,12 +11,40 @@
  */
 
 import { WebSocketServer } from 'ws';
+import type { Server as HttpServer } from 'node:http';
 import { config } from './config';
 import { log } from './logger';
 import { createWorld } from './state';
 import { createHttpServer } from './http';
 import { registerConnection } from './handlers';
 import { startLoops } from './loop';
+
+// El watcher de dev reinicia el proceso antes de que el SO suelte el puerto (EADDRINUSE fugaz,
+// típico en Windows): reintentar el bind unos instantes en vez de morir al primer intento.
+const LISTEN_RETRIES = 10;
+const LISTEN_RETRY_DELAY_MS = 300;
+
+function isAddrInUse(err: unknown): boolean {
+  return err instanceof Error && (err as NodeJS.ErrnoException).code === 'EADDRINUSE';
+}
+
+async function listenWithRetry(server: HttpServer, port: number): Promise<void> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(port, () => {
+          server.removeListener('error', reject);
+          resolve();
+        });
+      });
+      return;
+    } catch (err) {
+      if (!isAddrInUse(err) || attempt >= LISTEN_RETRIES) throw err;
+      await new Promise<void>((resolve) => setTimeout(resolve, LISTEN_RETRY_DELAY_MS));
+    }
+  }
+}
 
 async function main(): Promise<void> {
   const world = createWorld();
@@ -35,13 +63,16 @@ async function main(): Promise<void> {
   }
 
   const httpServer = createHttpServer(world);
+  // Bind ANTES de colgar el WSS: si el puerto tarda en soltarse, el retry ocurre sin que `ws`
+  // re-emita el error (crasheaba el proceso con un 'error' sin handler en el WebSocketServer).
+  await listenWithRetry(httpServer, config.port);
+
   // WS (ws; swappable a uWebSockets.js en prod) sobre el mismo server HTTP.
   const wss = new WebSocketServer({ server: httpServer, path: '/world', maxPayload: 64 * 1024 }); // holgura para SDP
   wss.on('connection', (ws, req) => registerConnection(world, ws, req));
 
   startLoops(world);
-
-  httpServer.listen(config.port, () => log.info({ port: config.port }, 'world-server escuchando'));
+  log.info({ port: config.port }, 'world-server escuchando');
 
   // Apagado LIMPIO (SIGTERM de un deploy, SIGINT de Ctrl-C): dejar de aceptar conexiones, cerrar los
   // sockets con 1001 (going away), CERRAR las sesiones de presencia abiertas (si no, quedan `online`

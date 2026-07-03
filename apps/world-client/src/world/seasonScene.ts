@@ -44,7 +44,9 @@ export function currentSeasonTints(): SeasonTints {
  * movimiento: no se congela con prefers-reduced-motion).
  */
 export function tintBySeason(
-  material: THREE.MeshStandardMaterial,
+  // Estructural a propósito: solo toca `.color`, así sirve igual para MeshStandardMaterial y los
+  // node materials (pasto con fade GPU, copas instanciadas) sin acoplarse a una clase concreta.
+  material: { color: THREE.Color },
   base: THREE.Color,
   surface: SeasonSurface,
 ): void {

@@ -4,12 +4,15 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
-import { texture, instanceIndex, vec2 } from 'three/tsl';
+import { abs, color, fract, positionLocal, sin, texture, instanceIndex, vec2 } from 'three/tsl';
 import { varyFoliage } from '@osia/atmosphere';
-import { forestTrees, TREE_CONE_BASE_RADIUS } from '@osia/shared';
+import { forestTrees, MONOLITH, TREE_CONE_BASE_RADIUS } from '@osia/shared';
 import { OSIA_COLORS } from '@osia/ui';
 import { prefersReducedMotion } from './motionPrefs';
 import { tintBySeason, currentSeasonTints } from './seasonScene';
+import { cameraRayHitsCylinder } from './cameraRay';
+import { buildGroundGeometry, terrainHeight } from './terrain';
+import Scatter from './Scatter';
 
 /**
  * Scene — contenido de la primera escena de OSIA (S0.2).
@@ -35,6 +38,16 @@ const WIND = {
 };
 
 /**
+ * Fade de OCLUSIÓN (M5, feedback de Carlos): lo que se interpone entre cámara y avatar se
+ * DESVANECE (dither alphaHash, sin sorting) en vez de empujar la cámara — el patrón de la
+ * industria (Genshin/Zelda/Fortnite). La cámara solo colisiona con el terreno.
+ */
+const OCCLUDER_ALPHA = 0.18;
+const OCCLUDER_FADE_LAMBDA = 12;
+/** Altura de copa del pino apilado (== geometría de abajo: 2.5 + 1.1/2, × escala). */
+const TREE_TOP = 3.05;
+
+/**
  * Forest — los pinos como InstancedMesh (S0.2 · instancing).
  *
  * Cada pino son 4 partes (tronco + 3 conos). En vez de 14×4 = 56 meshes sueltos,
@@ -46,7 +59,7 @@ const WIND = {
  * desplazado en OKLCH con el offset sembrado del árbol; el tronco es uniforme.
  */
 function Forest({ trees }: { trees: Tree[] }) {
-  const { meshes, tintTex, tintData } = useMemo(() => {
+  const { meshes, tintTex, tintData, alphaCur } = useMemo(() => {
     // Color de cada copa = varyFoliage(follaje de la ESTACIÓN, offset OKLCH del árbol). Va en una
     // DataTexture (1 fila × N px, lineal) que el shader muestrea por `instanceIndex` → variación por
     // instancia GARANTIZADA. Se hornea aquí (init) y se re-hornea al cambiar la estación (useFrame).
@@ -71,17 +84,32 @@ function Forest({ trees }: { trees: Tree[] }) {
     tintTex.minFilter = THREE.NearestFilter;
 
     const built = parts.map((part) => {
-      let mat: THREE.Material;
-      if (part.tinted) {
-        const nodeMat = new MeshStandardNodeMaterial({ flatShading: true, roughness: part.roughness });
-        // muestrea el píxel i (centro) de la textura: el color ya trae estación + variación por árbol
-        const u = instanceIndex.toFloat().add(0.5).div(W);
-        nodeMat.colorNode = texture(tintTex, vec2(u, 0.5)).rgb;
-        mat = nodeMat;
-      } else {
-        mat = new THREE.MeshStandardMaterial({ color: part.color, flatShading: true, roughness: part.roughness });
-      }
-      const inst = new THREE.InstancedMesh(part.geo, mat, trees.length);
+      // TODAS las partes son node materials: el canal ALFA de la misma DataTexture lleva el fade
+      // de oclusión POR ÁRBOL (M5) — el pino que tapa al avatar se desvanece con dither
+      // (alphaHash: sin transparencia ordenada, sin sorting), la cámara ya no lo esquiva.
+      const nodeMat = new MeshStandardNodeMaterial({ flatShading: true, roughness: part.roughness });
+      // muestrea el píxel i (centro) de la textura: color (estación + variación) y alfa (fade)
+      const u = instanceIndex.toFloat().add(0.5).div(W);
+      const texel = texture(tintTex, vec2(u, 0.5));
+      nodeMat.colorNode = part.tinted ? texel.rgb : color(part.color ?? 0x2a211a);
+      nodeMat.opacityNode = texel.a;
+      // Grano de dither ESTABLE (no `alphaHash` nativo): three sortea con la posición YA mecida
+      // por el viento → el grano del pino «hervía» (el monolito quieto se veía bien). Aquí va el
+      // MISMO hash 3D de three (Hashed Alpha Testing: hash2D anidado, sin planos de banding)
+      // pero sobre la posición LOCAL + índice de instancia: grano fino pegado a la superficie,
+      // que viaja con el meceo sin re-sortearse.
+      const hp = positionLocal.add(instanceIndex.toFloat().mul(7.77));
+      const hxy = fract(
+        sin(hp.x.mul(17).add(hp.y.mul(0.1)))
+          .mul(1e4)
+          .mul(abs(sin(hp.y.mul(13).add(hp.x))).add(0.1)),
+      );
+      nodeMat.alphaTestNode = fract(
+        sin(hxy.mul(17).add(hp.z.mul(0.1)))
+          .mul(1e4)
+          .mul(abs(sin(hp.z.mul(13).add(hxy))).add(0.1)),
+      );
+      const inst = new THREE.InstancedMesh(part.geo, nodeMat, trees.length);
       inst.castShadow = true;
       trees.forEach((t, i) => {
         p.set(t.position[0], t.position[1], t.position[2]);
@@ -91,7 +119,7 @@ function Forest({ trees }: { trees: Tree[] }) {
       inst.instanceMatrix.needsUpdate = true;
       return inst;
     });
-    return { meshes: built, tintTex, tintData };
+    return { meshes: built, tintTex, tintData, alphaCur: new Float32Array(W).fill(1) };
   }, [trees]);
 
   // Viento: cada árbol se MECE (lean desde la base) con su propia fase → bosque vivo.
@@ -124,6 +152,28 @@ function Forest({ trees }: { trees: Tree[] }) {
       }
       tintTex.needsUpdate = true;
     }
+
+    // --- fade de oclusión (M5): corre TAMBIÉN con reduced-motion (usabilidad, no adorno) ---
+    const fadeK = 1 - Math.exp(-OCCLUDER_FADE_LAMBDA * delta);
+    let alphaDirty = false;
+    for (let i = 0; i < trees.length; i++) {
+      const tree = trees[i]!;
+      const hit = cameraRayHitsCylinder(
+        tree.position[0],
+        tree.position[2],
+        TREE_CONE_BASE_RADIUS * tree.scale,
+        tree.position[1] + TREE_TOP * tree.scale,
+      );
+      const target = hit ? OCCLUDER_ALPHA : 1;
+      const cur = alphaCur[i]!;
+      if (Math.abs(target - cur) > 1e-3) {
+        const next = cur + (target - cur) * fadeK;
+        alphaCur[i] = next;
+        tintData[i * 4 + 3] = next;
+        alphaDirty = true;
+      }
+    }
+    if (alphaDirty) tintTex.needsUpdate = true;
 
     if (prefersReducedMotion()) return; // §9: sin loop de viento; los pinos quedan quietos
     tRef.current += delta;
@@ -170,15 +220,48 @@ function Forest({ trees }: { trees: Tree[] }) {
 function Ground() {
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
   const base = useMemo(() => new THREE.Color('#1d2a24'), []); // color natural, sin estación
+  // Relieve low-poly (M2): mismo material/tinte de siempre — solo cambia la silueta (el disco
+  // liso gana ondulación sutil + realce del borde). Generado una vez, dispose al desmontar.
+  const geo = useMemo(() => buildGroundGeometry(), []);
+  useEffect(() => () => geo.dispose(), [geo]);
   useFrame(() => {
     if (matRef.current) tintBySeason(matRef.current, base, 'ground');
   });
   // CON fog (como todo): en despejado no se nota (la niebla arranca lejos), pero en niebla/arena
   // el suelo se funde igual que árboles y cielo, sin "costura" en el horizonte.
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <circleGeometry args={[26, 48]} />
+    <mesh geometry={geo} receiveShadow>
       <meshStandardMaterial ref={matRef} color="#1d2a24" flatShading roughness={1} />
+    </mesh>
+  );
+}
+
+/** Monolito con fade de oclusión (M5): si tapa al avatar se desvanece — la cámara no lo esquiva. */
+function Monolith() {
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const alpha = useRef(1);
+  useFrame((_, delta) => {
+    const hit = cameraRayHitsCylinder(MONOLITH.x, MONOLITH.z, MONOLITH.radius + 0.15, 2.6);
+    const target = hit ? OCCLUDER_ALPHA : 1;
+    const next = alpha.current + (target - alpha.current) * (1 - Math.exp(-OCCLUDER_FADE_LAMBDA * delta));
+    if (Math.abs(next - alpha.current) > 1e-4 && matRef.current) {
+      alpha.current = next;
+      matRef.current.opacity = next;
+    }
+  });
+  return (
+    <mesh position={[0, 1.5, 0]} castShadow>
+      <icosahedronGeometry args={[1, 0]} />
+      <meshStandardMaterial
+        ref={matRef}
+        color={OSIA_COLORS.champan}
+        flatShading
+        metalness={0.3}
+        roughness={0.4}
+        emissive={OSIA_COLORS.champan}
+        emissiveIntensity={0.08}
+        alphaHash
+      />
     </mesh>
   );
 }
@@ -191,7 +274,8 @@ export function Scene() {
     // perceptual en OKLCH) que desplaza el follaje de la estación → bosque natural, igual para todos.
     () =>
       forestTrees().map((t) => ({
-        position: [t.x, 0, t.z] as [number, number, number],
+        // Posado sobre el relieve (M2): la base del tronco nace en la altura del terreno.
+        position: [t.x, terrainHeight(t.x, t.z), t.z] as [number, number, number],
         scale: t.scale,
         dL: t.dL,
         dC: t.dC,
@@ -207,19 +291,11 @@ export function Scene() {
       <Ground />
 
       {/* Un monolito celeste en el centro del claro (punto focal) */}
-      <mesh position={[0, 1.5, 0]} castShadow>
-        <icosahedronGeometry args={[1, 0]} />
-        <meshStandardMaterial
-          color={OSIA_COLORS.champan}
-          flatShading
-          metalness={0.3}
-          roughness={0.4}
-          emissive={OSIA_COLORS.champan}
-          emissiveIntensity={0.08}
-        />
-      </mesh>
+      <Monolith />
 
       <Forest trees={trees} />
+
+      <Scatter />
     </>
   );
 }

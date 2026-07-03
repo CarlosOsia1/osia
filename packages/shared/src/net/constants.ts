@@ -3,7 +3,7 @@
  * Cliente y servidor DEBEN usar estas mismas para que la simulación coincida.
  */
 
-export const PROTOCOL_VERSION = 6; // +6: VOICE_SIGNAL/VOICE_STATE (voz P2P S0.6)
+export const PROTOCOL_VERSION = 7; // +7: locomoción con peso — vx/vz en WELCOME/ENTITY_JOIN/DELTA (Ola 2 M1)
 
 /**
  * Versión del CONTRATO de atmósfera (clima/bioma difundido por el server), INDEPENDIENTE de
@@ -25,18 +25,27 @@ export const SEND_HZ = 20;
 
 /** Movimiento a pie (debe coincidir con el cliente). */
 export const MOVE_SPEED = 4.4; // m/s
+/** Aceleración hacia la velocidad objetivo (peso: 0→max en ~0.24 s; giro de 180° en ~0.5 s). */
+export const MOVE_ACCEL = 18; // m/s²
+/** Frenado al soltar el input (más fuerte que acelerar: peso perceptible sin sensación de hielo). */
+export const MOVE_BRAKE = 24; // m/s²
+/** Bajo esta rapidez sin input, la velocidad se fija a 0 (corta drift subnormal; deja dormir la entidad). */
+export const MOVE_STOP_EPS = 0.02; // m/s
 export const GROUND_RADIUS = 23.5; // límite del claro de Fase 0
 
 /** Anti-cheat / anti-flood de inputs (server-authoritative). */
 export const MAX_QUEUED_INPUTS = 120; // techo de la cola de inputs por entidad (descarta flood)
 export const MAX_INPUT_DT_S = 0.1; // dt máximo admitido por input (100 ms) — clampa teleport por dt inflado
 /**
- * Presupuesto de tiempo SIMULADO por tick y entidad (anti speed-hack, patrón Source
- * `sv_maxusrcmdprocessticks` / Overwatch). `step()` aplica movimiento mientras Σdt ≤ este techo;
- * el excedente igual actualiza yaw/ackSeq pero NO desplaza. Un cliente honesto (dt real ≈ TICK_MS
- * por tick) nunca lo alcanza; un flood de inputs con dt inflado queda acotado a ~2 ticks de avance.
+ * Anti speed-hack por TOKEN BUCKET de tiempo simulado (QA M5; reemplaza el presupuesto por tick).
+ * Cada tick la entidad gana `TICK · SIM_BANK_REFILL_RATE` segundos de crédito (cap abajo); `step()`
+ * procesa inputs EN ORDEN mientras alcance el crédito y DEJA el resto en cola (ackea SOLO lo
+ * procesado). Así: (1) un hitch/ráfaga TCP honesta (~0.3 s de inputs de golpe) NO se descarta —
+ * se difiere 1-2 ticks y la predicción del cliente coincide sin snap; (2) un tramposo que manda
+ * dt inflado sostenido queda acotado a ~1.05× tiempo real (antes sostenía 2×).
  */
-export const MAX_SIM_DT_PER_TICK_S = (TICK_MS / 1000) * 2; // 0.1 s con TICK_MS=50
+export const SIM_BANK_CAP_S = 0.25; // absorbe ráfagas honestas (hitch de GC/tab) sin descartar
+export const SIM_BANK_REFILL_RATE = 1.05; // margen de reloj: jitter honesto no acumula retraso
 
 /** Instancias. */
 export const INSTANCE_CAPACITY = 12; // techo del hub en Fase 0

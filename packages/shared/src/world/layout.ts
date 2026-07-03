@@ -56,23 +56,39 @@ export function forestTrees(): ForestTree[] {
 }
 
 /**
- * Radio del cono BASE del pino (el más ancho). FUENTE ÚNICA: el render lo usa como geometría del
- * cono base y el spawn como footprint del obstáculo — así no se desincronizan (DRY, §1.1-O).
+ * Radio del cono BASE del pino (el más ancho) — SOLO para el RENDER (geometría de la copa).
+ * La COLISIÓN usa un radio menor a propósito (abajo): puedes «meterte un poquito entre las
+ * hojas» (game-feel pedido por Carlos, Ola 2 M5) sin atravesar el tronco.
  */
 export const TREE_CONE_BASE_RADIUS = 0.9;
 
-/** Monolito central (punto focal del claro). */
-export const MONOLITH: Obstacle = { x: 0, z: 0, radius: 1.6 };
+/**
+ * Radio de COLISIÓN del pino por unidad de escala: entre el tronco (0.16) y la copa (0.9).
+ * Con el radio del jugador, el pino chico (escala 0.75) se toca justo en el borde de su copa y
+ * el grande (1.6) deja entrar ~0.4 m entre las hojas antes de frenar.
+ */
+export const TREE_COLLISION_RADIUS = 0.42;
 
-/** Radio aproximado del avatar: holgura para no spawnear pegado a un obstáculo. */
-export const PLAYER_RADIUS = 0.6;
+/** Monolito central (punto focal). Radio de colisión ≈ su silueta real (icosaedro r1 a la altura
+ *  del pecho): se puede LLEGAR a tocarlo, no atravesarlo (M5). */
+export const MONOLITH: Obstacle = { x: 0, z: 0, radius: 1.05 };
 
-/** Todos los obstáculos sólidos del mundo (para la seguridad de spawn). */
+/** Radio de colisión del avatar (el manto mide 0.5 de base; 0.35 deja acercarse de verdad). */
+export const PLAYER_RADIUS = 0.35;
+
+/** Todos los obstáculos sólidos del mundo (colisión de la simulación + seguridad de spawn). */
 export function worldObstacles(): Obstacle[] {
-  // footprint de la copa ≈ radio del cono base × escala del árbol (mismo valor que el render).
-  const trees = forestTrees().map((t) => ({ x: t.x, z: t.z, radius: TREE_CONE_BASE_RADIUS * t.scale }));
+  // footprint de COLISIÓN (menor que la copa visual: el game-feel manda, ver TREE_COLLISION_RADIUS).
+  const trees = forestTrees().map((t) => ({ x: t.x, z: t.z, radius: TREE_COLLISION_RADIUS * t.scale }));
   return [...trees, MONOLITH];
 }
+
+/**
+ * Lista CANÓNICA e inmutable de obstáculos, computada una vez por proceso (determinista por seed):
+ * la comparten la simulación del server y la predicción del cliente (Ola 2 M1) — misma referencia
+ * en los hot paths, cero re-alocación por tick/frame.
+ */
+export const WORLD_OBSTACLES: readonly Obstacle[] = worldObstacles();
 
 /** ¿El punto (x,z) está 100% despejado? Dentro del claro y lejos de todo obstáculo. */
 export function isSpawnClear(x: number, z: number): boolean {
@@ -82,6 +98,27 @@ export function isSpawnClear(x: number, z: number): boolean {
     const dz = z - o.z;
     const clear = o.radius + PLAYER_RADIUS;
     if (dx * dx + dz * dz < clear * clear) return false;
+  }
+  return true;
+}
+
+/**
+ * ¿La posición GUARDADA de una entidad sigue siendo tenible? (spawn-safety del RESUME). A
+ * diferencia de `isSpawnClear` (estricta, para elegir puntos NUEVOS), esta tolera las posiciones
+ * que la propia física produce: el clamp del borde deja al jugador EXACTAMENTE en GROUND_RADIUS y
+ * el push-out de un obstáculo lo deja a 1 ulp DENTRO del círculo inflado — reubicar ahí
+ * teletransportaba a un jugador legítimo que refrescaba pegado a un árbol o al borde (QA M5).
+ * Solo se reubica ante penetración REAL (posición corrupta de datos viejos).
+ */
+export function isPositionTenable(x: number, z: number): boolean {
+  const d2 = x * x + z * z;
+  const rim = GROUND_RADIUS + 0.01;
+  if (d2 > rim * rim) return false;
+  for (const o of WORLD_OBSTACLES) {
+    const dx = x - o.x;
+    const dz = z - o.z;
+    const clear = o.radius + PLAYER_RADIUS - 0.05; // 5 cm de tolerancia (el slide roza el borde)
+    if (clear > 0 && dx * dx + dz * dz < clear * clear) return false;
   }
   return true;
 }

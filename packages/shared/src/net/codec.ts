@@ -173,6 +173,8 @@ export function encode(msg: NetMessage): Uint8Array {
         w.f64(e.x);
         w.f64(e.z);
         w.f64(e.yaw);
+        w.f64(e.vx);
+        w.f64(e.vz);
       }
       w.str(msg.atmosphere.biome);
       w.str(msg.atmosphere.weather.kind);
@@ -189,6 +191,8 @@ export function encode(msg: NetMessage): Uint8Array {
         w.f64(e.x);
         w.f64(e.z);
         w.f64(e.yaw);
+        w.f64(e.vx);
+        w.f64(e.vz);
       }
       break;
     case S2C.ENTITY_JOIN:
@@ -198,6 +202,8 @@ export function encode(msg: NetMessage): Uint8Array {
       w.f64(msg.entity.x);
       w.f64(msg.entity.z);
       w.f64(msg.entity.yaw);
+      w.f64(msg.entity.vx);
+      w.f64(msg.entity.vz);
       break;
     case S2C.ENTITY_LEAVE:
       w.u32(msg.id);
@@ -292,6 +298,8 @@ export function decode<T extends NetMessage = NetMessage>(
             x: rd.f64(),
             z: rd.f64(),
             yaw: rd.f64(),
+            vx: rd.f64(),
+            vz: rd.f64(),
           });
         }
         const biome = rd.str();
@@ -317,7 +325,14 @@ export function decode<T extends NetMessage = NetMessage>(
         const n = rd.u16();
         const entities = [];
         for (let i = 0; i < n; i++)
-          entities.push({ id: asEntityId(rd.u32()), x: rd.f64(), z: rd.f64(), yaw: rd.f64() });
+          entities.push({
+            id: asEntityId(rd.u32()),
+            x: rd.f64(),
+            z: rd.f64(),
+            yaw: rd.f64(),
+            vx: rd.f64(),
+            vz: rd.f64(),
+          });
         return { op, tick, ackSeq, entities } as T;
       }
       case S2C.ENTITY_JOIN:
@@ -330,6 +345,8 @@ export function decode<T extends NetMessage = NetMessage>(
             x: rd.f64(),
             z: rd.f64(),
             yaw: rd.f64(),
+            vx: rd.f64(),
+            vz: rd.f64(),
           },
         } as T;
       case S2C.ENTITY_LEAVE:

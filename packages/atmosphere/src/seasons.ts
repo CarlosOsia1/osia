@@ -21,8 +21,8 @@ import type { AtmosphereParams, RGB } from './types';
 export type SeasonId = 'primavera' | 'verano' | 'otono' | 'invierno';
 
 /** Superficies que la estación tiñe. Agregar una = un dato más (ver cabecera). */
-export type SeasonSurface = 'sky' | 'ground' | 'foliage';
-export const SEASON_SURFACES: readonly SeasonSurface[] = ['sky', 'ground', 'foliage'];
+export type SeasonSurface = 'sky' | 'ground' | 'foliage' | 'grass';
+export const SEASON_SURFACES: readonly SeasonSurface[] = ['sky', 'ground', 'foliage', 'grass'];
 
 export type SeasonTints = Record<SeasonSurface, RGB>;
 
@@ -38,6 +38,9 @@ export const SEASON_STRENGTH: Record<SeasonSurface, number> = {
   sky: 0.07,
   ground: 0.42,
   foliage: 1, // la copa TOMA el color de la estación; la variación la pone cada árbol (instanceColor)
+  // El PASTO tiene su propia superficie (Ola 2 M5): en otoño NO copia el naranja del follaje —
+  // el pasto real se apaga hacia oliva/pajizo pero sigue VERDE (pedido de Carlos).
+  grass: 0.85,
 };
 
 export type SeasonKeyframe = { t: number; season: Season };
@@ -46,22 +49,43 @@ export const SEASONS: Record<SeasonId, Season> = {
   primavera: {
     id: 'primavera',
     name: 'Primavera',
-    tints: { sky: hexToRGB('#81b7e4'), ground: hexToRGB('#2a6d36'), foliage: hexToRGB('#288a17') },
+    tints: {
+      sky: hexToRGB('#81b7e4'),
+      ground: hexToRGB('#2a6d36'),
+      foliage: hexToRGB('#288a17'),
+      grass: hexToRGB('#379a41'),
+    },
   },
   verano: {
     id: 'verano',
     name: 'Verano',
-    tints: { sky: hexToRGB('#e6dcc2'), ground: hexToRGB('#285731'), foliage: hexToRGB('#2c6b3a') },
+    tints: {
+      sky: hexToRGB('#e6dcc2'),
+      ground: hexToRGB('#285731'),
+      foliage: hexToRGB('#2c6b3a'),
+      grass: hexToRGB('#2f7c3c'),
+    },
   },
   otono: {
     id: 'otono',
     name: 'Otoño',
-    tints: { sky: hexToRGB('#d8b48c'), ground: hexToRGB('#3f3320'), foliage: hexToRGB('#b0912a') },
+    tints: {
+      sky: hexToRGB('#d8b48c'),
+      ground: hexToRGB('#3f3320'),
+      // El follaje sí se dora; el pasto solo se APAGA hacia oliva (verde con un toque ámbar).
+      foliage: hexToRGB('#b0912a'),
+      grass: hexToRGB('#5f7530'),
+    },
   },
   invierno: {
     id: 'invierno',
     name: 'Invierno',
-    tints: { sky: hexToRGB('#b6c4d8'), ground: hexToRGB('#2b343c'), foliage: hexToRGB('#334943') },
+    tints: {
+      sky: hexToRGB('#b6c4d8'),
+      ground: hexToRGB('#2b343c'),
+      foliage: hexToRGB('#334943'),
+      grass: hexToRGB('#3a5145'),
+    },
   },
 };
 

@@ -125,7 +125,8 @@ function isUnauthenticated(e: unknown): boolean {
 export class NetClient {
   readonly handle = loadHandle(); // estable entre reloads (misma pestaña)
   selfId: number | null = null;
-  serverSelf: { x: number; z: number; yaw: number } | null = null;
+  /** Estado autoritativo propio (posición + velocidad): ancla del replay de la reconciliación. */
+  serverSelf: { x: number; z: number; yaw: number; vx: number; vz: number } | null = null;
 
   /** Callbacks de voz (los conecta MeshVoice; NetClient sólo transporta, sin lógica WebRTC). */
   onVoiceSignal: ((srcId: number, kind: number, payload: string) => void) | null = null;
@@ -267,7 +268,8 @@ export class NetClient {
         this.onReset?.(); // cierra las PCs de voz (la roster puede traer ids nuevos)
         resetAux(); // limpia voz/burbujas de la sesión anterior
         for (const e of msg.entities) {
-          if (e.id === msg.selfId) this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw };
+          if (e.id === msg.selfId)
+            this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw, vx: e.vx, vz: e.vz };
           else
             this.remotes.set(e.id, {
               handle: e.handle,
@@ -287,7 +289,7 @@ export class NetClient {
         const now = performance.now();
         for (const e of msg.entities) {
           if (e.id === this.selfId) {
-            this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw };
+            this.serverSelf = { x: e.x, z: e.z, yaw: e.yaw, vx: e.vx, vz: e.vz };
             continue;
           }
           let r = this.remotes.get(e.id);
@@ -360,10 +362,13 @@ export class NetClient {
   sendInput(f: number, r: number, yaw: number, dt: number): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.selfId === null) return;
     this.seq++;
-    this.pending.push({ seq: this.seq, f, r, yaw, dt }); // guardado para el replay de reconciliación
+    // El server integra `dtMs / 1000`; el replay local debe usar EXACTAMENTE ese mismo valor
+    // (dt*1000/1000 difiere de dt en ~1 ulp a veces) — autoridad y predicción, bit a bit (QA M5).
+    const dtMs = dt * 1000;
+    this.pending.push({ seq: this.seq, f, r, yaw, dt: dtMs / 1000 }); // replay de reconciliación
     // Cap del backlog: si el server dejó de confirmar (stall), no dejar crecer `pending` sin fin.
     if (this.pending.length > MAX_PENDING) this.pending.splice(0, this.pending.length - MAX_PENDING);
-    this.ws.send(encode({ op: C2S.INPUT, seq: this.seq, f, r, yaw, dtMs: dt * 1000 }));
+    this.ws.send(encode({ op: C2S.INPUT, seq: this.seq, f, r, yaw, dtMs }));
   }
 
   sendChat(text: string): void {

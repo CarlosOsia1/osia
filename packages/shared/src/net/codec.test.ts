@@ -27,8 +27,9 @@ import type {
   VoiceStateMsg,
   VoiceStateRelayMsg,
 } from './messages';
-import { applyMovement, type Vec2 } from './movement';
-import { GROUND_RADIUS } from './constants';
+import { applyMovement, type MoveState } from './movement';
+import { GROUND_RADIUS, MOVE_SPEED } from './constants';
+import { MONOLITH, PLAYER_RADIUS, WORLD_OBSTACLES, type Obstacle } from '../world/layout';
 import { normalizeChat, normalizeHandle } from '../text/sanitizeChat';
 import { WEATHER_KINDS, type WeatherKind } from '@osia/atmosphere';
 
@@ -49,7 +50,9 @@ test('round-trip WELCOME y DELTA con entidades', () => {
     instanceId: 'hub',
     protocol: 1,
     tickHz: 20,
-    entities: [{ id: asEntityId(1), handle: 'carlos', accentColor: '#CBB89A', x: 0, z: 6, yaw: 0 }],
+    entities: [
+      { id: asEntityId(1), handle: 'carlos', accentColor: '#CBB89A', x: 0, z: 6, yaw: 0, vx: 0, vz: -1.25 },
+    ],
     atmosphere: { biome: 'bosque-celeste', weather: { kind: 'despejado', intensity: 0 } },
     serverTime: 1_700_000_000_000,
     resumeToken: 'tok-abc',
@@ -60,7 +63,7 @@ test('round-trip WELCOME y DELTA con entidades', () => {
     op: S2C.DELTA,
     tick: 100,
     ackSeq: 42,
-    entities: [{ id: asEntityId(1), x: 1.2, z: 5.5, yaw: 0.3 }],
+    entities: [{ id: asEntityId(1), x: 1.2, z: 5.5, yaw: 0.3, vx: 4.4, vz: -0.75 }],
   };
   assert.deepEqual(decode(encode(delta)), delta);
 });
@@ -105,7 +108,16 @@ test('round-trip CHAT_SEND / CHAT_MSG', () => {
 test('round-trip ENTITY_JOIN / ENTITY_LEAVE / BYE', () => {
   const join: EntityJoinMsg = {
     op: S2C.ENTITY_JOIN,
-    entity: { id: asEntityId(9), handle: 'Vega', accentColor: '#B8A07E', x: 2.5, z: -3.25, yaw: 1.1 },
+    entity: {
+      id: asEntityId(9),
+      handle: 'Vega',
+      accentColor: '#B8A07E',
+      x: 2.5,
+      z: -3.25,
+      yaw: 1.1,
+      vx: 0,
+      vz: 0,
+    },
   };
   assert.deepEqual(decode(encode(join)), join);
 
@@ -210,24 +222,95 @@ test('normalizeChat/Handle sanea control, zero-width y RTL', () => {
   assert.ok([...normalizeHandle('y'.repeat(50))].length <= 24); // cap del handle
 });
 
-test('applyMovement avanza y respeta el límite del claro', () => {
-  const p: Vec2 = { x: 0, z: 0 };
-  applyMovement(p, { f: 1, r: 0, yaw: 0 }, 0.05);
-  assert.ok(p.z < 0, 'con f=1, yaw=0 debe avanzar hacia -Z');
+/** Estado en reposo en (x, z) — helper de los tests de locomoción. */
+function at(x: number, z: number): MoveState {
+  return { x, z, vx: 0, vz: 0 };
+}
 
-  const far: Vec2 = { x: 100, z: 0 };
-  applyMovement(far, { f: 1, r: 0, yaw: Math.PI / 2 }, 0.05);
-  assert.ok(Math.hypot(far.x, far.z) <= GROUND_RADIUS + 1e-6, 'no debe salir del claro');
+/** Simula `n` pasos de dt fijo con el mismo input (sin obstáculos salvo que se pasen). */
+function run(
+  s: MoveState,
+  input: { f: number; r: number; yaw: number },
+  n: number,
+  dt = 0.05,
+  obstacles: readonly Obstacle[] = [],
+): void {
+  for (let i = 0; i < n; i++) applyMovement(s, input, dt, obstacles);
+}
+
+test('applyMovement: acelera con peso hasta MOVE_SPEED y avanza hacia -Z', () => {
+  const s = at(0, 0);
+  applyMovement(s, { f: 1, r: 0, yaw: 0 }, 0.05, []);
+  assert.ok(s.z < 0, 'con f=1, yaw=0 avanza hacia -Z');
+  const v1 = Math.hypot(s.vx, s.vz);
+  assert.ok(v1 > 0 && v1 < MOVE_SPEED, `arranca acelerando (${v1}), no a tope`);
+
+  run(s, { f: 1, r: 0, yaw: 0 }, 40); // 2 s: de sobra para alcanzar la velocidad máxima
+  const v2 = Math.hypot(s.vx, s.vz);
+  assert.ok(Math.abs(v2 - MOVE_SPEED) < 1e-9, `alcanza y no supera MOVE_SPEED (${v2})`);
+});
+
+test('applyMovement: al soltar el input frena hasta detenerse (velocidad exacta 0)', () => {
+  const s = at(0, 0);
+  run(s, { f: 1, r: 0, yaw: 0 }, 20); // a velocidad máxima
+  run(s, { f: 0, r: 0, yaw: 0 }, 20); // 1 s sin input: frena de sobra
+  assert.equal(s.vx, 0, 'vx queda en cero exacto');
+  assert.equal(s.vz, 0, 'vz queda en cero exacto');
+  const z = s.z;
+  run(s, { f: 0, r: 0, yaw: 0 }, 5);
+  assert.equal(s.z, z, 'detenido no hay drift');
+});
+
+test('applyMovement: determinista — misma secuencia de inputs ⇒ mismo estado bit a bit', () => {
+  const a = at(0, 6);
+  const b = at(0, 6);
+  const inputs = [
+    { f: 1, r: 0, yaw: 0.3 },
+    { f: 1, r: 1, yaw: 0.35 },
+    { f: 0, r: 1, yaw: 0.4 },
+    { f: 0, r: 0, yaw: 0.4 },
+  ];
+  for (const inp of inputs) applyMovement(a, inp, 0.016, WORLD_OBSTACLES);
+  for (const inp of inputs) applyMovement(b, inp, 0.016, WORLD_OBSTACLES);
+  assert.deepEqual(a, b, 'servidor y cliente calculan exactamente lo mismo');
+});
+
+test('applyMovement: no atraviesa el monolito — se detiene en el radio y desliza', () => {
+  // Camino directo al centro (el monolito está en 0,0): yaw=0 con f=1 avanza hacia -Z.
+  const s = at(0, 6);
+  run(s, { f: 1, r: 0, yaw: 0 }, 60, 0.05, [MONOLITH]);
+  const clear = MONOLITH.radius + PLAYER_RADIUS;
+  const d = Math.hypot(s.x - MONOLITH.x, s.z - MONOLITH.z);
+  assert.ok(d >= clear - 1e-9, `queda fuera del monolito (d=${d} ≥ ${clear})`);
+
+  // Empuje diagonal: la componente tangencial sobrevive (desliza, no se pega).
+  const t = { x: 0, z: clear, vx: 0, vz: 0 };
+  applyMovement(t, { f: 1, r: 1, yaw: 0 }, 0.05, [MONOLITH]);
+  assert.ok(Math.abs(t.x) > 0, 'la componente tangencial del movimiento sobrevive al contacto');
+  assert.ok(Math.hypot(t.x, t.z) >= clear - 1e-9, 'sin penetrar el círculo');
+});
+
+test('applyMovement: respeta el límite del claro y desliza por el borde', () => {
+  const far: MoveState = { x: GROUND_RADIUS - 0.01, z: 0, vx: 0, vz: 0 };
+  // yaw=π/2 con f=1 empuja hacia -X... hacia AFUERA es +X: usar yaw=-π/2 (fwd=+X).
+  run(far, { f: 1, r: 0, yaw: -Math.PI / 2 }, 20);
+  assert.ok(Math.hypot(far.x, far.z) <= GROUND_RADIUS + 1e-9, 'no sale del claro');
+
+  // En el borde, moverse en diagonal debe deslizar (avanza en Z aunque X esté clavado al radio).
+  const slide: MoveState = { x: GROUND_RADIUS, z: 0, vx: 0, vz: 0 };
+  const z0 = slide.z;
+  run(slide, { f: 1, r: -1, yaw: -Math.PI / 2 }, 10);
+  assert.ok(Math.abs(slide.z - z0) > 0.05, 'desliza por el borde en vez de quedarse clavado');
 });
 
 test('applyMovement es no-op ante yaw/dt no finitos (defensa en profundidad)', () => {
-  const p1: Vec2 = { x: 3, z: -2 };
-  applyMovement(p1, { f: 1, r: 0, yaw: Number.NaN }, 0.05);
-  assert.deepEqual(p1, { x: 3, z: -2 }, 'yaw=NaN no debe mover ni envenenar pos');
+  const p1: MoveState = { x: 3, z: -2, vx: 1, vz: 0 };
+  applyMovement(p1, { f: 1, r: 0, yaw: Number.NaN }, 0.05, []);
+  assert.deepEqual(p1, { x: 3, z: -2, vx: 1, vz: 0 }, 'yaw=NaN no mueve ni envenena el estado');
 
-  const p2: Vec2 = { x: 3, z: -2 };
-  applyMovement(p2, { f: 1, r: 0, yaw: 0 }, Number.POSITIVE_INFINITY);
-  assert.deepEqual(p2, { x: 3, z: -2 }, 'dt=Infinity no debe mover ni envenenar pos');
+  const p2: MoveState = { x: 3, z: -2, vx: 1, vz: 0 };
+  applyMovement(p2, { f: 1, r: 0, yaw: 0 }, Number.POSITIVE_INFINITY, []);
+  assert.deepEqual(p2, { x: 3, z: -2, vx: 1, vz: 0 }, 'dt=Infinity no mueve ni envenena el estado');
 });
 
 test('normalizeChat recorta por bytes sin partir un emoji en el borde', () => {

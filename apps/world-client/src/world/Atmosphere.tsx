@@ -34,7 +34,7 @@ const FOG_RAIN = new THREE.Color(FOG.rain.color);
 const FOG_SNOW = new THREE.Color(FOG.snow.color);
 // Relleno ambiente azul-lunar: de noche el ambientColor del preset es casi negro, así
 // que subir solo la intensidad no alcanza; lo lerpeamos hacia este tono para "ver".
-const MOONLIT = new THREE.Color('#34405c');
+const MOONLIT = new THREE.Color('#41507a');
 // Rebote cálido del SUELO para el relleno hemisférico (cielo desde arriba / suelo desde abajo).
 // Derivado del token champán (atenuado) → sin hex suelto y dentro de la familia de marca.
 const HEMI_GROUND = new THREE.Color(OSIA_COLORS.champan).multiplyScalar(0.16);
@@ -49,15 +49,24 @@ const SUN_SHADOW_INTENSITY = 0.52;
 // NOCHE · ADAPTACIÓN OCULAR. El ojo sube la ganancia de noche; subimos la exposición (no la
 // bajamos, como hacían los presets) según lo "noche" que sea. Es ganancia GLOBAL: necesita luz
 // real que escalar (de ahí los pisos de luna/ambiente/hemisférico) — un píxel negro sigue negro.
-const EXPO_NIGHT_LIFT = 0.1;
-// Pisos de luz lunar: noche CINEMATOGRÁFICA, no física → nada cae a negro puro (azul tenue).
-const MOON_NIGHT_FLOOR = 0.7;
-const AMBIENT_NIGHT_BASE = 0.05;
-const AMBIENT_NIGHT_GAIN = 0.25;
-const MOONLIT_MIX_NIGHT = 0.6; // cuánto tira el relleno (ambiente + cielo del hemisférico) al azul lunar
-// Relleno hemisférico: leve de día (rellena sombras sin lavar al sol), un poco más de noche.
-const HEMI_DAY = 0.3;
-const HEMI_NIGHT_GAIN = 0.12;
+const EXPO_NIGHT_LIFT = 0.22;
+// Pisos de luz lunar: noche JUGABLE (decisión de Carlos, M5: «jugabilidad antes que realismo» —
+// oscura pero legible; la mitad del tiempo se pasa de noche). Nada cae a negro puro.
+const MOON_NIGHT_FLOOR = 1.05;
+const AMBIENT_NIGHT_BASE = 0.14;
+const AMBIENT_NIGHT_GAIN = 0.34;
+const MOONLIT_MIX_NIGHT = 0.72; // cuánto tira el relleno (ambiente + cielo del hemisférico) al azul lunar
+// Relleno hemisférico: leve de día (rellena sombras sin lavar al sol), bastante más de noche.
+const HEMI_DAY = 0.4;
+const HEMI_NIGHT_GAIN = 0.3;
+// CREPÚSCULO JUGABLE (M5): con el sol bajo, mirar HACIA el sol dejaba árboles/pasto en negro
+// (las caras en sombra solo reciben relleno, y el relleno usaba los colores oscuros del preset).
+// Cuando el sol está cerca del horizonte sube el relleno frío — contraluz legible, look clásico
+// cálido/frío del atardecer. Se apaga de noche (ahí mandan los pisos lunares).
+const DUSK_SUN_ELEVATION = 0.32; // por debajo de esta altura del sol empieza el refuerzo
+const DUSK_FILL_MIX = 0.5; // cuánto tira el relleno al azul (color, no solo intensidad)
+const AMBIENT_DUSK_BOOST = 0.4; // multiplicador extra del ambiente en el contraluz
+const HEMI_DUSK_GAIN = 0.25;
 
 export default function Atmosphere() {
   const scene = useThree((s) => s.scene);
@@ -109,8 +118,13 @@ export default function Atmosphere() {
     // Piso de luz LUNAR: la noche nunca es oscuridad TOTAL — la luna ilumina un poco
     // (no mucho). Sube la luna direccional y el relleno ambiente según lo "noche" que sea.
     const nightAmt = THREE.MathUtils.clamp(p.starsIntensity, 0, 1); // 0 día → 1 noche
+    // Contraluz: 1 cuando el sol está pegado al horizonte (y aún prendido), 0 a pleno día o de noche.
+    const sunLow = THREE.MathUtils.clamp(1 - p.sunDir[1] / DUSK_SUN_ELEVATION, 0, 1);
+    const duskAmt = p.sunIntensity > 0.001 ? Math.min(sunLow, 1 - nightAmt) : 0;
     const moonI = Math.max(p.moonIntensity, MOON_NIGHT_FLOOR * nightAmt);
-    const ambI = Math.max(p.ambientIntensity, AMBIENT_NIGHT_BASE + AMBIENT_NIGHT_GAIN * nightAmt);
+    const ambI =
+      Math.max(p.ambientIntensity, AMBIENT_NIGHT_BASE + AMBIENT_NIGHT_GAIN * nightAmt) *
+      (1 + AMBIENT_DUSK_BOOST * duskAmt);
 
     bg.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
     scene.background = bg;
@@ -160,7 +174,9 @@ export default function Atmosphere() {
     }
     if (ambient.current) {
       ambient.current.color.setRGB(p.ambientColor[0], p.ambientColor[1], p.ambientColor[2], THREE.SRGBColorSpace);
-      ambient.current.color.lerp(MOONLIT, nightAmt * MOONLIT_MIX_NIGHT); // de noche, relleno azul lunar (no negro)
+      // De noche, relleno azul lunar; en el CONTRALUZ del atardecer también levanta hacia el frío
+      // (el color del preset es oscuro: subir solo la intensidad no saca las sombras del negro).
+      ambient.current.color.lerp(MOONLIT, Math.max(nightAmt * MOONLIT_MIX_NIGHT, duskAmt * DUSK_FILL_MIX));
       ambient.current.intensity = ambI;
     }
     if (hemi.current) {
@@ -171,7 +187,7 @@ export default function Atmosphere() {
       hemi.current.color.setRGB(p.skyHorizon[0], p.skyHorizon[1], p.skyHorizon[2], THREE.SRGBColorSpace);
       hemi.current.color.lerp(MOONLIT, nightAmt * MOONLIT_MIX_NIGHT);
       hemi.current.groundColor.copy(HEMI_GROUND);
-      hemi.current.intensity = HEMI_DAY + HEMI_NIGHT_GAIN * nightAmt;
+      hemi.current.intensity = HEMI_DAY + HEMI_NIGHT_GAIN * nightAmt + HEMI_DUSK_GAIN * duskAmt;
     }
     // Exposición con ADAPTACIÓN OCULAR: de noche SUBE (no baja). Ganancia global que aclara la
     // escena tenue manteniendo el tinte; verificado que llega al frame pese al PostProcessing.

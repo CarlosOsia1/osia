@@ -4,9 +4,14 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { applyMovement, MAX_INPUT_DT_S } from '@osia/shared';
+import { applyMovement, MAX_INPUT_DT_S, WORLD_OBSTACLES } from '@osia/shared';
 import { getNetClient } from '../net/useNet';
 import { isChatTyping } from '../net/store';
+import { terrainHeight } from './terrain';
+import { prefersReducedMotion } from './motionPrefs';
+import { createAvatarMotionState, stepAvatarMotion, type AvatarParts } from './avatarMotion';
+import { occludedCameraDistance } from './cameraOcclusion';
+import { setCameraRay } from './cameraRay';
 import AvatarMesh from './AvatarMesh';
 
 /**
@@ -28,6 +33,15 @@ const SENS = 0.0022; // rad por píxel de mouse
 const ELEV_MIN = -0.12; // permite bajar la cámara bajo la horizontal (mirar más hacia arriba)
 const ELEV_MAX = 1.3;
 const FOLLOW_LAMBDA = 14; // suavizado del pivote de cámara
+const CAM_RECOVER_LAMBDA = 5; // la cámara ocluida se ACERCA al instante y se re-aleja suave (M4)
+const MIN_CAM_DIST = 1.2; // piso: nunca pegada al cuello (near plane lejos del avatar)
+/**
+ * Techo de INPUTs por segundo (M4): a ≤60 fps se envía 1 por frame (igual que siempre); en
+ * monitores de 120/144 Hz los frames se COALESCEN (dt acumulado + último f/r/yaw) → mismo tiempo
+ * simulado con la mitad de paquetes. El tramo aún no enviado se predice como preview local.
+ */
+const INPUT_SEND_HZ = 60;
+const SEND_INTERVAL_S = 1 / INPUT_SEND_HZ;
 
 export default function Player() {
   const group = useRef<THREE.Group>(null);
@@ -45,7 +59,19 @@ export default function Player() {
   const pivot = useRef(new THREE.Vector3(0, 0, 6)).current;
   const offset = useRef(new THREE.Vector3()).current;
   const lookAt = useRef(new THREE.Vector3()).current;
-  const recon = useRef({ x: 0, z: 0 }).current; // posición reconciliada (server + replay)
+  // Estado cinemático reconciliado (server + replay). Con locomoción con peso (M1) el replay parte
+  // de la MISMA posición Y velocidad autoritativas; en modo local, la velocidad persiste entre frames.
+  const recon = useRef({ x: 0, z: 0, vx: 0, vz: 0 }).current;
+  // Animación procedural (M3): partes del cuerpo + estado de la marcha (sin alloc por frame).
+  const parts = useRef<AvatarParts>({ outer: null, body: null, cloak: null, spark: null });
+  const motion = useRef(createAvatarMotionState()).current;
+  // Input a tasa fija (M4): dt acumulado aún no enviado + preview local de ese tramo.
+  const sendAccum = useRef(0);
+  const preview = useRef({ x: 0, z: 0, vx: 0, vz: 0 }).current;
+  const inputScratch = useRef({ f: 0, r: 0, yaw: 0 }).current; // §7: sin literales por frame
+  // Cámara con oclusión (M4): rayo mirada→cámara y distancia suavizada.
+  const camRay = useRef(new THREE.Vector3()).current;
+  const camDist = useRef(CAM_DIST);
 
   // Mouse-look estándar con pointer lock (clic captura, ESC suelta).
   useEffect(() => {
@@ -88,37 +114,69 @@ export default function Player() {
     // autoridad (que sí recorta) → snap visible al reconciliar. Clampado, ambos coinciden.
     const dt = Math.min(delta, MAX_INPUT_DT_S);
 
-    // Orientación del cuerpo: mira hacia donde se mueve (visual; no se reconcilia).
+    // Heading objetivo del cuerpo: hacia donde se mueve (el giro con damping lo aplica M3 abajo).
+    let targetHeading: number | null = null;
     if (moving) {
       move.set(0, 0, 0).addScaledVector(fwd, f).addScaledVector(right, r).normalize();
-      g.rotation.y = Math.atan2(move.x, move.z);
+      targetHeading = Math.atan2(move.x, move.z);
     }
 
-    // --- enviar 1 INPUT POR FRAME (con su dt clampado) → NetClient lo guarda en `pending` ---
-    // (también parado, para reportar f=0). El server lo encola y lo drena por tick.
-    net.sendInput(f, r, yaw.current, dt);
+    // --- INPUT a tasa fija COALESCIDA (M4) → NetClient lo guarda en `pending` ---
+    // (también parado, para reportar f=0). El server lo encola y lo drena por tick. El acumulado
+    // se capa a MAX_INPUT_DT_S: lo enviado y lo previsto usan EXACTAMENTE el mismo dt.
+    sendAccum.current = Math.min(sendAccum.current + dt, MAX_INPUT_DT_S);
+    if (sendAccum.current >= SEND_INTERVAL_S - 1e-6) {
+      net.sendInput(f, r, yaw.current, sendAccum.current);
+      sendAccum.current = 0;
+    }
 
     // --- posición = estado AUTORITATIVO + REPLAY de los inputs pendientes (Gambetta/Valve) ---
-    // Como envío 1 input por frame, `recon` avanza un paso de frame por frame → suave; y el
-    // server procesa EXACTAMENTE los mismos inputs (misma applyMovement determinista), así la
+    // El server procesa EXACTAMENTE los mismos inputs (misma applyMovement determinista), así la
     // posición mostrada es la predicción correcta anclada al server: cero rubber-band, sin lag.
     const ss = net.serverSelf;
     if (ss) {
       recon.x = ss.x;
       recon.z = ss.z;
-      for (const inp of net.pending) applyMovement(recon, inp, inp.dt);
-      g.position.x = recon.x;
-      g.position.z = recon.z;
-    } else if (moving) {
-      // sin servidor todavía: dead-reckoning local por frame (misma función pura).
+      recon.vx = ss.vx;
+      recon.vz = ss.vz;
+      for (const inp of net.pending) applyMovement(recon, inp, inp.dt, WORLD_OBSTACLES);
+      // Preview del tramo coalescido AÚN no enviado (M4): continuidad exacta — al enviarse, ese
+      // mismo dt entra a `pending` y el preview se vuelve replay. Render de 120/144 Hz suave.
+      preview.x = recon.x;
+      preview.z = recon.z;
+      preview.vx = recon.vx;
+      preview.vz = recon.vz;
+      if (sendAccum.current > 0) {
+        inputScratch.f = f;
+        inputScratch.r = r;
+        inputScratch.yaw = yaw.current;
+        applyMovement(preview, inputScratch, sendAccum.current, WORLD_OBSTACLES);
+      }
+      g.position.x = preview.x;
+      g.position.z = preview.z;
+    } else {
+      // Sin servidor todavía: dead-reckoning local por frame (misma función pura). Corre TAMBIÉN
+      // sin input: con peso, al soltar las teclas hay que seguir frenando (la velocidad persiste
+      // en `recon` entre frames; quieto y sin inercia, applyMovement es un no-op barato).
       recon.x = g.position.x;
       recon.z = g.position.z;
-      applyMovement(recon, { f, r, yaw: yaw.current }, dt);
+      inputScratch.f = f;
+      inputScratch.r = r;
+      inputScratch.yaw = yaw.current;
+      applyMovement(recon, inputScratch, dt, WORLD_OBSTACLES);
       g.position.x = recon.x;
       g.position.z = recon.z;
+      preview.vx = recon.vx;
+      preview.vz = recon.vz;
     }
+    // Posado sobre el relieve (M2): la simulación es 2D; la altura solo viste la escena.
+    g.position.y = terrainHeight(g.position.x, g.position.z);
 
-    // --- cámara de tercera persona (radio constante; pivote suavizado) ---
+    // Animación procedural (M3): giro con damping, bob de paso, lean, manto y chispa — desde la
+    // velocidad del estado que se RENDERIZA (reconciliación + preview), no desde el input crudo.
+    stepAvatarMotion(motion, parts.current, preview.vx, preview.vz, targetHeading, delta, prefersReducedMotion());
+
+    // --- cámara de tercera persona (pivote suavizado + oclusión M4) ---
     pivot.lerp(g.position, 1 - Math.exp(-FOLLOW_LAMBDA * delta));
     const horiz = Math.cos(elev.current) * CAM_DIST;
     offset.set(
@@ -126,15 +184,37 @@ export default function Player() {
       Math.sin(elev.current) * CAM_DIST + 1.0,
       Math.cos(yaw.current) * horiz,
     );
-    camera.position.copy(pivot).add(offset);
     lookAt.copy(pivot);
     lookAt.y += 1.2;
+    // Rayo mirada→cámara deseada: si un árbol/monolito/loma se interpone, la cámara se ACERCA
+    // (al instante, para no clipear) y se re-aleja con suavizado cuando el paso queda libre.
+    camRay.copy(pivot).add(offset).sub(lookAt);
+    // Invariante: con ELEV_MAX < π/2 el rayo nunca es ~0; el max() lo blinda si alguien lo sube.
+    const rayLen = Math.max(camRay.length(), 1e-6);
+    camRay.multiplyScalar(1 / rayLen);
+    const allowed = Math.max(
+      MIN_CAM_DIST,
+      occludedCameraDistance(lookAt.x, lookAt.y, lookAt.z, camRay.x, camRay.y, camRay.z, rayLen),
+    );
+    camDist.current =
+      allowed < camDist.current
+        ? allowed
+        : Math.min(rayLen, camDist.current + (allowed - camDist.current) * (1 - Math.exp(-CAM_RECOVER_LAMBDA * delta)));
+    camera.position.copy(lookAt).addScaledVector(camRay, camDist.current);
     camera.lookAt(lookAt);
+    // Publica el rayo del frame: Forest/Monolith se DESVANECEN si se interponen (M5, cameraRay.ts).
+    setCameraRay(lookAt.x, lookAt.y, lookAt.z, camRay.x, camRay.y, camRay.z, camDist.current);
   });
 
   return (
-    <group ref={group} position={[0, 0, 6]}>
-      <AvatarMesh />
+    <group
+      ref={(g) => {
+        group.current = g;
+        parts.current.outer = g;
+      }}
+      position={[0, 0, 6]}
+    >
+      <AvatarMesh partsRef={parts} />
     </group>
   );
 }

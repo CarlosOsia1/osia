@@ -1,14 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { asEntityId as E } from '@osia/shared';
+import {
+  applyMovement,
+  asEntityId as E,
+  MONOLITH,
+  PLAYER_RADIUS,
+  WORLD_OBSTACLES,
+} from '@osia/shared';
 import { Instance } from './instance';
 
 test('Instance.step: drena inputs y aplica el movimiento autoritativo', () => {
   const inst = new Instance('hub');
-  const rt = inst.add(E(1), 'a', '#CBB89A', { x: 0, z: 0 }, 'tok');
+  // Zona despejada (el centro es el monolito: allí la colisión empuja y ensucia el assert).
+  const rt = inst.add(E(1), 'a', '#CBB89A', { x: 10, z: 10 }, 'tok');
   rt.inputs.push({ seq: 1, f: 1, r: 0, yaw: 0, dt: 0.05 }); // adelante
   inst.step();
-  assert.ok(rt.state.z < 0, 'con f=1, yaw=0 avanza hacia -Z');
+  assert.ok(rt.state.z < 10, 'con f=1, yaw=0 avanza hacia -Z');
   assert.equal(rt.lastSeq, 1, 'lastSeq = último seq drenado (ackSeq)');
   assert.equal(rt.inputs.length, 0, 'la cola de inputs queda vacía');
 });
@@ -20,24 +27,82 @@ test('Instance.step: sin inputs no mueve la entidad', () => {
   assert.deepEqual({ x: rt.state.x, z: rt.state.z }, { x: 5, z: 5 });
 });
 
-test('Instance.step: presupuesto de dt acota el speed-hack (flood de inputs con dt inflado)', () => {
-  // Un tramposo encola muchos inputs con el dt máximo (0.1 s c/u): sin presupuesto avanzaría
-  // ~MOVE_SPEED × 4 s en un solo tick. Con el techo (~0.1 s de tiempo simulado) el avance queda
-  // acotado a ~1 paso, y aun así ackea el último seq (no traba la reconciliación).
+test('Instance.step: token bucket — dt inflado SOSTENIDO queda a ~tiempo real (sin 2× de velocidad)', () => {
   const inst = new Instance('hub');
-  const cheater = inst.add(E(1), 'x', '#CBB89A', { x: 0, z: 0 }, 't1');
-  for (let i = 1; i <= 40; i++) cheater.inputs.push({ seq: i, f: 1, r: 0, yaw: 0, dt: 0.1 });
-  inst.step();
-  const cheatDist = Math.abs(cheater.state.z);
+  // Zona despejada; el tramposo mete 0.1 s de dt por tick (2× tiempo real), el honesto 0.05 s.
+  const cheater = inst.add(E(1), 'x', '#CBB89A', { x: 10, z: 10 }, 't1');
+  const honest = inst.add(E(2), 'y', '#CBB89A', { x: -10, z: 10 }, 't2');
+  for (let t = 1; t <= 100; t++) {
+    cheater.inputs.push({ seq: t, f: 1, r: 0, yaw: 0, dt: 0.1 });
+    honest.inputs.push({ seq: t, f: 1, r: 0, yaw: 0, dt: 0.05 });
+    inst.step();
+  }
+  const cheatDist = 10 - cheater.state.z;
+  const honestDist = 10 - honest.state.z;
+  // Acotado a ~SIM_BANK_REFILL_RATE (1.05×) + el crédito inicial del cap (0.25 s ≈ 1.1 m).
+  assert.ok(
+    cheatDist <= honestDist * 1.1 + 1.2,
+    `sostenido: tramposo ${cheatDist.toFixed(2)} m vs honesto ${honestDist.toFixed(2)} m (antes sostenía 2×)`,
+  );
+  assert.ok(cheater.inputs.length > 0, 'el excedente del tramposo espera en cola (no se ackea)');
+  assert.ok(cheater.lastSeq < 100, 'no ackea lo que no procesó');
+});
 
-  // Cliente honesto: un input de un tick real (~0.05 s).
-  const honest = inst.add(E(2), 'y', '#CBB89A', { x: 0, z: 0 }, 't2');
-  honest.inputs.push({ seq: 1, f: 1, r: 0, yaw: 0, dt: 0.05 });
-  inst.step();
-  const honestStep = Math.abs(honest.state.z);
+test('Instance.step: ráfaga honesta (hitch) — NADA se descarta y coincide con el replay del cliente', () => {
+  const inst = new Instance('hub');
+  const rt = inst.add(E(1), 'a', '#CBB89A', { x: 10, z: 10 }, 'tok');
+  // Hitch/ráfaga TCP: 3 inputs de 0.1 s llegan en el MISMO tick (0.3 s > cap 0.25).
+  rt.inputs.push({ seq: 1, f: 1, r: 0, yaw: 0.4, dt: 0.1 });
+  rt.inputs.push({ seq: 2, f: 1, r: 0, yaw: 0.4, dt: 0.1 });
+  rt.inputs.push({ seq: 3, f: 1, r: 1, yaw: 0.4, dt: 0.1 });
+  inst.step(); // crédito 0.25: procesa 2, difiere 1
+  assert.equal(rt.lastSeq, 2, 'ackea SOLO lo procesado');
+  assert.equal(rt.inputs.length, 1, 'el excedente queda en cola');
+  inst.step(); // refill: procesa el tercero
+  assert.equal(rt.lastSeq, 3, 'el diferido se procesa al tick siguiente');
+  assert.equal(rt.inputs.length, 0);
+  // La posición final DEBE coincidir bit a bit con el replay puro de los 3 inputs (lo que el
+  // cliente predijo): el bucket difiere, JAMÁS descarta (el descarte era el snap del QA M5).
+  const ref = { x: 10, z: 10, vx: 0, vz: 0 };
+  applyMovement(ref, { f: 1, r: 0, yaw: 0.4 }, 0.1, WORLD_OBSTACLES);
+  applyMovement(ref, { f: 1, r: 0, yaw: 0.4 }, 0.1, WORLD_OBSTACLES);
+  applyMovement(ref, { f: 1, r: 1, yaw: 0.4 }, 0.1, WORLD_OBSTACLES);
+  assert.deepEqual(
+    { x: rt.state.x, z: rt.state.z, vx: rt.state.vx, vz: rt.state.vz },
+    ref,
+    'autoridad == predicción (cero descarte)',
+  );
+});
 
-  assert.ok(cheatDist <= honestStep * 2.5, `avance del tramposo (${cheatDist}) acotado al presupuesto`);
-  assert.equal(cheater.lastSeq, 40, 'ackea el último seq aunque no aplique el excedente');
+test('Instance.step: la locomoción acumula velocidad entre ticks (peso)', () => {
+  const inst = new Instance('hub');
+  // Nace en zona despejada (fuera del anillo de árboles y lejos del monolito): la colisión no
+  // contamina la medición de aceleración.
+  const rt = inst.add(E(1), 'a', '#CBB89A', { x: 10, z: 10 }, 'tok');
+  rt.inputs.push({ seq: 1, f: 1, r: 0, yaw: 0, dt: 0.05 });
+  inst.step();
+  const v1 = Math.hypot(rt.state.vx, rt.state.vz);
+  const d1 = 10 - rt.state.z; // desplazamiento del tick 1 (avanza hacia -Z)
+  const z1 = rt.state.z;
+  rt.inputs.push({ seq: 2, f: 1, r: 0, yaw: 0, dt: 0.05 });
+  inst.step();
+  const v2 = Math.hypot(rt.state.vx, rt.state.vz);
+  const d2 = z1 - rt.state.z; // desplazamiento del tick 2
+  assert.ok(v1 > 0 && v2 > v1, `la velocidad crece entre ticks (${v1} → ${v2})`);
+  assert.ok(d2 > d1, 'el segundo tick desplaza más que el primero (acelerando)');
+});
+
+test('Instance.step: no atraviesa el monolito (colisión autoritativa)', () => {
+  const inst = new Instance('hub');
+  // Nace al sur del monolito (0,0 radio 1.6) y camina de frente hacia el centro varios ticks.
+  const rt = inst.add(E(1), 'a', '#CBB89A', { x: 0, z: 4 }, 'tok');
+  for (let t = 0; t < 40; t++) {
+    rt.inputs.push({ seq: t + 1, f: 1, r: 0, yaw: 0, dt: 0.05 });
+    inst.step();
+  }
+  const d = Math.hypot(rt.state.x, rt.state.z);
+  const clear = MONOLITH.radius + PLAYER_RADIUS;
+  assert.ok(d >= clear - 1e-9, `el server lo detiene en el radio del monolito (d=${d} >= ${clear})`);
 });
 
 test('Instance AOI: el DELTA siempre incluye al propio + los visibles', () => {

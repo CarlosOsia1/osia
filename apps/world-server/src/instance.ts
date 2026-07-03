@@ -11,7 +11,10 @@ import {
   INSTANCE_CAPACITY,
   AOI_ENTER_M,
   AOI_EXIT_M,
-  MAX_SIM_DT_PER_TICK_S,
+  SIM_BANK_CAP_S,
+  SIM_BANK_REFILL_RATE,
+  TICK_MS,
+  WORLD_OBSTACLES,
   type EntityId,
   type EntityState,
   type DeltaEntity,
@@ -22,8 +25,9 @@ export type QueuedInput = { seq: number; f: number; r: number; yaw: number; dt: 
 
 export type EntityRuntime = {
   state: EntityState;
-  inputs: QueuedInput[]; // COLA de inputs pendientes (por seq); se drena cada tick
-  lastSeq: number; // último seq drenado = ackSeq → reconciliación con input replay
+  inputs: QueuedInput[]; // COLA de inputs pendientes (por seq); se procesa hasta el crédito por tick
+  lastSeq: number; // último seq PROCESADO = ackSeq → reconciliación con input replay
+  simBank: number; // crédito de tiempo simulado (token bucket anti speed-hack, QA M5)
   token: string; // resume token: re-adoptar la entidad en una reconexión (grace window)
   disconnected: boolean; // true mientras espera reconexión (no la borramos de inmediato)
   voiceFlags: number; // último estado de voz (mic/hablando/sordo) → sync al que entra
@@ -38,7 +42,7 @@ export class Instance {
   readonly entities = new Map<EntityId, EntityRuntime>();
   /** viewerId → ids de entidades actualmente visibles para ese viewer (AOI con histéresis). */
   private readonly visible = new Map<EntityId, Set<EntityId>>();
-  private readonly scratch = { x: 0, z: 0 }; // reutilizado en step() (cero asignaciones/tick)
+  private readonly scratch = { x: 0, z: 0, vx: 0, vz: 0 }; // reutilizado en step() (cero asignaciones/tick)
   /** Buffer reutilizado por visibleDeltaFor (§7: cero asignaciones/tick con roster estable). */
   private readonly deltaScratch: DeltaEntity[] = [];
 
@@ -58,9 +62,10 @@ export class Instance {
     token: string,
   ): EntityRuntime {
     const rt: EntityRuntime = {
-      state: { id, handle, accentColor, x: spawn.x, z: spawn.z, yaw: 0 },
+      state: { id, handle, accentColor, x: spawn.x, z: spawn.z, yaw: 0, vx: 0, vz: 0 },
       inputs: [],
       lastSeq: 0,
+      simBank: SIM_BANK_CAP_S, // arranca lleno: los primeros inputs entran sin espera
       token,
       disconnected: false,
       voiceFlags: 0,
@@ -80,29 +85,40 @@ export class Instance {
     return [...this.entities.values()].map((e) => ({ ...e.state }));
   }
 
-  /** Avanza la simulación un tick: drena inputs por entidad y aplica `applyMovement`. */
+  /** Avanza la simulación un tick: procesa inputs por entidad hasta el crédito del token bucket. */
   step(): void {
     for (const rt of this.entities.values()) {
+      // Refill del crédito de simulación SIEMPRE (aunque no haya inputs): el bucket sigue el reloj
+      // del server, no la llegada de paquetes.
+      rt.simBank = Math.min(SIM_BANK_CAP_S, rt.simBank + (TICK_MS / 1000) * SIM_BANK_REFILL_RATE);
       if (rt.inputs.length === 0) continue; // sin inputs este tick → la entidad no avanza
       rt.inputs.sort((a, b) => a.seq - b.seq);
       this.scratch.x = rt.state.x;
       this.scratch.z = rt.state.z;
-      // Drena los inputs encolados con su propio dt (igual que el replay del cliente), pero acotando
-      // el tiempo SIMULADO por tick (anti speed-hack): un cliente honesto suma ~TICK_MS de dt por
-      // tick; un flood con dt inflado (120 inputs × 100 ms = 12 s) queda topado. El excedente igual
-      // actualiza yaw/ackSeq (para no trabar la reconciliación) pero NO desplaza — el tramposo se
-      // reconcilia de vuelta a la posición autoritativa. Se drena TODA la cola cada tick.
-      let simBudget = MAX_SIM_DT_PER_TICK_S;
+      this.scratch.vx = rt.state.vx;
+      this.scratch.vz = rt.state.vz;
+      // Procesa inputs EN ORDEN con su propio dt (igual que el replay del cliente) MIENTRAS alcance
+      // el crédito; lo que no alcanza QUEDA en cola para el próximo tick y NO se ackea (QA M5).
+      // Honesto con hitch/ráfaga TCP: nada se descarta (se difiere 1-2 ticks, sin snap). Tramposo
+      // con dt inflado sostenido: acotado a ~SIM_BANK_REFILL_RATE× tiempo real (antes sostenía 2×).
+      let used = 0;
       for (const inp of rt.inputs) {
-        const dt = Math.min(inp.dt, Math.max(0, simBudget));
-        applyMovement(this.scratch, inp, dt);
-        simBudget -= inp.dt;
-        rt.lastSeq = inp.seq; // ackSeq = último seq procesado
+        if (inp.dt > rt.simBank) break; // sin crédito: este y los siguientes esperan al refill
+        rt.simBank -= inp.dt;
+        applyMovement(this.scratch, inp, inp.dt, WORLD_OBSTACLES);
+        rt.lastSeq = inp.seq; // ackSeq = último seq PROCESADO
         rt.state.yaw = inp.yaw;
+        used++;
       }
-      rt.state.x = this.scratch.x;
-      rt.state.z = this.scratch.z;
-      rt.inputs.length = 0;
+      if (used > 0) {
+        // Conserva el excedente al frente de la cola SIN asignar (§7): compacta in-place.
+        if (used < rt.inputs.length) rt.inputs.copyWithin(0, used);
+        rt.inputs.length -= used;
+        rt.state.x = this.scratch.x;
+        rt.state.z = this.scratch.z;
+        rt.state.vx = this.scratch.vx;
+        rt.state.vz = this.scratch.vz;
+      }
     }
   }
 
@@ -143,12 +159,21 @@ export class Instance {
       if (e.state.id === viewerId || !set || set.has(e.state.id)) {
         const slot = out[n];
         if (slot === undefined) {
-          out[n] = { id: e.state.id, x: e.state.x, z: e.state.z, yaw: e.state.yaw };
+          out[n] = {
+            id: e.state.id,
+            x: e.state.x,
+            z: e.state.z,
+            yaw: e.state.yaw,
+            vx: e.state.vx,
+            vz: e.state.vz,
+          };
         } else {
           slot.id = e.state.id;
           slot.x = e.state.x;
           slot.z = e.state.z;
           slot.yaw = e.state.yaw;
+          slot.vx = e.state.vx;
+          slot.vz = e.state.vz;
         }
         n++;
       }

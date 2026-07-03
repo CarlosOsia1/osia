@@ -21,7 +21,7 @@ import {
   MAX_INPUT_DT_S,
   DEFAULT_ACCENT_COLOR,
   safeSpawn,
-  isSpawnClear,
+  isPositionTenable,
   decode,
   type EntityId,
   type C2SMessage,
@@ -147,13 +147,16 @@ async function onHello(world: World, conn: Conn, msg: HelloMsg): Promise<void> {
       // viejo (alto), si no rechazaría TODOS los inputs nuevos (seq <= lastSeq) y la entidad quedaría
       // trabada (no se movería). Resetear → los inputs frescos se aceptan desde seq 1.
       prev.lastSeq = 0;
-      // Spawn-safety en RESUME: si la posición guardada quedó obstruida (dentro de un árbol/
-      // monolito/barrera), reubicar a un punto despejado — nunca reaparecer trabado.
-      if (!isSpawnClear(prev.state.x, prev.state.z)) {
+      // Spawn-safety en RESUME: reubicar SOLO ante penetración real (posición corrupta). El
+      // chequeo estricto de spawn teletransportaba a jugadores legítimos que refrescaban pegados
+      // a un árbol o al borde del claro (la física deja la posición exactamente en el límite, QA M5).
+      if (!isPositionTenable(prev.state.x, prev.state.z)) {
         const sp = safeSpawn(Number(prev.state.id));
         prev.state.x = sp.x;
         prev.state.z = sp.z;
         prev.state.yaw = 0;
+        prev.state.vx = 0; // reubicado: sin inercia vieja (reaparecer deslizándose es incoherente)
+        prev.state.vz = 0;
       }
       conn.entityId = prev.state.id;
       clearHelloTimer(conn); // autenticado por resume
@@ -240,8 +243,13 @@ function onInput(world: World, conn: Conn, msg: InputMsg): void {
   const rt = world.hub.entities.get(conn.entityId);
   if (!rt) return;
   if (msg.seq <= rt.lastSeq || rt.inputs.length >= MAX_QUEUED_INPUTS) return; // viejo/duplicado o flood (cola llena)
+  const tail = rt.inputs[rt.inputs.length - 1];
+  if (tail && msg.seq <= tail.seq) return; // duplicado dentro de la misma ventana de tick (QA M5)
   const inputDt = Math.min(MAX_INPUT_DT_S, Math.max(0, msg.dtMs / 1000)); // clamp anti-cheat
-  rt.inputs.push({ seq: msg.seq, f: msg.f, r: msg.r, yaw: msg.yaw, dt: inputDt });
+  // Normaliza yaw a (-π, π] SIN bucles (un yaw=1e9 con while-loop sería un vector de DoS): el
+  // interpolador remoto asume arco corto y un yaw absurdo hacía girar al avatar como trompo.
+  const yaw = Math.atan2(Math.sin(msg.yaw), Math.cos(msg.yaw));
+  rt.inputs.push({ seq: msg.seq, f: msg.f, r: msg.r, yaw, dt: inputDt });
 }
 
 function takeChatToken(conn: Conn): boolean {
