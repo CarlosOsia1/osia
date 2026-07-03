@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_REFRESH_COOKIE } from '@osia/shared';
+import { SESSION_ID_COOKIE } from '@osia/shared';
 
 /**
  * Guard de rutas (S1.6/S1.7): protege las rutas autenticadas redirigiendo a /login si NO hay cookie
@@ -13,7 +13,7 @@ import { SESSION_REFRESH_COOKIE } from '@osia/shared';
 const PROTECTED = ['/passport'];
 
 export function middleware(req: NextRequest): NextResponse {
-  const hasSession = req.cookies.has(SESSION_REFRESH_COOKIE);
+  const hasSession = req.cookies.has(SESSION_ID_COOKIE);
   const { pathname } = req.nextUrl;
 
   if (!hasSession && PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {

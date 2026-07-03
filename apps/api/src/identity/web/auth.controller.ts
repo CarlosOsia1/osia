@@ -13,7 +13,7 @@ import {
 import type { Request, Response } from 'express';
 import {
   ErrorCode,
-  SESSION_REFRESH_COOKIE,
+  SESSION_ID_COOKIE,
   SESSION_REFRESH_MAX_AGE_MS,
   forgotPasswordSchema,
   loginSchema,
@@ -36,21 +36,21 @@ import { APP_ENV } from '../../config/config.module';
 import type { Env } from '../../config/env';
 import { SignupUseCase } from '../application/use-cases/signup.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
-import { RefreshSessionUseCase } from '../application/use-cases/refresh-session.use-case';
-import { LogoutUseCase } from '../application/use-cases/logout.use-case';
 import { VerifyEmailUseCase } from '../application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from '../application/use-cases/resend-verification.use-case';
 import { RequestPasswordResetUseCase } from '../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../application/use-cases/reset-password.use-case';
+import { ServerSessionService } from '../application/server-session.service';
 
-/** Cookie de refresh (HttpOnly) que sostiene el SSO entre apps — nombre/vida compartidos. */
-const RT_COOKIE = SESSION_REFRESH_COOKIE;
-const RT_MAX_AGE_MS = SESSION_REFRESH_MAX_AGE_MS;
+/** Cookie de sesión SSO server-side (HttpOnly, Ola 1F): ID opaco de sesión — NO el refresh de Supabase. */
+const SID_COOKIE = SESSION_ID_COOKIE;
+const SID_MAX_AGE_MS = SESSION_REFRESH_MAX_AGE_MS;
 
 /**
  * Auth (contexto identity): signup (gate invite-only), login, refresh, logout, session.
- * El refresh token viaja en cookie HttpOnly `Domain=.osia.*` (SSO); el access token corto va
- * en el cuerpo. Supabase rota el refresh (single-use) y detecta reúso. Ver docs/10 §1.6.
+ * La cookie `osia.sid` (HttpOnly, `Domain=.osia.*`) guarda un ID de sesión OPACO; el refresh de Supabase
+ * vive server-side (`identity.sessions`) y se rota single-flight — sin "logout aleatorio" multi-app y con
+ * revocación real (Ola 1F). El access token corto va en el cuerpo. Ver docs/10 §1.6.
  */
 @Controller('auth')
 export class AuthController {
@@ -59,12 +59,11 @@ export class AuthController {
   constructor(
     private readonly signupUseCase: SignupUseCase,
     private readonly loginUseCase: LoginUseCase,
-    private readonly refreshUseCase: RefreshSessionUseCase,
-    private readonly logoutUseCase: LogoutUseCase,
     private readonly verifyEmailUseCase: VerifyEmailUseCase,
     private readonly resendVerificationUseCase: ResendVerificationUseCase,
     private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly serverSession: ServerSessionService,
     @Inject(APP_ENV) private readonly env: Env,
   ) {}
 
@@ -83,7 +82,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ session: SessionDto }> {
     const { session, refreshToken } = await this.loginUseCase.execute(body);
-    this.setRefreshCookie(res, refreshToken);
+    await this.startServerSession(res, session, refreshToken);
     return { session };
   }
 
@@ -95,7 +94,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ session: SessionDto }> {
     const { session, refreshToken } = await this.verifyEmailUseCase.execute(body.email, body.token);
-    this.setRefreshCookie(res, refreshToken);
+    await this.startServerSession(res, session, refreshToken);
     return { session };
   }
 
@@ -128,73 +127,76 @@ export class AuthController {
       body.token,
       body.newPassword,
     );
-    this.setRefreshCookie(res, refreshToken);
+    // El reset expulsa las demás sesiones (espejo del scope:'others' de Supabase): mata las sesiones
+    // server-side previas de la cuenta ANTES de crear la nueva (la de este reset queda viva).
+    await this.serverSession.revokeAllForAccount(session.passport.accountId);
+    await this.startServerSession(res, session, refreshToken);
     return { session };
   }
 
-  /** Devuelve el pasaporte + access token a partir de la cookie de refresh (rota la cookie). */
+  /** Devuelve el pasaporte + access token a partir de la cookie de sesión (Ola 1F: sin rotar la cookie). */
   @Get('session')
-  async session(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<SessionDto> {
-    const rt = this.readRefreshCookie(req);
-    if (!rt) throw new AppException(ErrorCode.UNAUTHENTICATED, 401, 'No hay sesión activa.');
-    const { session, refreshToken } = await this.refreshUseCase.execute(rt);
-    this.setRefreshCookie(res, refreshToken);
-    return session;
+  async session(@Req() req: Request): Promise<SessionDto> {
+    const sid = this.readSessionCookie(req);
+    if (!sid) throw new AppException(ErrorCode.UNAUTHENTICATED, 401, 'No hay sesión activa.');
+    return this.serverSession.resolve(sid);
   }
 
-  /** Rota la sesión y devuelve solo el access token (patrón refresh-y-reintenta del cliente). */
+  /** Devuelve solo el access token vigente (patrón refresh-y-reintenta del cliente). */
   @Post('refresh')
   @HttpCode(200)
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<{ accessToken: string; expiresIn: number }> {
-    const rt = this.readRefreshCookie(req);
-    if (!rt) throw new AppException(ErrorCode.SESSION_EXPIRED, 401, 'Tu sesión expiró.');
-    const { session, refreshToken } = await this.refreshUseCase.execute(rt);
-    this.setRefreshCookie(res, refreshToken);
+  async refresh(@Req() req: Request): Promise<{ accessToken: string; expiresIn: number }> {
+    const sid = this.readSessionCookie(req);
+    if (!sid) throw new AppException(ErrorCode.SESSION_EXPIRED, 401, 'Tu sesión expiró.');
+    const session = await this.serverSession.resolve(sid);
     return { accessToken: session.accessToken, expiresIn: session.expiresIn };
   }
 
   @Post('logout')
   @HttpCode(204)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
-    const rt = this.readRefreshCookie(req);
-    // La cookie se limpia SIEMPRE, aunque la revocación falle (token ya inválido/expirado): si no,
-    // una sesión muerta dejaría la cookie viva y el cliente quedaría en un estado fantasma.
-    if (rt) {
+    const sid = this.readSessionCookie(req);
+    // La cookie se limpia SIEMPRE, aunque la revocación falle: si no, una sesión muerta dejaría la cookie
+    // viva y el cliente quedaría en un estado fantasma.
+    if (sid) {
       try {
-        await this.logoutUseCase.execute(rt);
+        await this.serverSession.destroy(sid);
       } catch (err) {
-        // token ya inválido en el proveedor: igual limpiamos la cookie local, pero lo dejamos en el
-        // log (warn) para que ops vea si la revocación falla por otra causa (red/timeout).
         this.logger.warn(`logout: revocación falló (${err instanceof Error ? err.message : 'desconocido'})`);
       }
     }
-    this.clearRefreshCookie(res);
+    this.clearSessionCookie(res);
   }
 
-  // --- cookie helpers ---
-  private setRefreshCookie(res: Response, token: string): void {
-    res.cookie(RT_COOKIE, token, {
+  // --- sesión + cookie helpers ---
+  /** Crea la sesión server-side y pone la cookie opaca (login/verify/reset). */
+  private async startServerSession(res: Response, session: SessionDto, refreshToken: string): Promise<void> {
+    const token = await this.serverSession.start(
+      session.passport.accountId,
+      session.accessToken,
+      refreshToken,
+      session.expiresIn,
+    );
+    this.setSessionCookie(res, token);
+  }
+
+  private setSessionCookie(res: Response, token: string): void {
+    res.cookie(SID_COOKIE, token, {
       httpOnly: true,
       secure: this.env.COOKIE_SECURE,
       sameSite: 'lax',
       domain: this.env.COOKIE_DOMAIN,
       path: '/',
-      maxAge: RT_MAX_AGE_MS,
+      maxAge: SID_MAX_AGE_MS,
     });
   }
 
-  private clearRefreshCookie(res: Response): void {
-    res.clearCookie(RT_COOKIE, { domain: this.env.COOKIE_DOMAIN, path: '/' });
+  private clearSessionCookie(res: Response): void {
+    res.clearCookie(SID_COOKIE, { domain: this.env.COOKIE_DOMAIN, path: '/' });
   }
 
-  private readRefreshCookie(req: Request): string | undefined {
+  private readSessionCookie(req: Request): string | undefined {
     const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
-    return cookies?.[RT_COOKIE];
+    return cookies?.[SID_COOKIE];
   }
 }

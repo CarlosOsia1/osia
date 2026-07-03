@@ -14,8 +14,9 @@ import { PgAvatarRepository } from './infrastructure/postgres/avatar.repository'
 import { JoinWaitlistUseCase } from './application/use-cases/join-waitlist.use-case';
 import { SignupUseCase } from './application/use-cases/signup.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
-import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case';
-import { LogoutUseCase } from './application/use-cases/logout.use-case';
+import { ServerSessionService } from './application/server-session.service';
+import { SESSION_STORE } from './application/ports/out/session-store.port';
+import { PgSessionStore } from './infrastructure/postgres/pg-session-store';
 import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
 import { ResendVerificationUseCase } from './application/use-cases/resend-verification.use-case';
 import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
@@ -65,8 +66,7 @@ import { AuthGuard } from '../common/auth.guard';
     JoinWaitlistUseCase,
     SignupUseCase,
     LoginUseCase,
-    RefreshSessionUseCase,
-    LogoutUseCase,
+    ServerSessionService,
     VerifyEmailUseCase,
     ResendVerificationUseCase,
     RequestPasswordResetUseCase,
@@ -82,6 +82,7 @@ import { AuthGuard } from '../common/auth.guard';
     { provide: WAITLIST_REPOSITORY, useClass: PgWaitlistRepository },
     { provide: INVITATION_REPOSITORY, useClass: PgInvitationRepository },
     { provide: ACCOUNT_REPOSITORY, useClass: PgAccountRepository },
+    { provide: SESSION_STORE, useClass: PgSessionStore },
     { provide: AUDIT_LOG_REPOSITORY, useClass: PgAuditLogRepository },
     { provide: RETENTION_REPOSITORY, useClass: PgRetentionRepository },
     { provide: DELETION_TOKEN_REPOSITORY, useClass: PgDeletionTokenRepository },
