@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ErrorCode, type ReactionKind, type ReactionResult } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
+import { TX_RUNNER, type TxRunner } from '../../../common/tx';
 import { REACTION_REPOSITORY, type ReactionRepository } from '../ports/out/reaction.repository';
 import {
   SOCIAL_EVENT_PUBLISHER,
@@ -18,19 +19,25 @@ export class SetReactionUseCase {
   constructor(
     @Inject(REACTION_REPOSITORY) private readonly reactions: ReactionRepository,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
+    @Inject(TX_RUNNER) private readonly tx: TxRunner,
   ) {}
 
   async execute(postId: string, accountId: string, kind: ReactionKind): Promise<ReactionResult> {
-    const result = await this.reactions.setReaction(postId, accountId, kind);
+    // La reacción y su `social.post.reacted` (reputación al autor + notificación) van en una sola
+    // transacción; el evento solo se encola si nació una reacción NUEVA (no en el re-PUT idempotente).
+    const result = await this.tx.run(async (tx) => {
+      const r = await this.reactions.setReaction(postId, accountId, kind, tx);
+      if (r?.created) {
+        await this.events.postReacted(tx, {
+          postId,
+          postAuthorAccountId: r.postAuthorAccountId,
+          reactorAccountId: accountId,
+          kind,
+        });
+      }
+      return r;
+    });
     if (!result) throw new AppException(ErrorCode.NOT_FOUND, 404, 'El post no existe.');
-    if (result.created) {
-      this.events.postReacted({
-        postId,
-        postAuthorAccountId: result.postAuthorAccountId,
-        reactorAccountId: accountId,
-        kind,
-      });
-    }
     return { reaction: result.reaction, reactionCount: result.reactionCount };
   }
 }

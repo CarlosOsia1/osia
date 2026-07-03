@@ -11,7 +11,10 @@ import { FollowGraphService } from './application/follow-graph.service';
 import { FOLLOW_REPOSITORY } from './application/ports/out/follow.repository';
 import { PgFollowRepository } from './infrastructure/persistence/follow.repository';
 import { SOCIAL_EVENT_PUBLISHER } from './application/ports/out/social-event-publisher.port';
-import { EventEmitterSocialPublisher } from './infrastructure/messaging/event-emitter-social-publisher';
+import { OutboxSocialPublisher } from './infrastructure/messaging/outbox-social-publisher';
+import { OUTBOX_STORE } from './application/ports/out/outbox.store';
+import { PgOutboxStore } from './infrastructure/persistence/outbox.repository';
+import { OutboxDispatcher } from './infrastructure/messaging/outbox.dispatcher';
 import { MediaController } from './web/media.controller';
 import { PostController } from './web/post.controller';
 import { CreateUploadUrlUseCase } from './application/use-cases/create-upload-url.use-case';
@@ -195,9 +198,11 @@ import { RejectFollowRequestUseCase } from './application/use-cases/reject-follo
     ListProfilePostsUseCase,
     CreateReportUseCase,
     EmailVerifiedGuard,
+    OutboxDispatcher,
     { provide: SOCIAL_HEALTH_PORT, useClass: PgSocialHealthRepository },
     { provide: FOLLOW_REPOSITORY, useClass: PgFollowRepository },
-    { provide: SOCIAL_EVENT_PUBLISHER, useClass: EventEmitterSocialPublisher },
+    { provide: SOCIAL_EVENT_PUBLISHER, useClass: OutboxSocialPublisher },
+    { provide: OUTBOX_STORE, useClass: PgOutboxStore },
     { provide: STORAGE_PORT, useClass: SupabaseStorageAdapter },
     { provide: POST_REPOSITORY, useClass: PgPostRepository },
     { provide: REACTION_REPOSITORY, useClass: PgReactionRepository },

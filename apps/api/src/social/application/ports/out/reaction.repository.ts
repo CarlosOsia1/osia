@@ -1,4 +1,5 @@
 import type { Cursor, Page, ReactionActorDto, ReactionDto, ReactionKind } from '@osia/shared';
+import type { Tx } from '../../../../common/tx';
 
 export const REACTION_REPOSITORY = Symbol('REACTION_REPOSITORY');
 
@@ -13,8 +14,14 @@ export type SetReactionResult = {
 };
 
 export interface ReactionRepository {
-  /** Upsert idempotente por `(post, account, kind)`. `null` si el post no existe o está borrado (→ 404). */
-  setReaction(postId: string, accountId: string, kind: ReactionKind): Promise<SetReactionResult | null>;
+  /** Upsert idempotente por `(post, account, kind)`. `null` si el post no existe o está borrado (→ 404).
+   *  `tx` permite encolar el `social.post.reacted` en la misma transacción (outbox, Ola 1C). */
+  setReaction(
+    postId: string,
+    accountId: string,
+    kind: ReactionKind,
+    tx?: Tx,
+  ): Promise<SetReactionResult | null>;
   /** Borra la reacción (idempotente; sin error si no existía). El trigger ajusta `reaction_count`. */
   removeReaction(postId: string, accountId: string, kind: ReactionKind): Promise<void>;
   /** Quién reaccionó a un post (opcionalmente filtrado por `kind`), keyset. `null` si el post no es

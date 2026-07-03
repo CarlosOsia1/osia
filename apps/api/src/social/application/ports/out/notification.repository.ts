@@ -3,8 +3,13 @@ import type { Cursor, NotificationDto, NotificationType, Page } from '@osia/shar
 export const NOTIFICATION_REPOSITORY = Symbol('NOTIFICATION_REPOSITORY');
 
 export interface NotificationRepository {
-  /** Crea una notificación para `accountId` (el destinatario). `actorAccountId` null = de sistema. */
+  /**
+   * Crea una notificación para `accountId` (el destinatario). `actorAccountId` null = de sistema.
+   * `id` es determinista (uuid v5 de la clave natural del evento) → `ON CONFLICT DO NOTHING`: si el
+   * outbox re-entrega el mismo evento tras un crash, la notificación no se duplica (Ola 1C).
+   */
   create(
+    id: string,
     accountId: string,
     kind: NotificationType,
     actorAccountId: string | null,

@@ -17,6 +17,10 @@ import { SetReactionUseCase } from './set-reaction.use-case';
 import type { ReactionRepository, SetReactionResult } from '../ports/out/reaction.repository';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const POST = '0190b8e0-7c1e-7b3a-8a4e-0000000000a1';
 const READER = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
@@ -34,13 +38,15 @@ const spyPublisher = (): { pub: SocialEventPublisher; emitted: SocialPostReacted
   const emitted: SocialPostReactedPayload[] = [];
   return {
     pub: {
-      followCreated: () => {},
-      followRequested: () => {},
-      followAccepted: () => {},
-      postReacted: (p) => emitted.push(p),
-      postPublished: () => {},
-      postCommented: () => {},
-  postEchoed: () => {},
+      followCreated: async () => {},
+      followRequested: async () => {},
+      followAccepted: async () => {},
+      postReacted: async (_tx, p) => {
+        emitted.push(p);
+      },
+      postPublished: async () => {},
+      postCommented: async () => {},
+      postEchoed: async () => {},
     },
     emitted,
   };
@@ -54,10 +60,7 @@ const repo = (result: SetReactionResult | null): ReactionRepository => ({
 
 test('reacción nueva: devuelve resultado y emite social.post.reacted', async () => {
   const { pub, emitted } = spyPublisher();
-  const uc = new SetReactionUseCase(
-    repo({ reaction, reactionCount: 1, postAuthorAccountId: AUTHOR, created: true }),
-    pub,
-  );
+  const uc = new SetReactionUseCase(repo({ reaction, reactionCount: 1, postAuthorAccountId: AUTHOR, created: true }), pub, fakeTxRunner);
   const res = await uc.execute(POST, READER, 'star');
   assert.equal(res.reactionCount, 1);
   assert.equal(res.reaction.kind, 'star');
@@ -68,17 +71,14 @@ test('reacción nueva: devuelve resultado y emite social.post.reacted', async ()
 
 test('idempotente: re-PUT (created=false) no re-emite', async () => {
   const { pub, emitted } = spyPublisher();
-  const uc = new SetReactionUseCase(
-    repo({ reaction, reactionCount: 1, postAuthorAccountId: AUTHOR, created: false }),
-    pub,
-  );
+  const uc = new SetReactionUseCase(repo({ reaction, reactionCount: 1, postAuthorAccountId: AUTHOR, created: false }), pub, fakeTxRunner);
   await uc.execute(POST, READER, 'star');
   assert.equal(emitted.length, 0);
 });
 
 test('post inexistente → NOT_FOUND (404) y no emite', async () => {
   const { pub, emitted } = spyPublisher();
-  const uc = new SetReactionUseCase(repo(null), pub);
+  const uc = new SetReactionUseCase(repo(null), pub, fakeTxRunner);
   await assert.rejects(
     () => uc.execute(POST, READER, 'star'),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,

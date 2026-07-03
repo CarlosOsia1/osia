@@ -15,6 +15,10 @@ import type { FollowRepository } from '../ports/out/follow.repository';
 import type { MuteRepository } from '../ports/out/mute.repository';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const emptyPage: Page<AccountBriefDto> = { data: [], page: { nextCursor: null, hasMore: false, limit: 20 } };
 
@@ -39,13 +43,13 @@ function followsRepo(over: Partial<FollowRepository> = {}): FollowRepository {
 }
 
 const noEvents: SocialEventPublisher = {
-  followCreated: () => {},
-  followRequested: () => {},
-  followAccepted: () => {},
-  postReacted: () => {},
-  postCommented: () => {},
-  postPublished: () => {},
-  postEchoed: () => {},
+  followCreated: async () => {},
+  followRequested: async () => {},
+  followAccepted: async () => {},
+  postReacted: async () => {},
+  postCommented: async () => {},
+  postPublished: async () => {},
+  postEchoed: async () => {},
 };
 
 test('block: anti-self 422; inexistente 404; delega al repo', async () => {
@@ -67,7 +71,7 @@ test('block: anti-self 422; inexistente 404; delega al repo', async () => {
 });
 
 test('follow con par bloqueado → 403 BLOCKED (sin oráculo de dirección)', async () => {
-  const uc = new FollowAccountUseCase(followsRepo({ follow: () => Promise.resolve(null) }), noEvents);
+  const uc = new FollowAccountUseCase(followsRepo({ follow: () => Promise.resolve(null) }), noEvents, fakeTxRunner);
   await assert.rejects(
     () => uc.execute('a1', 'a2'),
     (e: unknown) => e instanceof AppException && e.status === 403 && e.code === ErrorCode.BLOCKED,

@@ -18,6 +18,10 @@ import { FollowAccountUseCase } from './follow-account.use-case';
 import type { FollowRepository } from '../ports/out/follow.repository';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const A = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const B = '0190b8e0-7c1e-7b3a-8a4e-000000000002';
@@ -61,13 +65,17 @@ const spyPublisher = (): {
   const requested: SocialFollowCreatedPayload[] = [];
   return {
     pub: {
-      followCreated: (p) => created.push(p),
-      followRequested: (p) => requested.push(p),
-      followAccepted: () => {},
-      postReacted: () => {},
-      postPublished: () => {},
-      postCommented: () => {},
-  postEchoed: () => {},
+      followCreated: async (_tx, p) => {
+        created.push(p);
+      },
+      followRequested: async (_tx, p) => {
+        requested.push(p);
+      },
+      followAccepted: async () => {},
+      postReacted: async () => {},
+      postPublished: async () => {},
+      postCommented: async () => {},
+      postEchoed: async () => {},
     },
     created,
     requested,
@@ -76,7 +84,7 @@ const spyPublisher = (): {
 
 test('follow público: arista activa y emite social.follow.created (no requested)', async () => {
   const { pub, created, requested } = spyPublisher();
-  const uc = new FollowAccountUseCase(repo(), pub);
+  const uc = new FollowAccountUseCase(repo(), pub, fakeTxRunner);
   const follow = await uc.execute(A, B);
   assert.equal(follow.followerAccountId, A);
   assert.equal(follow.followeeAccountId, B);
@@ -91,6 +99,7 @@ test('follow privado: arista PENDING y emite social.follow.requested (no created
   const uc = new FollowAccountUseCase(
     repo({ follow: async (f, t) => ({ follow: makeFollow(f, t, 'pending', '2026-06-28T00:00:00.000Z'), created: true }) }),
     pub,
+    fakeTxRunner,
   );
   const follow = await uc.execute(A, B);
   assert.equal(follow.status, 'pending');
@@ -105,6 +114,7 @@ test('follow: idempotente — re-seguir devuelve el vigente SIN re-emitir evento
       follow: async (f, t) => ({ follow: makeFollow(f, t, 'active', '2026-06-01T00:00:00.000Z'), created: false }),
     }),
     pub,
+    fakeTxRunner,
   );
   const follow = await uc.execute(A, B);
   assert.equal(follow.followeeAccountId, B);
@@ -113,7 +123,7 @@ test('follow: idempotente — re-seguir devuelve el vigente SIN re-emitir evento
 
 test('follow: anti-self → CANNOT_FOLLOW_SELF (422) y no emite evento', async () => {
   const { pub, created, requested } = spyPublisher();
-  const uc = new FollowAccountUseCase(repo(), pub);
+  const uc = new FollowAccountUseCase(repo(), pub, fakeTxRunner);
   await assert.rejects(
     () => uc.execute(A, A),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.CANNOT_FOLLOW_SELF && e.status === 422,
@@ -123,7 +133,7 @@ test('follow: anti-self → CANNOT_FOLLOW_SELF (422) y no emite evento', async (
 
 test('follow: destino inexistente → NOT_FOUND (404) y no emite evento', async () => {
   const { pub, created, requested } = spyPublisher();
-  const uc = new FollowAccountUseCase(repo({ accountExists: async () => false }), pub);
+  const uc = new FollowAccountUseCase(repo({ accountExists: async () => false }), pub, fakeTxRunner);
   await assert.rejects(
     () => uc.execute(A, B),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,

@@ -17,6 +17,10 @@ import type { PostRepository } from '../ports/out/post.repository';
 import type { StoragePort } from '../ports/out/storage.port';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const ACCOUNT = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const OWN = { url: 'https://ref.supabase.co/storage/v1/object/public/post-media/posts/x/y.png', kind: 'image' } as const;
@@ -75,20 +79,22 @@ const deps = (over: { owns?: (u: string) => boolean } = {}) => {
     ownsPublicUrl: over.owns ?? ((u) => u.startsWith('https://ref.supabase.co/storage/v1/object/public/post-media/')),
   };
   const events: SocialEventPublisher = {
-    followCreated: () => {},
-    followRequested: () => {},
-    followAccepted: () => {},
-    postReacted: () => {},
-    postCommented: () => {},
-    postPublished: (p) => published.push({ postId: p.postId, authorAccountId: p.authorAccountId }),
-    postEchoed: () => {},
+    followCreated: async () => {},
+    followRequested: async () => {},
+    followAccepted: async () => {},
+    postReacted: async () => {},
+    postCommented: async () => {},
+    postPublished: async (_tx, p) => {
+      published.push({ postId: p.postId, authorAccountId: p.authorAccountId });
+    },
+    postEchoed: async () => {},
   };
   return { posts, storage, events, created, published };
 };
 
 test('publica un post de solo texto y emite social.post.published', async () => {
   const { posts, storage, events, created, published } = deps();
-  const uc = new CreatePostUseCase(posts, storage, events);
+  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner);
   const post = await uc.execute(ACCOUNT, input({ body: 'Hola mundo' }));
   assert.equal(post.body, 'Hola mundo');
   assert.equal(created.length, 1);
@@ -97,7 +103,7 @@ test('publica un post de solo texto y emite social.post.published', async () => 
 
 test('publica un post con adjunto de nuestro Storage', async () => {
   const { posts, storage, events, created } = deps();
-  const uc = new CreatePostUseCase(posts, storage, events);
+  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner);
   const post = await uc.execute(ACCOUNT, input({ kind: 'image', media: [OWN] }));
   assert.deepEqual(post.media, [OWN]);
   assert.equal(created.length, 1);
@@ -105,7 +111,7 @@ test('publica un post con adjunto de nuestro Storage', async () => {
 
 test('rechaza un adjunto externo (no de OSIA) con VALIDATION_FAILED, no persiste ni emite', async () => {
   const { posts, storage, events, created, published } = deps();
-  const uc = new CreatePostUseCase(posts, storage, events);
+  const uc = new CreatePostUseCase(posts, storage, events, fakeTxRunner);
   await assert.rejects(
     () => uc.execute(ACCOUNT, input({ body: 'mira', media: [FOREIGN] })),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.VALIDATION_FAILED && e.status === 422,

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ErrorCode, type CreateEchoInput, type PostDto } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
+import { TX_RUNNER, type TxRunner } from '../../../common/tx';
 import { POST_REPOSITORY, type PostRepository } from '../ports/out/post.repository';
 import {
   SOCIAL_EVENT_PUBLISHER,
@@ -19,24 +20,30 @@ export class CreateEchoUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly posts: PostRepository,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
+    @Inject(TX_RUNNER) private readonly tx: TxRunner,
   ) {}
 
   async execute(accountId: string, originalPostId: string, input: CreateEchoInput): Promise<PostDto> {
-    const result = await this.posts.createEcho(accountId, originalPostId, input.body ?? null);
+    // El eco y sus dos eventos (fan-out del eco + aviso al autor del original) van en una transacción;
+    // solo se encolan si el eco es NUEVO (el eco simple repetido es idempotente y no re-emite).
+    const result = await this.tx.run(async (tx) => {
+      const echo = await this.posts.createEcho(accountId, originalPostId, input.body ?? null, tx);
+      if (echo?.created) {
+        await this.events.postPublished(tx, {
+          postId: echo.echo.id,
+          authorAccountId: accountId,
+          createdAt: echo.echo.createdAt,
+        });
+        await this.events.postEchoed(tx, {
+          echoPostId: echo.echo.id,
+          originalPostId: echo.originalPostId,
+          originalAuthorAccountId: echo.originalAuthorAccountId,
+          echoAuthorAccountId: accountId,
+        });
+      }
+      return echo;
+    });
     if (!result) throw new AppException(ErrorCode.NOT_FOUND, 404, 'Publicación no encontrada.');
-    if (result.created) {
-      this.events.postPublished({
-        postId: result.echo.id,
-        authorAccountId: accountId,
-        createdAt: result.echo.createdAt,
-      });
-      this.events.postEchoed({
-        echoPostId: result.echo.id,
-        originalPostId: result.originalPostId,
-        originalAuthorAccountId: result.originalAuthorAccountId,
-        echoAuthorAccountId: accountId,
-      });
-    }
     return result.echo;
   }
 }

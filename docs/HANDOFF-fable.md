@@ -118,11 +118,19 @@ es la red social (parte de Ola 3) y el Vestíbulo, luego el Mundo (Ola 2).**
 > INSERT leyendo `is_private` en la misma snapshot); `POST /v1/reports` valida que el target exista
 > (404 si no, no contamina la cola de moderación); `unfollow` limpia del feed los posts del ex-seguido
 > (CTE atómico); `DROP INDEX social.idx_feed_acct_score` (índice muerto, amplificación de escritura sin
-> lector) — migración `20260702000001`, aplicada y verificada. **Lo que sigue de Ola 1 (pendiente):**
-- **Outbox transaccional** en `apps/api` (social/economy): hoy el fan-out del feed + reputación +
-  notificaciones dependen de un `EventEmitter` in-process fire-and-forget tras el commit. Si el proceso
-  muere, **el post no llega a NINGÚN feed (ni al del autor) sin rastro**. Tabla `social.outbox` escrita
-  en la misma tx + dispatcher (cron). Desbloquea además correr el API con >1 instancia.
+> lector) — migración `20260702000001`, aplicada y verificada.
+>
+> **✅ Ola 1C YA HECHA por Opus (staged, gates 16/16 verdes, migraciones aplicadas+verificadas en cloud):**
+> **outbox transaccional**. `social.outbox` (migración `20260702000007`) + `TxRunner` (BEGIN/COMMIT sobre
+> un `PoolClient`): el `SocialEventPublisher` ya NO emite al bus, ENCOLA el evento en `social.outbox`
+> usando el MISMO `Tx` del write de dominio (post/reacción/comentario/follow/eco/accept envueltos en
+> `tx.run`) → write + evento atómicos. Un `OutboxDispatcher` (poll ~1 s, `claimBatch` con `FOR UPDATE SKIP
+> LOCKED` + `attempts++`, `emitAsync` esperando a los consumidores, `markPublished`/`markFailed`) entrega
+> **at-least-once**; los `@OnEvent` no cambian pero **dejan de tragarse el error** (para que el reintento
+> funcione). Consumidores idempotentes: reputación (source_ref determinista, ya lo era), **fan-out con
+> `ON CONFLICT` + único `uq_feed_acct_post`** (migración `20260702000008`), **notificaciones con id
+> determinista** (uuid v5 de la clave natural + `ON CONFLICT DO NOTHING`). Tests: dispatcher (entrega/
+> retry) + idempotencia de notificaciones. **Lo que sigue de Ola 1 (pendiente):**
 - **Sesión SSO server-side** (patrón database-session tipo Lucia/Auth.js): elimina el «logout aleatorio
   del ecosistema» por rotación de refresh multi-app y da revocación real. (El fix táctico del logout ya
   está en Ola 0; esto es la solución de fondo.)

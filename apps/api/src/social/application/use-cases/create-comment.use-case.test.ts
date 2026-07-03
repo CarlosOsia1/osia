@@ -18,6 +18,10 @@ import { CreateCommentUseCase } from './create-comment.use-case';
 import type { CommentRepository, CreatedComment } from '../ports/out/comment.repository';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const POST = '0190b8e0-7c1e-7b3a-8a4e-0000000000a1';
 const COMMENTER = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
@@ -45,13 +49,15 @@ const comment: CommentDto = {
 const spyPublisher = () => {
   const emitted: SocialPostCommentedPayload[] = [];
   const pub: SocialEventPublisher = {
-    followCreated: () => {},
-    followRequested: () => {},
-    followAccepted: () => {},
-    postReacted: () => {},
-    postPublished: () => {},
-    postCommented: (p) => emitted.push(p),
-    postEchoed: () => {},
+    followCreated: async () => {},
+    followRequested: async () => {},
+    followAccepted: async () => {},
+    postReacted: async () => {},
+    postPublished: async () => {},
+    postCommented: async (_tx, p) => {
+      emitted.push(p);
+    },
+    postEchoed: async () => {},
   };
   return { pub, emitted };
 };
@@ -69,7 +75,7 @@ const input: CreateCommentInput = { body: 'hola @maria' };
 
 test('crea el comentario y emite social.post.commented', async () => {
   const { pub, emitted } = spyPublisher();
-  const uc = new CreateCommentUseCase(repo(), pub);
+  const uc = new CreateCommentUseCase(repo(), pub, fakeTxRunner);
   const res = await uc.execute(POST, COMMENTER, input);
   assert.equal(res.body, 'hola @maria');
   assert.equal(emitted.length, 1);
@@ -80,17 +86,14 @@ test('crea el comentario y emite social.post.commented', async () => {
 test('menciones: excluye al comentador y al autor del post; deja a los demás', async () => {
   const { pub, emitted } = spyPublisher();
   // El repo resuelve los handles a [maria, comentador, autor]; el use case debe filtrar los 2 últimos.
-  const uc = new CreateCommentUseCase(
-    repo({ resolveMentionedAccountIds: async () => [MARIA, COMMENTER, POST_AUTHOR] }),
-    pub,
-  );
+  const uc = new CreateCommentUseCase(repo({ resolveMentionedAccountIds: async () => [MARIA, COMMENTER, POST_AUTHOR] }), pub, fakeTxRunner);
   await uc.execute(POST, COMMENTER, input);
   assert.deepEqual(emitted[0]!.mentionedAccountIds, [MARIA]);
 });
 
 test('post no visible/inexistente (repo null) → NOT_FOUND (404) y no emite', async () => {
   const { pub, emitted } = spyPublisher();
-  const uc = new CreateCommentUseCase(repo({ createComment: async () => null }), pub);
+  const uc = new CreateCommentUseCase(repo({ createComment: async () => null }), pub, fakeTxRunner);
   await assert.rejects(
     () => uc.execute(POST, COMMENTER, input),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,

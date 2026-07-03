@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ErrorCode, parseMentions, type CommentDto, type CreateCommentInput } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
+import { TX_RUNNER, type TxRunner } from '../../../common/tx';
 import { COMMENT_REPOSITORY, type CommentRepository } from '../ports/out/comment.repository';
 import {
   SOCIAL_EVENT_PUBLISHER,
@@ -18,6 +19,7 @@ export class CreateCommentUseCase {
   constructor(
     @Inject(COMMENT_REPOSITORY) private readonly comments: CommentRepository,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
+    @Inject(TX_RUNNER) private readonly tx: TxRunner,
   ) {}
 
   async execute(
@@ -25,28 +27,36 @@ export class CreateCommentUseCase {
     authorAccountId: string,
     input: CreateCommentInput,
   ): Promise<CommentDto> {
-    const result = await this.comments.createComment(
-      postId,
-      authorAccountId,
-      input.body,
-      input.parentCommentId ?? null,
-    );
+    // El comentario y su `social.post.commented` (notifica al autor y a los mencionados) van juntos en
+    // una transacción. La resolución de menciones (@handle → accountId) es una lectura independiente que
+    // corre dentro del bloque pero no afecta la atomicidad del write + outbox.
+    const result = await this.tx.run(async (tx) => {
+      const created = await this.comments.createComment(
+        postId,
+        authorAccountId,
+        input.body,
+        input.parentCommentId ?? null,
+        tx,
+      );
+      if (!created) return null;
+
+      const handles = parseMentions(input.body);
+      const mentioned = (handles.length > 0 ? await this.comments.resolveMentionedAccountIds(handles) : [])
+        // El comentador y el autor del post no se notifican como "mención" (ya reciben lo suyo).
+        .filter((id) => id !== authorAccountId && id !== created.postAuthorAccountId);
+
+      await this.events.postCommented(tx, {
+        postId,
+        postAuthorAccountId: created.postAuthorAccountId,
+        commenterAccountId: authorAccountId,
+        commentId: created.comment.id,
+        mentionedAccountIds: mentioned,
+      });
+      return created;
+    });
     if (!result) {
       throw new AppException(ErrorCode.NOT_FOUND, 404, 'El post no existe o no puedes comentarlo.');
     }
-
-    const handles = parseMentions(input.body);
-    const mentioned = (handles.length > 0 ? await this.comments.resolveMentionedAccountIds(handles) : [])
-      // El comentador y el autor del post no se notifican como "mención" (ya reciben lo suyo).
-      .filter((id) => id !== authorAccountId && id !== result.postAuthorAccountId);
-
-    this.events.postCommented({
-      postId,
-      postAuthorAccountId: result.postAuthorAccountId,
-      commenterAccountId: authorAccountId,
-      commentId: result.comment.id,
-      mentionedAccountIds: mentioned,
-    });
     return result.comment;
   }
 }

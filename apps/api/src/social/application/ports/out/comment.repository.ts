@@ -1,4 +1,5 @@
 import type { CommentDto, Cursor, Page } from '@osia/shared';
+import type { Tx } from '../../../../common/tx';
 
 export const COMMENT_REPOSITORY = Symbol('COMMENT_REPOSITORY');
 
@@ -16,6 +17,7 @@ export interface CommentRepository {
     authorAccountId: string,
     body: string,
     parentCommentId: string | null,
+    tx?: Tx,
   ): Promise<CreatedComment | null>;
 
   /** Resuelve handles (minúsculas) a `accountId` de perfiles existentes — para notificar menciones. */

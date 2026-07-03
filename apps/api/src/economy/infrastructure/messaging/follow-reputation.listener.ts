@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   SOCIAL_FOLLOW_ACCEPTED,
@@ -13,34 +13,20 @@ import { CreditReputationOnFollowUseCase } from '../../application/use-cases/cre
  * acreditación de reputación (S3.2-H3, S3.9). Consume `social.follow.created` (follow público directo) y
  * `social.follow.accepted` (solicitud privada aprobada): ambos significan "el seguido ganó un seguidor
  * activo" → acredita al seguido (dedup por par en el ledger, así que aceptar tras solicitar no duplica).
- * Desacopla `social` de `economy`. `emit` es fire-and-forget: ABSORBE sus errores (el ledger es la fuente
- * de verdad y el backfill reconcilia el caché).
+ * Desacopla `social` de `economy`. El evento llega por el OUTBOX (Ola 1C): NO se traga el error — se
+ * propaga para que el dispatcher reintente; el crédito es idempotente, así que un reintento no duplica.
  */
 @Injectable()
 export class FollowReputationListener {
-  private readonly logger = new Logger(FollowReputationListener.name);
-
   constructor(private readonly creditReputation: CreditReputationOnFollowUseCase) {}
 
   @OnEvent(SOCIAL_FOLLOW_CREATED)
-  onFollowCreated(payload: SocialFollowCreatedPayload): Promise<void> {
-    return this.credit(payload, SOCIAL_FOLLOW_CREATED);
+  async onFollowCreated(payload: SocialFollowCreatedPayload): Promise<void> {
+    await this.creditReputation.execute(payload);
   }
 
   @OnEvent(SOCIAL_FOLLOW_ACCEPTED)
-  onFollowAccepted(payload: SocialFollowAcceptedPayload): Promise<void> {
-    return this.credit(payload, SOCIAL_FOLLOW_ACCEPTED);
-  }
-
-  private async credit(payload: SocialFollowCreatedPayload, event: string): Promise<void> {
-    try {
-      await this.creditReputation.execute(payload);
-    } catch (err) {
-      this.logger.warn(
-        `No se pudo acreditar reputación por ${event} (seguido=${payload.followeeAccountId}): ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
-    }
+  async onFollowAccepted(payload: SocialFollowAcceptedPayload): Promise<void> {
+    await this.creditReputation.execute(payload);
   }
 }

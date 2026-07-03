@@ -11,6 +11,7 @@ import {
   type Page,
   type ProfileBrief,
 } from '@osia/shared';
+import type { Tx } from '../../../common/tx';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { FollowRepository } from '../../application/ports/out/follow.repository';
 import {
@@ -33,6 +34,7 @@ export class PgFollowRepository implements FollowRepository {
   async follow(
     followerAccountId: string,
     followeeAccountId: string,
+    db: Tx = this.pool,
   ): Promise<{ follow: FollowDto; created: boolean } | null> {
     // El `status` se decide DENTRO del INSERT leyendo profile_cards.is_private en la misma snapshot:
     // `pending` si el destino es privado, `active` si no. Cierra el TOCTOU (leer is_private y luego
@@ -40,7 +42,7 @@ export class PgFollowRepository implements FollowRepository {
     // y nacía una arista `active` saltándose la solicitud). Idempotente: ON CONFLICT no inserta.
     // Bloqueo (R4.4): con un par bloqueado en CUALQUIER dirección no se sigue — el WHERE vacía el
     // SELECT, no inserta, y el `null` final se traduce a 403 BLOCKED en el caso de uso.
-    const inserted = await this.pool.query<FollowRow>(
+    const inserted = await db.query<FollowRow>(
       `INSERT INTO social.follows (follower_account_id, followee_account_id, status)
        SELECT $1, $2,
          CASE WHEN EXISTS (SELECT 1 FROM social.profile_cards pc
@@ -59,7 +61,7 @@ export class PgFollowRepository implements FollowRepository {
     if (created) return { follow: toFollowDto(created), created: true };
 
     // Ya existía → devolver el vigente (active o pending; una arista `blocked` propia no es un follow).
-    const existing = await this.pool.query<FollowRow>(
+    const existing = await db.query<FollowRow>(
       `SELECT ${FOLLOW_COLS} FROM social.follows
        WHERE follower_account_id = $1 AND followee_account_id = $2 AND status IN ('active', 'pending')`,
       [followerAccountId, followeeAccountId],
@@ -184,8 +186,12 @@ export class PgFollowRepository implements FollowRepository {
     return (res.rowCount ?? 0) > 0;
   }
 
-  async acceptRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean> {
-    const res = await this.pool.query(
+  async acceptRequest(
+    ownerAccountId: string,
+    requesterAccountId: string,
+    db: Tx = this.pool,
+  ): Promise<boolean> {
+    const res = await db.query(
       `UPDATE social.follows SET status = 'active'
        WHERE followee_account_id = $1 AND follower_account_id = $2 AND status = 'pending'`,
       [ownerAccountId, requesterAccountId],

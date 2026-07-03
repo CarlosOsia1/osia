@@ -2,6 +2,8 @@ import { Global, Inject, Logger, Module, type OnModuleDestroy } from '@nestjs/co
 import { Pool } from 'pg';
 import { APP_ENV } from '../../../config/config.module';
 import type { Env } from '../../../config/env';
+import { TX_RUNNER } from '../../../common/tx';
+import { PgTxRunner } from './pg-tx-runner';
 import { PG_POOL } from './postgres.tokens';
 
 /**
@@ -30,8 +32,9 @@ import { PG_POOL } from './postgres.tokens';
         return pool;
       },
     },
+    { provide: TX_RUNNER, useClass: PgTxRunner },
   ],
-  exports: [PG_POOL],
+  exports: [PG_POOL, TX_RUNNER],
 })
 export class PostgresModule implements OnModuleDestroy {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import { encodeCursor, type CommentDto, type Cursor, type Page } from '@osia/shared';
+import type { Tx } from '../../../common/tx';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { CommentRepository, CreatedComment } from '../../application/ports/out/comment.repository';
 import {
@@ -28,11 +29,12 @@ export class PgCommentRepository implements CommentRepository {
     authorAccountId: string,
     body: string,
     parentCommentId: string | null,
+    db: Tx = this.pool,
   ): Promise<CreatedComment | null> {
     // Atómico: inserta solo si el post está vivo Y es visible para el autor, y (si hay parent) el parent
     // pertenece a ESTE post y está vivo. Si algo falla, `ins` queda vacío → no hay fila → null → 404.
     // `visible` también trae el autor del post (receptor de la notificación de comentario, S3.4).
-    const res = await this.pool.query<CreateCommentRow>(
+    const res = await db.query<CreateCommentRow>(
       `WITH visible AS (
          SELECT id, author_account_id FROM social.posts WHERE id = $1 AND ${POST_VISIBLE_PREDICATE}
        ),

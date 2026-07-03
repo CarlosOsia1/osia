@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Pool } from 'pg';
 import type { CreatePostInput, PostDto, ReactionKind } from '@osia/shared';
+import type { Tx } from '../../../common/tx';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type { CreatedEcho, PostRepository } from '../../application/ports/out/post.repository';
 import {
@@ -47,11 +48,12 @@ function toFullPostDto(row: FullPostRow): PostDto {
 export class PgPostRepository implements PostRepository {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
-  async createPost(authorAccountId: string, input: CreatePostInput): Promise<PostDto> {
+  async createPost(authorAccountId: string, input: CreatePostInput, db: Tx = this.pool): Promise<PostDto> {
     const media = input.media ?? [];
     // Inserta y trae el post + el brief del autor en una sola ida (CTE). El post (`ins.*`) y el perfil
     // (`p.*`) comparten columna `id`, así que el brief del autor se aliasa con prefijo `author_`.
-    const res = await this.pool.query<PostRow & AuthorBriefAliasedRow>(
+    // `db` es el pool por defecto, o el cliente de la transacción cuando el caso de uso encola el evento.
+    const res = await db.query<PostRow & AuthorBriefAliasedRow>(
       `WITH ins AS (
          INSERT INTO social.posts (author_account_id, kind, body, media, visibility)
          VALUES ($1, $2, $3, $4::jsonb, $5)
@@ -72,12 +74,13 @@ export class PgPostRepository implements PostRepository {
     authorAccountId: string,
     originalPostId: string,
     body: string | null,
+    db: Tx = this.pool,
   ): Promise<CreatedEcho | null> {
     // Atómico: el eco nace SOLO si el original está vivo, es PÚBLICO y su cuenta NO es privada
     // (amplificar es para lo abierto — cierra el leak de followers-only y la carrera TOCTOU).
     // Ecoar un eco resuelve al ORIGINAL raíz (sin cadenas). El eco simple (sin nota) es único
     // por (autor, original): ON CONFLICT no inserta y devolvemos el existente (idempotente).
-    const res = await this.pool.query<
+    const res = await db.query<
       PostRow & AuthorBriefAliasedRow & RefPostAliasedRow & { original_author: string; original_id: string }
     >(
       `WITH original AS (

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ErrorCode, type CreatePostInput, type PostDto } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
+import { TX_RUNNER, type TxRunner } from '../../../common/tx';
 import { POST_REPOSITORY, type PostRepository } from '../ports/out/post.repository';
 import { STORAGE_PORT, type StoragePort } from '../ports/out/storage.port';
 import {
@@ -19,6 +20,7 @@ export class CreatePostUseCase {
     @Inject(POST_REPOSITORY) private readonly posts: PostRepository,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
+    @Inject(TX_RUNNER) private readonly tx: TxRunner,
   ) {}
 
   async execute(authorAccountId: string, input: CreatePostInput): Promise<PostDto> {
@@ -29,8 +31,13 @@ export class CreatePostUseCase {
         });
       }
     }
-    const post = await this.posts.createPost(authorAccountId, input);
-    this.events.postPublished({ postId: post.id, authorAccountId, createdAt: post.createdAt });
-    return post;
+    // El post y su `social.post.published` (que dispara el fan-out) nacen en la MISMA transacción: o se
+    // guardan ambos o ninguno. Sin esto, un crash tras crear el post perdía el evento y el post quedaba
+    // invisible para los seguidores para siempre.
+    return this.tx.run(async (tx) => {
+      const post = await this.posts.createPost(authorAccountId, input, tx);
+      await this.events.postPublished(tx, { postId: post.id, authorAccountId, createdAt: post.createdAt });
+      return post;
+    });
   }
 }

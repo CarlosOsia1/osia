@@ -18,7 +18,7 @@ type Call = { accountId: string; kind: NotificationType; actor: string | null };
 const setup = () => {
   const calls: Call[] = [];
   const repo: NotificationRepository = {
-    create: async (accountId, kind, actor) => {
+    create: async (_id, accountId, kind, actor) => {
       calls.push({ accountId, kind, actor });
     },
     list: async () => ({ data: [], page: { nextCursor: null, hasMore: false, limit: 20 } }),

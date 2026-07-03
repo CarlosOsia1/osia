@@ -11,6 +11,10 @@ import { RejectFollowRequestUseCase } from './reject-follow-request.use-case';
 import type { FollowRepository } from '../ports/out/follow.repository';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const OWNER = '0190b8e0-7c1e-7b3a-8a4e-000000000001';
 const REQ = '0190b8e0-7c1e-7b3a-8a4e-000000000002';
@@ -40,13 +44,15 @@ const spy = (): { pub: SocialEventPublisher; accepted: SocialFollowAcceptedPaylo
   const accepted: SocialFollowAcceptedPayload[] = [];
   return {
     pub: {
-      followCreated: () => {},
-      followRequested: () => {},
-      followAccepted: (p) => accepted.push(p),
-      postReacted: () => {},
-      postPublished: () => {},
-      postCommented: () => {},
-  postEchoed: () => {},
+      followCreated: async () => {},
+      followRequested: async () => {},
+      followAccepted: async (_tx, p) => {
+        accepted.push(p);
+      },
+      postReacted: async () => {},
+      postPublished: async () => {},
+      postCommented: async () => {},
+      postEchoed: async () => {},
     },
     accepted,
   };
@@ -54,13 +60,13 @@ const spy = (): { pub: SocialEventPublisher; accepted: SocialFollowAcceptedPaylo
 
 test('aceptar: activa la arista y emite follow.accepted (follower=solicitante, followee=dueño)', async () => {
   const { pub, accepted } = spy();
-  await new AcceptFollowRequestUseCase(repo(), pub).execute(OWNER, REQ);
+  await new AcceptFollowRequestUseCase(repo(), pub, fakeTxRunner).execute(OWNER, REQ);
   assert.deepEqual(accepted, [{ followerAccountId: REQ, followeeAccountId: OWNER }]);
 });
 
 test('aceptar: sin solicitud pendiente → NOT_FOUND (404) y no emite', async () => {
   const { pub, accepted } = spy();
-  const uc = new AcceptFollowRequestUseCase(repo({ acceptRequest: async () => false }), pub);
+  const uc = new AcceptFollowRequestUseCase(repo({ acceptRequest: async () => false }), pub, fakeTxRunner);
   await assert.rejects(
     () => uc.execute(OWNER, REQ),
     (e: unknown) => e instanceof AppException && e.code === ErrorCode.NOT_FOUND && e.status === 404,

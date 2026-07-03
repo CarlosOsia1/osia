@@ -27,6 +27,8 @@ export class PgFeedRepository implements FeedRepository {
     // desde la columna destino y lo trataría como text → mismatch con post_id/account_id (uuid).
     // Un post `private` (solo-autor) NO se reparte a seguidores: solo entra al feed del propio autor.
     // `public`/`followers` sí van a los seguidores activos (que están autorizados a verlos).
+    // `ON CONFLICT (account_id, post_id) DO NOTHING`: el outbox entrega at-least-once, así que un
+    // re-fan-out tras un reintento NO duplica el post en el feed (Ola 1C, único `uq_feed_acct_post`).
     const res = await this.pool.query(
       `INSERT INTO social.feed_items (account_id, post_id, reason, created_at)
        SELECT fo.follower_account_id, $1::uuid, 'follow', $3::timestamptz
@@ -35,7 +37,8 @@ export class PgFeedRepository implements FeedRepository {
         WHERE fo.followee_account_id = $2::uuid AND fo.status = 'active'
           AND po.visibility <> 'private'
        UNION
-       SELECT $2::uuid, $1::uuid, 'follow', $3::timestamptz`,
+       SELECT $2::uuid, $1::uuid, 'follow', $3::timestamptz
+       ON CONFLICT (account_id, post_id) DO NOTHING`,
       [postId, authorAccountId, createdAt],
     );
     return res.rowCount ?? 0;

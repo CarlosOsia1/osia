@@ -1,4 +1,5 @@
 import type { CreatePostInput, PostDto } from '@osia/shared';
+import type { Tx } from '../../../../common/tx';
 
 export const POST_REPOSITORY = Symbol('POST_REPOSITORY');
 
@@ -11,8 +12,9 @@ export type CreatedEcho = {
 };
 
 export interface PostRepository {
-  /** Inserta un post de la cuenta autora y lo devuelve ya como DTO (con el autor brief embebido). */
-  createPost(authorAccountId: string, input: CreatePostInput): Promise<PostDto>;
+  /** Inserta un post de la cuenta autora y lo devuelve ya como DTO (con el autor brief embebido).
+   *  `tx` permite encolar el `social.post.published` en la misma transacción (outbox, Ola 1C). */
+  createPost(authorAccountId: string, input: CreatePostInput, tx?: Tx): Promise<PostDto>;
   /** Lee un post por id REIMPONIENDO la visibilidad para el lector; `null` si no existe o no lo puede ver. */
   getById(postId: string, viewerAccountId: string): Promise<PostDto | null>;
   /** Soft-delete del post PROPIO (autor); también lo saca de los feeds. `true` si borró (era suyo y vivo). */
@@ -28,7 +30,12 @@ export interface PostRepository {
    * es PÚBLICO y su cuenta NO es privada — atómico (cierra TOCTOU). El eco simple (sin nota) es
    * idempotente por (autor, original). `null` si el original no califica (→ 404, sin oráculo).
    */
-  createEcho(authorAccountId: string, originalPostId: string, body: string | null): Promise<CreatedEcho | null>;
+  createEcho(
+    authorAccountId: string,
+    originalPostId: string,
+    body: string | null,
+    tx?: Tx,
+  ): Promise<CreatedEcho | null>;
 
   /** Quita el eco SIMPLE propio del post dado (o de su raíz). `true` si había uno vivo. */
   removeSimpleEcho(authorAccountId: string, originalPostId: string): Promise<boolean>;

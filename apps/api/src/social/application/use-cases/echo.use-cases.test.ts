@@ -9,6 +9,10 @@ import { CreateEchoUseCase, RemoveEchoUseCase } from './echo.use-cases';
 import type { CreatedEcho, PostRepository } from '../ports/out/post.repository';
 import type { SocialEventPublisher } from '../ports/out/social-event-publisher.port';
 import { AppException } from '../../../common/app-exception';
+import type { Tx, TxRunner } from '../../../common/tx';
+
+/** TxRunner fake: corre la función con un `Tx` de mentira (los fakes de repo/publisher lo ignoran). */
+const fakeTxRunner: TxRunner = { run: (fn) => fn({} as Tx) };
 
 const echo = { id: 'e1', createdAt: '2026-07-02T12:00:00.000Z' } as unknown as PostDto;
 
@@ -27,13 +31,17 @@ function eventsSpy() {
   const published: string[] = [];
   const echoed: string[] = [];
   const events: SocialEventPublisher = {
-    followCreated: () => {},
-    followRequested: () => {},
-    followAccepted: () => {},
-    postReacted: () => {},
-    postCommented: () => {},
-    postPublished: (p) => published.push(p.postId),
-    postEchoed: (p) => echoed.push(p.echoPostId),
+    followCreated: async () => {},
+    followRequested: async () => {},
+    followAccepted: async () => {},
+    postReacted: async () => {},
+    postCommented: async () => {},
+    postPublished: async (_tx, p) => {
+      published.push(p.postId);
+    },
+    postEchoed: async (_tx, p) => {
+      echoed.push(p.echoPostId);
+    },
   };
   return { events, published, echoed };
 }
@@ -46,7 +54,7 @@ test('eco nuevo: emite published (fan-out) + echoed (notificación)', async () =
     originalAuthorAccountId: 'autor-original',
     created: true,
   };
-  const result = await new CreateEchoUseCase(postsRepo(created), events).execute('yo', 'p1', {});
+  const result = await new CreateEchoUseCase(postsRepo(created), events, fakeTxRunner).execute('yo', 'p1', {});
   assert.equal(result.id, 'e1');
   assert.deepEqual(published, ['e1']);
   assert.deepEqual(echoed, ['e1']);
@@ -60,7 +68,7 @@ test('eco simple repetido (idempotente): devuelve el existente SIN re-emitir', a
     originalAuthorAccountId: 'autor-original',
     created: false,
   };
-  await new CreateEchoUseCase(postsRepo(existing), events).execute('yo', 'p1', {});
+  await new CreateEchoUseCase(postsRepo(existing), events, fakeTxRunner).execute('yo', 'p1', {});
   assert.deepEqual(published, []);
   assert.deepEqual(echoed, []);
 });
@@ -68,7 +76,7 @@ test('eco simple repetido (idempotente): devuelve el existente SIN re-emitir', a
 test('original no elegible (privado/followers/borrado) → 404 sin oráculo', async () => {
   const { events } = eventsSpy();
   await assert.rejects(
-    () => new CreateEchoUseCase(postsRepo(null), events).execute('yo', 'p1', {}),
+    () => new CreateEchoUseCase(postsRepo(null), events, fakeTxRunner).execute('yo', 'p1', {}),
     (e: unknown) => e instanceof AppException && e.status === 404,
   );
 });

@@ -6,6 +6,7 @@ import type {
   Page,
   ProfileBrief,
 } from '@osia/shared';
+import type { Tx } from '../../../../common/tx';
 
 export const FOLLOW_REPOSITORY = Symbol('FOLLOW_REPOSITORY');
 
@@ -18,6 +19,7 @@ export interface FollowRepository {
   follow(
     followerAccountId: string,
     followeeAccountId: string,
+    tx?: Tx,
   ): Promise<{ follow: FollowDto; created: boolean } | null>;
   /** Borra el follow (`active`/`pending`; jamás deshace un bloqueo); `true` si existía (idempotente). */
   unfollow(followerAccountId: string, followeeAccountId: string): Promise<boolean>;
@@ -32,8 +34,9 @@ export interface FollowRepository {
   isAccountPrivate(accountId: string): Promise<boolean>;
   /** ¿`followerAccountId` sigue ACTIVAMENTE a `followeeAccountId`? (para gatear listas de cuenta privada). */
   isActiveFollower(followerAccountId: string, followeeAccountId: string): Promise<boolean>;
-  /** Aprueba una solicitud entrante (pending→active) del `requester` hacia `owner`; `true` si había una. */
-  acceptRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean>;
+  /** Aprueba una solicitud entrante (pending→active) del `requester` hacia `owner`; `true` si había una.
+   *  `tx` permite encolar el `social.follow.accepted` en la misma transacción (outbox, Ola 1C). */
+  acceptRequest(ownerAccountId: string, requesterAccountId: string, tx?: Tx): Promise<boolean>;
   /** Rechaza/cancela una solicitud entrante (borra la fila pending); `true` si había una (idempotente). */
   rejectRequest(ownerAccountId: string, requesterAccountId: string): Promise<boolean>;
   /** Página (keyset) de solicitudes ENTRANTES pendientes hacia `accountId` (solicitante + su accountId). */

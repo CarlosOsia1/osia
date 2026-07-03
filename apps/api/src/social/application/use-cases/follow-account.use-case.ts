@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ErrorCode, type FollowDto } from '@osia/shared';
 import { AppException } from '../../../common/app-exception';
+import { TX_RUNNER, type TxRunner } from '../../../common/tx';
 import { FOLLOW_REPOSITORY, type FollowRepository } from '../ports/out/follow.repository';
 import {
   SOCIAL_EVENT_PUBLISHER,
@@ -21,6 +22,7 @@ export class FollowAccountUseCase {
   constructor(
     @Inject(FOLLOW_REPOSITORY) private readonly follows: FollowRepository,
     @Inject(SOCIAL_EVENT_PUBLISHER) private readonly events: SocialEventPublisher,
+    @Inject(TX_RUNNER) private readonly tx: TxRunner,
   ) {}
 
   async execute(followerAccountId: string, followeeAccountId: string): Promise<FollowDto> {
@@ -30,18 +32,23 @@ export class FollowAccountUseCase {
     if (!(await this.follows.accountExists(followeeAccountId))) {
       throw new AppException(ErrorCode.NOT_FOUND, 404, 'La cuenta a seguir no existe.');
     }
-    // El repo decide `pending`/`active` atómicamente (según la privacidad del destino en la misma
-    // sentencia); el evento a emitir se deriva del estado REAL de la arista creada. `null` = par
-    // bloqueado (R4.4): 403 sin revelar la dirección del bloqueo.
-    const result = await this.follows.follow(followerAccountId, followeeAccountId);
+    // La arista y su evento (created/requested) nacen en la MISMA transacción. El repo decide
+    // `pending`/`active` atómicamente (según la privacidad del destino); el evento se deriva del estado
+    // REAL de la arista. `null` = par bloqueado (R4.4): 403 sin revelar la dirección del bloqueo.
+    const result = await this.tx.run(async (tx) => {
+      const created = await this.follows.follow(followerAccountId, followeeAccountId, tx);
+      if (created?.created) {
+        if (created.follow.status === 'pending') {
+          await this.events.followRequested(tx, { followerAccountId, followeeAccountId });
+        } else {
+          await this.events.followCreated(tx, { followerAccountId, followeeAccountId });
+        }
+      }
+      return created;
+    });
     if (!result) {
       throw new AppException(ErrorCode.BLOCKED, 403, 'No puedes seguir a esta cuenta.');
     }
-    const { follow, created } = result;
-    if (created) {
-      if (follow.status === 'pending') this.events.followRequested({ followerAccountId, followeeAccountId });
-      else this.events.followCreated({ followerAccountId, followeeAccountId });
-    }
-    return follow;
+    return result.follow;
   }
 }

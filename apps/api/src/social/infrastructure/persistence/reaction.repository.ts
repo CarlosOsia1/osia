@@ -7,6 +7,7 @@ import {
   type ReactionActorDto,
   type ReactionKind,
 } from '@osia/shared';
+import type { Tx } from '../../../common/tx';
 import { PG_POOL } from '../../../identity/infrastructure/postgres/postgres.tokens';
 import type {
   ReactionRepository,
@@ -35,6 +36,7 @@ export class PgReactionRepository implements ReactionRepository {
     postId: string,
     accountId: string,
     kind: ReactionKind,
+    db: Tx = this.pool,
   ): Promise<SetReactionResult | null> {
     // Una sola sentencia (atómica): solo se inserta si el post está VIVO y el lector puede VERLO — espejo
     // de la policy RLS posts_select_visible (autor / público / followers con follow activo). Las
@@ -42,7 +44,7 @@ export class PgReactionRepository implements ReactionRepository {
     // visible, `visible` queda vacío → no se inserta, no se bumpea el contador, no se emite, y la query
     // no devuelve fila → 404 (mismo código que post inexistente: sin oráculo de existencia). El INSERT
     // gateado por `visible` en la misma snapshot cierra además la carrera TOCTOU del borrado del post.
-    const res = await this.pool.query<SetReactionQueryRow>(
+    const res = await db.query<SetReactionQueryRow>(
       `WITH visible AS (
          SELECT id, author_account_id
          FROM social.posts
@@ -71,7 +73,7 @@ export class PgReactionRepository implements ReactionRepository {
 
     // El conteo se lee tras el trigger (valor ya commiteado): es caché de display y el trigger lo mantiene
     // consistente con las filas, así que leerlo en otra snapshot no compromete la corrección.
-    const count = await this.pool.query<{ reaction_count: number }>(
+    const count = await db.query<{ reaction_count: number }>(
       `SELECT reaction_count FROM social.posts WHERE id = $1`,
       [postId],
     );

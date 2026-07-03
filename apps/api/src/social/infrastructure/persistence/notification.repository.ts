@@ -17,15 +17,19 @@ export class PgNotificationRepository implements NotificationRepository {
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
   async create(
+    id: string,
     accountId: string,
     kind: NotificationType,
     actorAccountId: string | null,
     payload: Record<string, unknown>,
   ): Promise<void> {
+    // El id determinista (uuid v5 de la clave del evento) hace la escritura idempotente: una re-entrega
+    // del outbox choca en la PK y no duplica. `DO NOTHING` la vuelve un no-op silencioso.
     await this.pool.query(
-      `INSERT INTO social.notifications (account_id, kind, actor_account_id, payload)
-       VALUES ($1, $2, $3, $4::jsonb)`,
-      [accountId, kind, actorAccountId, JSON.stringify(payload)],
+      `INSERT INTO social.notifications (id, account_id, kind, actor_account_id, payload)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       ON CONFLICT (id) DO NOTHING`,
+      [id, accountId, kind, actorAccountId, JSON.stringify(payload)],
     );
   }
 
