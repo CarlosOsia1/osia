@@ -4,9 +4,31 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import { NestFactory } from '@nestjs/core';
+import type { INestApplication } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { loadEnv } from './config/env';
+
+// El watcher de dev reinicia el proceso antes de que el SO suelte el puerto (EADDRINUSE fugaz,
+// típico en Windows): reintentar el bind unos instantes en vez de morir al primer intento.
+const LISTEN_RETRIES = 10;
+const LISTEN_RETRY_DELAY_MS = 300;
+
+function isAddrInUse(err: unknown): boolean {
+  return err instanceof Error && (err as NodeJS.ErrnoException).code === 'EADDRINUSE';
+}
+
+async function listenWithRetry(app: INestApplication, port: number): Promise<void> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await app.listen(port);
+      return;
+    } catch (err) {
+      if (!isAddrInUse(err) || attempt >= LISTEN_RETRIES) throw err;
+      await new Promise<void>((resolve) => setTimeout(resolve, LISTEN_RETRY_DELAY_MS));
+    }
+  }
+}
 
 /** Composition root de apps/api (NestJS hexagonal). */
 async function bootstrap(): Promise<void> {
@@ -26,7 +48,7 @@ async function bootstrap(): Promise<void> {
 
   // Todas las rutas REST cuelgan de /v1 (docs/10 §1.2); las health probes quedan fuera.
   app.setGlobalPrefix('v1', { exclude: ['healthz', 'healthz/ready'] });
-  await app.listen(env.PORT);
+  await listenWithRetry(app, env.PORT);
 }
 
 void bootstrap();
