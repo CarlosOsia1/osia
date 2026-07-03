@@ -68,14 +68,14 @@
 > (reputación ya lo era; fan-out `ON CONFLICT`+único; notificaciones id determinista); adiós al
 > fire-and-forget que perdía fan-out/reputación/notif ante un crash. **1D privacidad de media** — los
 > adjuntos de post se sirven por URL FIRMADA (bucket privado, TTL 7d) + borrado de objetos al soft-delete;
-> `profile-media` se queda público a propósito. El código es no-breaking; **⚠️ falta que Carlos APLIQUE la
-> migración `20260702000011` (flip de buckets a privado) al desplegar** — es el interruptor que cierra la
-> fuga. **1E RLS** alineada al predicado (función SECURITY DEFINER `post_visible_to`). **1F sesión SSO
-> server-side** — la cookie pasa a ID opaco (`osia.sid`); la sesión de Supabase vive server-side
-> (`identity.sessions`) y se refresca single-flight (`FOR UPDATE`); `/session` sirve el access CACHEADO →
-> **mata el "logout aleatorio"** y da revocación real. El AuthGuard (JWKS) no cambia → frontends intactos
-> salvo el nombre de cookie en `apps/web/middleware`. **⚠️ migración `20260702000012` (sesiones) va con
-> 000011 al desplegar; implica un re-login único.** **1B** (cursor µs / cooldown de notif) es menor y
+> `profile-media` se queda público a propósito. **1E RLS** alineada al predicado (función SECURITY DEFINER
+> `post_visible_to`). **1F sesión SSO server-side** — la cookie pasa a ID opaco (`osia.sid`); la sesión de
+> Supabase vive server-side (`identity.sessions`) y se refresca single-flight (`FOR UPDATE`); `/session`
+> sirve el access CACHEADO → **mata el "logout aleatorio"** y da revocación real. El AuthGuard (JWKS) no
+> cambia → frontends intactos salvo el nombre de cookie en `apps/web/middleware`. **Migraciones `000011`
+> (buckets post-media/video a PRIVADO) y `000012` (identity.sessions) APLICADAS+verificadas en cloud
+> (2026-07-02).** Como los buckets ya son privados, la media SOLO se ve con el API nuevo (firmado); y el
+> cambio de cookie implica un **re-login único**. **1B** (cursor µs / cooldown de notif) es menor y
 > queda documentado.
 >
 > **✅ Ola 4 — deploy/observabilidad, CÓDIGO listo env-gated (Opus, 2026-07-02):** Dockerfile del api +

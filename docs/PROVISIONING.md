@@ -11,21 +11,15 @@
 
 ## 0. Ya committeado — pendiente de un paso tuyo al desplegar
 
-### 0.1 Aplicar las 2 migraciones pendientes al desplegar/probar el API nuevo
-> `supabase db push` aplica TODAS las pendientes en orden. Estas dos van juntas y las aplicas TÚ (bajo tu
-> vista) al correr el API nuevo, porque `dev == prod`: `pnpm exec supabase db push --db-url "$SUPABASE_DB_URL" --yes`
+### 0.1 Migraciones — ✅ YA APLICADAS al cloud (2026-07-02, por Claude)
+> Las 2 migraciones nuevas ya están aplicadas y verificadas por introspección:
+> - **`20260702000011` (1D):** buckets `post-media`/`post-video` → PRIVADOS (media solo por URL firmada).
+> - **`20260702000012` (1F):** tabla `identity.sessions` creada.
 >
-> - **`20260702000011_post_media_private.sql` (1D):** pone los buckets `post-media`/`post-video` en privado.
->   Desde ese momento la media SOLO se ve por URL firmada (la firma el API nuevo). **Verificar:** subir una
->   foto a un post, confirmar que **se ve logueado** y que **da 403 por URL directa**. Si NO se ve, avísame
->   (el firmado está unit-testeado pero no lo pude probar contra un objeto real subido).
-> - **`20260702000012_identity_sessions.sql` (1F):** crea `identity.sessions`. **El API nuevo la NECESITA**
->   para el login (si no existe, el login falla al insertar la sesión).
->
-> **Re-login único (1F):** la cookie de sesión cambió de `osia.rt` a `osia.sid`. La primera vez que corras el
-> API nuevo, las sesiones viejas dejan de valer y hay que **volver a entrar una vez** (esperado, no es un bug).
-> **Probar 1F:** entra en Vestíbulo → Social → Mundo (SSO sigue), deja una pestaña abierta un rato y confirma
-> que NO te saca solo (el "logout aleatorio" ya no pasa), y que **Logout** cierra de verdad.
+> **Lo que TÚ debes hacer ahora:** **reiniciar el API** (para que corra el código nuevo que firma la media y
+> usa la tabla de sesiones). Como los buckets ya son privados, con el API VIEJO la media no se verá.
+> **Verificar:** (1) una foto de post **se ve logueado** y **da 403 por URL directa**; (2) **re-login único**
+> (la cookie cambió a `osia.sid`) y luego NO te saca solo. Si el media no se ve, avísame.
 
 ### 0.2 Template de email "Recovery" en Supabase (recuperar contraseña — ya en Vestíbulo)
 - **Dónde:** Supabase Dashboard → Authentication → Email Templates → **Reset Password**.
