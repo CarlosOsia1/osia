@@ -60,9 +60,26 @@
 > (constantes de accel/bob/lean) queda para afinar con Carlos jugando. Detalle en
 > `docs/HANDOFF-fable.md` §Ola 2.
 >
-> Con esto las Olas 0, 2 y 3 están hechas. Quedan: **Ola 1** (outbox, sesión server-side, privacidad
-> de media, dev/prod split) y **Ola 4** (deploy/lanzable). **Estado del git:** `origin/main` en
-> `184646b`; local `main` tiene `b91a40f` + Olas 0+2+3, todo sin push (lo hace Carlos).
+> **✅ Ola 1 — backend/confianza, AVANCE MAYOR (Opus, 2026-07-02, gates 16/16 + migraciones aplicadas/
+> verificadas en cloud, todo commiteado en `main` local):** **1A** correctitud (predicado de visibilidad
+> unificado, TOCTOU de follow, reports 404, unfollow limpia feed, índice muerto). **1C outbox
+> transaccional** — el evento se ENCOLA en `social.outbox` en la MISMA tx del write (TxRunner); un
+> dispatcher lo entrega at-least-once (poll + SKIP LOCKED + emitAsync); consumidores idempotentes
+> (reputación ya lo era; fan-out `ON CONFLICT`+único; notificaciones id determinista); adiós al
+> fire-and-forget que perdía fan-out/reputación/notif ante un crash. **1D privacidad de media** — los
+> adjuntos de post se sirven por URL FIRMADA (bucket privado, TTL 7d) + borrado de objetos al soft-delete;
+> `profile-media` se queda público a propósito. El código es no-breaking; **⚠️ falta que Carlos APLIQUE la
+> migración `20260702000011` (flip de buckets a privado) al desplegar** — es el interruptor que cierra la
+> fuga. **1E RLS** alineada al predicado (función SECURITY DEFINER `post_visible_to`). **Pendiente de Ola
+> 1:** **1F sesión SSO server-side** (reescritura de auth — requiere a Carlos probando login en las 3 apps,
+> NO se hace a ciegas) y **1G tests de integración** (necesitan una base de test separada = parte del
+> dev/prod split). **1B** (cursor µs / cooldown de notif) es menor.
+>
+> Con esto las Olas 0, 1 (mayor parte), 2 y 3 están hechas. Queda: **1F/1G/dev-prod split** (coordinar con
+> Carlos) y **Ola 4** (deploy/lanzable — infra parcial ya existe: CI con gates, world-server dockerizado +
+> Caddy + guía; falta Dockerfile del api, publish, Sentry/TURN/Realtime/rate-limit — casi todo depende de
+> las cuentas de Carlos). **Estado del git:** `origin/main` en `184646b`; local `main` tiene `b91a40f` +
+> Olas 0+1(1A/1C/1D/1E)+2+3, todo sin push (lo hace Carlos).
 
 **Fases cerradas**
 - **Fase 0 — El Sentimiento (S0.1–S0.8): ✅ cerrada.** El Mundo camina, voz P2P, presencia
