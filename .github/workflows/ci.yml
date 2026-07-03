@@ -51,3 +51,33 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  migrations:
+    name: Migraciones desde cero (Supabase local)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # `db reset` aplica TODAS las migraciones sobre una base Supabase local recién creada (auth/storage
+      # incluidos). Si alguna migración falla desde cero (orden, dependencia, SQL inválido), el job cae —
+      # es la red que atrapa una migración que solo funcionaba encima del estado acumulado del cloud (1G).
+      - name: Supabase local + db reset
+        run: |
+          pnpm exec supabase start
+          pnpm exec supabase db reset --local
+          pnpm exec supabase stop
